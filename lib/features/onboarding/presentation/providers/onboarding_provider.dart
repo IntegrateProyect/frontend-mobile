@@ -12,10 +12,9 @@ class OnboardingProvider extends ChangeNotifier {
   bool _isCompleted = false;
 
   OnboardingProvider({
-    required GetOnboardingData getOnboardingData,
+    required this._getOnboardingData,
     required CompleteOnboardingUseCase completeOnboardingUseCase,
-  })  : _getOnboardingData = getOnboardingData,
-        _completeOnboardingUseCase = completeOnboardingUseCase;
+  })  : _completeOnboardingUseCase = completeOnboardingUseCase;
 
   List<OnboardingEntity> get items {
     if (_items.isEmpty) {

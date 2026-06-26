@@ -7,8 +7,7 @@ class FavoritesProvider extends ChangeNotifier {
   final List<String> _favoriteIds = [];
   bool _isLoading = false;
 
-  FavoritesProvider({required SaveFavoriteUseCase saveFavoriteUseCase})
-      : _saveFavoriteUseCase = saveFavoriteUseCase;
+  FavoritesProvider({required this._saveFavoriteUseCase});
 
   List<String> get favoriteIds => _favoriteIds;
   bool get isLoading => _isLoading;

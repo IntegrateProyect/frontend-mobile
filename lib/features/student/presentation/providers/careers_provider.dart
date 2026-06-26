@@ -8,8 +8,7 @@ class CareersProvider extends ChangeNotifier {
   List<CareerEntity> _careers = [];
   bool _isLoading = false;
 
-  CareersProvider({required GetRecommendedCareersUseCase getRecommendedCareersUseCase})
-      : _getRecommendedCareersUseCase = getRecommendedCareersUseCase;
+  CareersProvider({required this._getRecommendedCareersUseCase});
 
   List<CareerEntity> get careers => _careers;
   bool get isLoading => _isLoading;

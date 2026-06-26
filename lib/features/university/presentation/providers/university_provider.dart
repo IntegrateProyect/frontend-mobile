@@ -13,10 +13,9 @@ class UniversityProvider extends ChangeNotifier {
   bool _isLoading = false;
 
   UniversityProvider({
-    required GetUniversityProfileUseCase getProfileUseCase,
+    required this._getProfileUseCase,
     required ManageCareersUseCase manageCareersUseCase,
-  })  : _getProfileUseCase = getProfileUseCase,
-        _manageCareersUseCase = manageCareersUseCase;
+  })  : _manageCareersUseCase = manageCareersUseCase;
 
   UniversityProfileEntity? get profile => _profile;
   List<UniversityCareerEntity> get careers => _careers;

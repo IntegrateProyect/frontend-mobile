@@ -11,10 +11,9 @@ class ChatProvider extends ChangeNotifier {
   bool _isLoading = false;
 
   ChatProvider({
-    required SendMessageUseCase sendMessageUseCase,
+    required this._sendMessageUseCase,
     required GetChatHistoryUseCase getChatHistoryUseCase,
-  })  : _sendMessageUseCase = sendMessageUseCase,
-        _getChatHistoryUseCase = getChatHistoryUseCase;
+  })  : _getChatHistoryUseCase = getChatHistoryUseCase;
 
   List<ChatMessageEntity> get messages => _messages;
   bool get isLoading => _isLoading;

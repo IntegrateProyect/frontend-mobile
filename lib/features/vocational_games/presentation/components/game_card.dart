@@ -18,7 +18,7 @@ class GameCard extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                color: Colors.blue.withOpacity(0.1),
+                color: Colors.blue.withValues(alpha: 0.1),
                 width: double.infinity,
                 child: const Icon(Icons.videogame_asset, size: 50, color: Colors.blue),
               ),

@@ -31,7 +31,7 @@ class OnboardingItem extends StatelessWidget {
                     width: 170,
                     height: 170,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFE5D9).withOpacity(0.9),
+                      color: const Color(0xFFFFE5D9).withValues(alpha: 0.9),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -57,7 +57,7 @@ class OnboardingItem extends StatelessWidget {
                     borderRadius: BorderRadius.circular(36),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.10),
+                        color: Colors.black.withValues(alpha: 0.10),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),

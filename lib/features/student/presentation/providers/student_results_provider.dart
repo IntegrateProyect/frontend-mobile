@@ -8,8 +8,7 @@ class StudentResultsProvider extends ChangeNotifier {
   List<VocationalResultEntity> _results = [];
   bool _isLoading = false;
 
-  StudentResultsProvider({required GetVocationalResultsUseCase getResultsUseCase})
-      : _getResultsUseCase = getResultsUseCase;
+  StudentResultsProvider({required this._getResultsUseCase});
 
   List<VocationalResultEntity> get results => _results;
   bool get isLoading => _isLoading;

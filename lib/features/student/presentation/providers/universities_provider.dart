@@ -8,8 +8,7 @@ class UniversitiesProvider extends ChangeNotifier {
   List<UniversityEntity> _universities = [];
   bool _isLoading = false;
 
-  UniversitiesProvider({required GetCompatibleUniversitiesUseCase getCompatibleUniversitiesUseCase})
-      : _getCompatibleUniversitiesUseCase = getCompatibleUniversitiesUseCase;
+  UniversitiesProvider({required this._getCompatibleUniversitiesUseCase});
 
   List<UniversityEntity> get universities => _universities;
   bool get isLoading => _isLoading;

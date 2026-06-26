@@ -11,10 +11,9 @@ class StudentProfileProvider extends ChangeNotifier {
   bool _isLoading = false;
 
   StudentProfileProvider({
-    required GetStudentProfileUseCase getProfileUseCase,
+    required this._getProfileUseCase,
     required UpdateStudentProfileUseCase updateProfileUseCase,
-  })  : _getProfileUseCase = getProfileUseCase,
-        _updateProfileUseCase = updateProfileUseCase;
+  })  : _updateProfileUseCase = updateProfileUseCase;
 
   StudentProfileEntity? get profile => _profile;
   bool get isLoading => _isLoading;
