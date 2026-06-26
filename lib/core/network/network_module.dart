@@ -1,5 +1,4 @@
 import 'package:get_it/get_it.dart';
-import 'api_client.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/error_interceptor.dart';
 
