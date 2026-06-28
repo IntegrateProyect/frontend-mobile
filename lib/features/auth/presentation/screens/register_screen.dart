@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:confetti/confetti.dart';
@@ -146,16 +147,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _validateCurrentStep() {
     if (_currentStep == 0) {
-      if (_nameController.text.trim().isEmpty ||
-          _emailController.text.trim().isEmpty ||
-          _passwordController.text.trim().isEmpty ||
-          _confirmPasswordController.text.trim().isEmpty) {
-        _showMessage('Completa todos los campos obligatorios');
+      final name = _nameController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+      final confirmPassword = _confirmPasswordController.text.trim();
+
+      final nameRegex = RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$");
+      final emailRegex = RegExp(
+        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+      );
+
+      if (name.isEmpty) {
+        _showMessage('El nombre completo es obligatorio');
         return false;
       }
 
-      if (_passwordController.text.trim() !=
-          _confirmPasswordController.text.trim()) {
+      if (name.length < 3) {
+        _showMessage('El nombre debe tener mínimo 3 letras');
+        return false;
+      }
+
+      if (!nameRegex.hasMatch(name)) {
+        _showMessage(
+          'El nombre solo debe contener letras, no números ni caracteres especiales',
+        );
+        return false;
+      }
+
+      if (email.isEmpty) {
+        _showMessage('El correo electrónico es obligatorio');
+        return false;
+      }
+
+      if (!emailRegex.hasMatch(email)) {
+        _showMessage('Ingresa un correo válido. Ejemplo: usuario@correo.com');
+        return false;
+      }
+
+      if (password.isEmpty) {
+        _showMessage('La contraseña es obligatoria');
+        return false;
+      }
+
+      if (password.length < 8) {
+        _showMessage('La contraseña debe tener mínimo 8 caracteres');
+        return false;
+      }
+
+      if (confirmPassword.isEmpty) {
+        _showMessage('Confirma tu contraseña');
+        return false;
+      }
+
+      if (password != confirmPassword) {
         _showMessage('Las contraseñas no coinciden');
         return false;
       }
@@ -167,18 +211,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (_isStudent && _currentStep == 1) {
-      if (_likes.isEmpty ||
-          _dislikes.isEmpty ||
-          _interests.isEmpty ||
-          _skills.isEmpty) {
-        _showMessage('Completa tu perfil vocacional');
+      if (_likes.isEmpty) {
+        _showMessage('Selecciona al menos una materia que te gusta');
+        return false;
+      }
+
+      if (_dislikes.isEmpty) {
+        _showMessage('Selecciona al menos una materia que no te gusta');
+        return false;
+      }
+
+      if (_interests.isEmpty) {
+        _showMessage('Selecciona al menos un área de interés');
+        return false;
+      }
+
+      if (_skills.isEmpty) {
+        _showMessage('Selecciona al menos una habilidad');
         return false;
       }
     }
 
     if (_isStudent && _currentStep == 2) {
-      if (_groupCodeController.text.trim().isEmpty) {
+      final code = _groupCodeController.text.trim();
+
+      if (code.isEmpty) {
         _showMessage('Ingresa el código del grupo');
+        return false;
+      }
+
+      if (code.length < 4) {
+        _showMessage('El código del grupo debe tener mínimo 4 caracteres');
+        return false;
+      }
+
+      if (!RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(code)) {
+        _showMessage(
+          'El código solo puede tener letras, números, guion o guion bajo',
+        );
         return false;
       }
     }
@@ -406,6 +476,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           hint: 'Ej. Juan Pérez',
           icon: Icons.person_outline,
           controller: _nameController,
+          keyboardType: TextInputType.name,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(
+              RegExp(r"[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]"),
+            ),
+          ],
         ),
         SizedBox(height: 16.h),
         _buildInputField(
@@ -413,11 +489,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           hint: 'juan@gmail.com',
           icon: Icons.email_outlined,
           controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
         ),
         SizedBox(height: 16.h),
         _buildInputField(
           label: 'Contraseña *',
-          hint: '••••••••',
+          hint: 'Mínimo 8 caracteres',
           icon: Icons.lock_outline,
           isPassword: true,
           controller: _passwordController,
@@ -429,7 +506,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SizedBox(height: 16.h),
         _buildInputField(
           label: 'Confirmar contraseña *',
-          hint: '••••••••',
+          hint: 'Repite tu contraseña',
           icon: Icons.lock_reset,
           isPassword: true,
           controller: _confirmPasswordController,
@@ -517,14 +594,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Nada claro',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            Text(
-              'Muy claro',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
+            Text('Nada claro', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            Text('Muy claro', style: TextStyle(fontSize: 12, color: Colors.grey)),
           ],
         ),
         SizedBox(height: 40.h),
@@ -555,6 +626,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           hint: 'Ej. INV-69941',
           icon: Icons.qr_code,
           controller: _groupCodeController,
+          keyboardType: TextInputType.text,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\-_]')),
+          ],
         ),
       ],
     );
@@ -578,6 +653,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           hint: 'Ej. 35',
           icon: Icons.calendar_today,
           controller: _ageController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         ),
         SizedBox(height: 16.h),
         _buildInputField(
@@ -622,6 +699,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           hint: 'Ej. GRUPO-2024',
           icon: Icons.vpn_key,
           controller: _groupCodeController,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\-_]')),
+          ],
         ),
       ],
     );
@@ -635,6 +715,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool isObs = false,
     VoidCallback? onToggleObs,
     TextEditingController? controller,
+    List<TextInputFormatter>? inputFormatters,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -647,6 +729,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextFormField(
           controller: controller,
           obscureText: isPassword && isObs,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: Icon(icon, size: 18),
