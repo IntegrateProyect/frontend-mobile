@@ -1,404 +1,559 @@
 import 'package:flutter/material.dart';
-import 'package:orientate/core/routes/AppRoutes.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
-class StudentHomeScreen extends StatelessWidget {
+import '../providers/student_home_provider.dart';
+import '../../../../core/routes/AppRoutes.dart';
+
+class StudentHomeScreen extends StatefulWidget {
   const StudentHomeScreen({super.key});
 
   @override
+  State<StudentHomeScreen> createState() => _StudentHomeScreenState();
+}
+
+class _StudentHomeScreenState extends State<StudentHomeScreen> {
+  static const Color primaryColor = Color(0xFF311B92);
+  static const Color darkText = Color(0xFF1D1B4B);
+  static const Color bgColor = Color(0xFFF8F9FE);
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      context.read<StudentHomeProvider>().loadHomeData();
+    });
+  }
+
+  void _showJoinGroupDialog(StudentHomeProvider provider) {
+    final controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        bool isJoining = false;
+
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Unirme a grupo'),
+              content: TextField(
+                controller: controller,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                  labelText: 'Código del grupo',
+                  hintText: 'Ej. INV-69941',
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isJoining
+                      ? null
+                      : () {
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: isJoining
+                      ? null
+                      : () async {
+                    setStateDialog(() {
+                      isJoining = true;
+                    });
+
+                    final success =
+                    await provider.joinGroupByCode(controller.text);
+
+                    if (!mounted) return;
+
+                    Navigator.pop(dialogContext);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Te uniste al grupo correctamente'
+                              : provider.errorMessage ??
+                              'No se pudo unir al grupo',
+                        ),
+                      ),
+                    );
+                  },
+                  child: isJoining
+                      ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text('Unirme'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final provider = context.watch<StudentHomeProvider>();
+    final profile = provider.profile;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
-        title: const Text(
+        centerTitle: true,
+        title: Text(
           'Oriéntate+',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
+          style: TextStyle(
+            color: primaryColor,
+            fontWeight: FontWeight.w900,
+            fontSize: 22.sp,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.black),
+            icon: Icon(Icons.notifications_none, color: Colors.grey[700]),
             onPressed: () {},
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Greeting Section
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '¡Hola, Diego! 👋',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B)),
-                      ),
-                      Text(
-                        'Tu futuro comienza hoy.',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, AppRoutes.studentProfile.path),
-                    child: Stack(
-                      children: [
-                        const CircleAvatar(
-                          radius: 24,
-                          backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=diego'),
-                        ),
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+          Padding(
+            padding: EdgeInsets.only(right: 16.w),
+            child: CircleAvatar(
+              radius: 19.r,
+              backgroundColor: Colors.grey[200],
+              backgroundImage: profile?.profileImageUrl != null &&
+                  profile!.profileImageUrl!.isNotEmpty
+                  ? NetworkImage(profile.profileImageUrl!)
+                  : null,
+              child: profile?.profileImageUrl == null ||
+                  profile!.profileImageUrl!.isEmpty
+                  ? Icon(Icons.person, color: Colors.grey[500])
+                  : null,
             ),
-
-            // Featured Progress Card
-            _buildFeaturedProgressCard(),
-
-            // Explora Recursos
-            _buildSectionHeader('Explora Recursos', showSeeAll: true),
-            _buildResourcesGrid(),
-
-            // Recomendaciones para ti
-            _buildSectionHeader('Recomendaciones para ti', icon: Icons.star_border),
-            _buildRecommendationsList(),
-
-            // Próximo Evento
-            _buildNextEventCard(),
-            
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF311B92),
-        unselectedItemColor: Colors.grey,
-        currentIndex: 0,
-        onTap: (index) {
-          if (index == 3) {
-            Navigator.pushNamed(context, AppRoutes.studentProfile.path);
-          }
-        },
-        selectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-        unselectedLabelStyle: const TextStyle(fontSize: 10),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), activeIcon: Icon(Icons.explore), label: 'Explorar'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), activeIcon: Icon(Icons.chat_bubble), label: 'Chatbot'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Perfil'),
+          ),
         ],
       ),
+      body: _buildBody(provider),
+      bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
-  Widget _buildFeaturedProgressCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
+  Widget _buildBody(StudentHomeProvider provider) {
+    if (provider.isLoading && provider.profile == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: primaryColor),
+      );
+    }
+
+    final totalGames = provider.availableGames.length;
+    final totalResults = provider.results.length;
+
+    return RefreshIndicator(
+      color: primaryColor,
+      onRefresh: provider.loadHomeData,
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 28.h),
         children: [
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 4, 
-              decoration: const BoxDecoration(
-                color: Color(0xFF4285F4), 
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20))
-              )
-            ),
-          ),
+          _buildHero(provider),
+          SizedBox(height: 18.h),
           Row(
             children: [
-              const SizedBox(width: 12),
               Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Tu Camino\nVocacional',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B)),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Completa el test de habilidades para desbloquear nuevas recomendaciones.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF311B92),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                      child: const Text('Continuar ahora', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
+                child: _buildMiniStat(
+                  icon: Icons.sports_esports_outlined,
+                  value: '$totalGames',
+                  label: 'Juegos',
                 ),
               ),
+              SizedBox(width: 12.w),
               Expanded(
-                flex: 2,
-                child: Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        height: 70,
-                        width: 70,
-                        child: CircularProgressIndicator(
-                          value: 0.65,
-                          strokeWidth: 8,
-                          backgroundColor: Colors.grey[100],
-                          color: const Color(0xFF311B92),
-                        ),
-                      ),
-                      const Text(
-                        '65%',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1D1B4B)),
-                      ),
-                    ],
-                  ),
+                child: _buildMiniStat(
+                  icon: Icons.bar_chart_rounded,
+                  value: '$totalResults',
+                  label: 'Resultados',
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: _buildMiniStat(
+                  icon: Icons.groups_2_outlined,
+                  value: provider.hasGroup ? 'Sí' : 'No',
+                  label: 'Grupo',
                 ),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, {bool showSeeAll = false, IconData? icon}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-      child: Row(
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 20, color: const Color(0xFF1D1B4B)),
-            const SizedBox(width: 8),
-          ],
+          SizedBox(height: 22.h),
           Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B)),
-          ),
-          const Spacer(),
-          if (showSeeAll)
-            TextButton(
-              onPressed: () {},
-              child: const Row(
-                children: [
-                  Text('VER TODO', style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
-                  Icon(Icons.chevron_right, size: 16, color: Colors.blue),
-                ],
-              ),
+            'Accesos rápidos',
+            style: TextStyle(
+              fontSize: 19.sp,
+              fontWeight: FontWeight.w900,
+              color: darkText,
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResourcesGrid() {
-    final List<Map<String, dynamic>> resources = [
-      {'label': 'Perfil Vocacional', 'icon': Icons.trending_up, 'color': Colors.blue},
-      {'label': 'Minijuegos', 'icon': Icons.sports_esports_outlined, 'color': Colors.purple},
-      {'label': 'Chatbot AI', 'icon': Icons.chat_bubble_outline, 'color': Colors.teal},
-      {'label': 'Resultados', 'icon': Icons.pie_chart_outline, 'color': Colors.indigo},
-      {'label': 'Carreras', 'icon': Icons.school_outlined, 'color': Colors.pink},
-      {'label': 'Universidades', 'icon': Icons.account_balance_outlined, 'color': Colors.blue},
-      {'label': 'Becas', 'icon': Icons.account_balance_wallet_outlined, 'color': Colors.purple},
-      {'label': 'Eventos', 'icon': Icons.calendar_today_outlined, 'color': Colors.teal},
-      {'label': 'Favoritos', 'icon': Icons.favorite_border, 'color': Colors.red},
-      {'label': 'Solicitar Apoyo', 'icon': Icons.support, 'color': Colors.blue},
-    ];
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey[100]!),
-      ),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          mainAxisSpacing: 20,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.9,
-        ),
-        itemCount: resources.length,
-        itemBuilder: (context, index) {
-          final res = resources[index];
-          return Column(
+          ),
+          SizedBox(height: 14.h),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 14.w,
+            mainAxisSpacing: 14.h,
+            childAspectRatio: 1.08,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: (res['color'] as Color).withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(res['icon'], color: res['color'], size: 24),
+              _buildActionTile(
+                icon: Icons.psychology_outlined,
+                title: 'Perfil',
+                description: 'Edita tus intereses',
+                color: const Color(0xFF6A4CFF),
+                onTap: () => context.push(AppRoutes.studentProfile.path),
               ),
-              const SizedBox(height: 8),
-              Text(
-                res['label'],
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+              _buildActionTile(
+                icon: Icons.extension_outlined,
+                title: 'Minijuegos',
+                description: 'Descubre áreas',
+                color: const Color(0xFF00A6A6),
+                onTap: () => context.push(AppRoutes.games.path),
+              ),
+              _buildActionTile(
+                icon: Icons.groups_2_outlined,
+                title: 'Grupo',
+                description: provider.hasGroup ? 'Ver grupo' : 'Unirme',
+                color: const Color(0xFFFF8A00),
+                onTap: () {
+                  if (provider.hasGroup) return;
+                  _showJoinGroupDialog(provider);
+                },
+              ),
+              _buildActionTile(
+                icon: Icons.insights_outlined,
+                title: 'Resultados',
+                description: 'Ver avances',
+                color: const Color(0xFFE84A8A),
+                onTap: () => context.push(AppRoutes.vocationalResults.path),
               ),
             ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildRecommendationsList() {
-    return SizedBox(
-      height: 200,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        children: [
-          _buildRecommendationCard(
-            'Ingeniería en Inteligencia\nArtificial',
-            '92% compatible',
-            ['#Tech', '#Futuro'],
-            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&q=80',
           ),
-          const SizedBox(width: 16),
-          _buildRecommendationCard(
-            'Diseño de Experiencia de\nUsuario (UX)',
-            '88% compatible',
-            ['#Creativo', '#Digital'],
-            'https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?w=400&q=80',
+          SizedBox(height: 22.h),
+          _buildWideCard(
+            title: provider.hasGroup ? 'Grupo escolar' : 'Únete a tu grupo',
+            description: provider.groupDescription,
+            icon: Icons.school_outlined,
+            buttonText: provider.hasGroup ? 'Ver grupo' : 'Ingresar código',
+            onTap: () {
+              if (provider.hasGroup) return;
+              _showJoinGroupDialog(provider);
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRecommendationCard(String title, String compatibility, List<String> tags, String imageUrl) {
+  Widget _buildHero(StudentHomeProvider provider) {
     return Container(
-      width: 200,
+      padding: EdgeInsets.all(22.w),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        image: DecorationImage(
-          image: NetworkImage(imageUrl),
-          fit: BoxFit.cover,
+        borderRadius: BorderRadius.circular(30.r),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF311B92), Color(0xFF6A4CFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.25),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                  child: Text(compatibility, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                ),
-                const Icon(Icons.favorite_border, color: Colors.white, size: 20),
-              ],
-            ),
-            const Spacer(),
-            Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-            const SizedBox(height: 4),
-            Row(
-              children: tags.map((t) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Text(t, style: const TextStyle(color: Colors.white70, fontSize: 10)),
-              )).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNextEventCard() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F3FF),
-        borderRadius: BorderRadius.circular(16),
+        ],
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-            child: const Icon(Icons.calendar_today, color: Colors.purple, size: 24),
-          ),
-          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('PRÓXIMO EVENTO', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple)),
-                const SizedBox(height: 2),
-                const Text('Feria Universitaria 2024', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-                Text('Mañana, 09:00 AM • Presencial', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                Text(
+                  '¡Hola, ${provider.firstName}! 👋',
+                  style: TextStyle(
+                    fontSize: 26.sp,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    height: 1.08,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  'Continúa tu orientación vocacional y descubre qué áreas van contigo.',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: Colors.white.withOpacity(0.88),
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                GestureDetector(
+                  onTap: () => context.push(AppRoutes.games.path),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 10.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18.r),
+                    ),
+                    child: Text(
+                      'Empezar ahora',
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13.sp,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: Colors.grey),
+          SizedBox(width: 14.w),
+          Container(
+            width: 82.w,
+            height: 82.w,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.rocket_launch_outlined,
+              color: Colors.white,
+              size: 42.sp,
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMiniStat({
+    required IconData icon,
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 10.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22.r),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: primaryColor, size: 25.sp),
+          SizedBox(height: 8.h),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w900,
+              color: darkText,
+            ),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionTile({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(26.r),
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(18.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(26.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.025),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 46.w,
+              height: 46.w,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+              child: Icon(icon, color: color, size: 27.sp),
+            ),
+            const Spacer(),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w900,
+                color: darkText,
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              description,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWideCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required String buttonText,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28.r),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 58.w,
+            height: 58.w,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F0FF),
+              borderRadius: BorderRadius.circular(18.r),
+            ),
+            child: Icon(icon, color: primaryColor, size: 30.sp),
+          ),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w900,
+                    color: darkText,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: Colors.grey[700],
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                InkWell(
+                  onTap: onTap,
+                  child: Text(
+                    buttonText,
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context) {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: Colors.white,
+      elevation: 10,
+      selectedItemColor: primaryColor,
+      unselectedItemColor: Colors.grey[400],
+      currentIndex: 0,
+      selectedFontSize: 12.sp,
+      unselectedFontSize: 12.sp,
+      onTap: (index) {
+        if (index == 1) context.push(AppRoutes.studentProfile.path);
+        if (index == 2) context.push(AppRoutes.games.path);
+        if (index == 3) context.push(AppRoutes.vocationalResults.path);
+        if (index == 4) context.push(AppRoutes.studentProfile.path);
+      },
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.psychology_outlined),
+          label: 'Perfil',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.sports_esports_outlined),
+          label: 'Minijuegos',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.bar_chart_outlined),
+          label: 'Resultados',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.account_circle_outlined),
+          label: 'Cuenta',
+        ),
+      ],
     );
   }
 }

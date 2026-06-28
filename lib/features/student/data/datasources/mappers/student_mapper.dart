@@ -1,4 +1,3 @@
-
 import '../../../domain/entities/alumni_entity.dart';
 import '../../../domain/entities/career_entity.dart';
 import '../../../domain/entities/event_entity.dart';
@@ -6,6 +5,7 @@ import '../../../domain/entities/scholarship_entity.dart';
 import '../../../domain/entities/student_profile_entity.dart';
 import '../../../domain/entities/university_entity.dart';
 import '../../../domain/entities/vocational_result_entity.dart';
+
 import '../models/alumni_model.dart';
 import '../models/career_model.dart';
 import '../models/event_model.dart';
@@ -20,12 +20,22 @@ class StudentMapper {
       id: model.id,
       name: model.name,
       email: model.email,
-      bio: model.bio,
       profileImageUrl: model.profileImageUrl,
+      groupName: model.groupName,
+      groupCode: model.groupCode,
+      subjectsLiked: model.subjectsLiked,
+      subjectsDisliked: model.subjectsDisliked,
+      interests: model.interests,
+      skills: model.skills,
+      needsScholarship: model.needsScholarship,
+      studyAbroad: model.studyAbroad,
+      vocationalClarity: model.vocationalClarity,
     );
   }
 
-  static VocationalResultEntity toVocationalResultEntity(VocationalResultModel model) {
+  static VocationalResultEntity toVocationalResultEntity(
+      VocationalResultModel model,
+      ) {
     return VocationalResultEntity(
       id: model.id,
       date: model.date,

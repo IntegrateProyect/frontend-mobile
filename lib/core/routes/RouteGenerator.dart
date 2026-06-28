@@ -52,86 +52,85 @@ class RouteGenerator {
     final name = settings.name;
 
     if (name == AppRoutes.splash.path) {
-      return MaterialPageRoute(builder: (_) => const SplashScreen());
+      return MaterialPageRoute(builder: (_) => const SplashScreen(), settings: settings);
     } else if (name == AppRoutes.onboarding.path) {
-      return MaterialPageRoute(builder: (_) => const OnboardingScreen());
+      return MaterialPageRoute(builder: (_) => const OnboardingScreen(), settings: settings);
     } else if (name == AppRoutes.login.path) {
-      return MaterialPageRoute(builder: (_) => const LoginScreen());
+      return MaterialPageRoute(builder: (_) => const LoginScreen(), settings: settings);
     } else if (name == AppRoutes.register.path) {
-      return MaterialPageRoute(builder: (_) => const RegisterScreen());
+      return MaterialPageRoute(builder: (_) => const RegisterScreen(), settings: settings);
     } else if (name == AppRoutes.roleSelection.path) {
-      return MaterialPageRoute(builder: (_) => const RoleSelectionScreen());
+      return MaterialPageRoute(builder: (_) => const RoleSelectionScreen(), settings: settings);
     }
     
     // Student Routes
     else if (name == AppRoutes.home.path) {
-      return MaterialPageRoute(builder: (_) => const StudentHomeScreen());
+      return MaterialPageRoute(builder: (_) => const StudentHomeScreen(), settings: settings);
     } else if (name == AppRoutes.studentProfile.path) {
-      return MaterialPageRoute(builder: (_) => const StudentProfileScreen());
+      return MaterialPageRoute(builder: (_) => const StudentProfileScreen(), settings: settings);
     } else if (name == AppRoutes.vocationalResults.path) {
-      return MaterialPageRoute(builder: (_) => const VocationalResultsScreen());
+      return MaterialPageRoute(builder: (_) => const VocationalResultsScreen(), settings: settings);
     } else if (name == AppRoutes.careers.path) {
-      return MaterialPageRoute(builder: (_) => const CareersScreen());
+      return MaterialPageRoute(builder: (_) => const CareersScreen(), settings: settings);
     } else if (name == AppRoutes.careerDetail.path) {
-      return MaterialPageRoute(builder: (_) => const CareerDetailScreen());
+      return MaterialPageRoute(builder: (_) => const CareerDetailScreen(), settings: settings);
     } else if (name == AppRoutes.careerCompare.path) {
-      return MaterialPageRoute(builder: (_) => const CareerCompareScreen());
+      return MaterialPageRoute(builder: (_) => const CareerCompareScreen(), settings: settings);
     } else if (name == AppRoutes.universities.path) {
-      return MaterialPageRoute(builder: (_) => const UniversitiesScreen());
+      return MaterialPageRoute(builder: (_) => const UniversitiesScreen(), settings: settings);
     } else if (name == AppRoutes.universityDetail.path) {
-      return MaterialPageRoute(builder: (_) => const UniversityDetailScreen());
+      return MaterialPageRoute(builder: (_) => const UniversityDetailScreen(), settings: settings);
     } else if (name == AppRoutes.scholarships.path) {
-      return MaterialPageRoute(builder: (_) => const ScholarshipsScreen());
+      return MaterialPageRoute(builder: (_) => const ScholarshipsScreen(), settings: settings);
     } else if (name == AppRoutes.events.path) {
-      return MaterialPageRoute(builder: (_) => const EventsScreen());
+      return MaterialPageRoute(builder: (_) => const EventsScreen(), settings: settings);
     } else if (name == AppRoutes.alumniList.path) {
-      return MaterialPageRoute(builder: (_) => const AlumniListScreen());
+      return MaterialPageRoute(builder: (_) => const AlumniListScreen(), settings: settings);
     } else if (name == AppRoutes.favorites.path) {
-      return MaterialPageRoute(builder: (_) => const FavoritesScreen());
+      return MaterialPageRoute(builder: (_) => const FavoritesScreen(), settings: settings);
     } else if (name == AppRoutes.requestSupport.path) {
-      return MaterialPageRoute(builder: (_) => const RequestSupportScreen());
+      return MaterialPageRoute(builder: (_) => const RequestSupportScreen(), settings: settings);
     } else if (name == AppRoutes.vocationalRoute.path) {
-      return MaterialPageRoute(builder: (_) => const VocationalRouteScreen());
+      return MaterialPageRoute(builder: (_) => const VocationalRouteScreen(), settings: settings);
     }
 
     // Chatbot
     else if (name == AppRoutes.chat.path) {
-      return MaterialPageRoute(builder: (_) => const ChatScreen());
+      return MaterialPageRoute(builder: (_) => const ChatScreen(), settings: settings);
     }
 
     // Games
     else if (name == AppRoutes.games.path) {
-      return MaterialPageRoute(builder: (_) => const GamesListScreen());
+      return MaterialPageRoute(builder: (_) => const GamesListScreen(), settings: settings);
     } else if (name == AppRoutes.gameDetail.path) {
-      return MaterialPageRoute(builder: (_) => const GameDetailScreen());
+      return _errorRoute();
     }
-
     // Counselor
     else if (name == AppRoutes.counselorHome.path) {
-      return MaterialPageRoute(builder: (_) => const CounselorHomeScreen());
+      return MaterialPageRoute(builder: (_) => const CounselorHomeScreen(), settings: settings);
     } else if (name == AppRoutes.counselorProfile.path) {
-      return MaterialPageRoute(builder: (_) => const CounselorProfileScreen());
+      return MaterialPageRoute(builder: (_) => const CounselorProfileScreen(), settings: settings);
     }
 
     // University Institution
     else if (name == AppRoutes.universityHome.path) {
-      return MaterialPageRoute(builder: (_) => const UniversityHomeScreen());
+      return MaterialPageRoute(builder: (_) => const UniversityHomeScreen(), settings: settings);
     } else if (name == AppRoutes.manageCareers.path) {
-      return MaterialPageRoute(builder: (_) => const ManageCareersScreen());
+      return MaterialPageRoute(builder: (_) => const ManageCareersScreen(), settings: settings);
     }
 
     // Alumni
     else if (name == AppRoutes.alumniHome.path) {
-      return MaterialPageRoute(builder: (_) => const AlumniHomeScreen());
+      return MaterialPageRoute(builder: (_) => const AlumniHomeScreen(), settings: settings);
     } else if (name == AppRoutes.alumniProfile.path) {
-      return MaterialPageRoute(builder: (_) => const AlumniProfileScreen());
+      return MaterialPageRoute(builder: (_) => const AlumniProfileScreen(), settings: settings);
     }
 
     // Admin
     else if (name == AppRoutes.adminHome.path) {
-      return MaterialPageRoute(builder: (_) => const AdminHomeScreen());
+      return MaterialPageRoute(builder: (_) => const AdminHomeScreen(), settings: settings);
     } else if (name == AppRoutes.adminUsers.path) {
-      return MaterialPageRoute(builder: (_) => const UserManagementScreen());
+      return MaterialPageRoute(builder: (_) => const UserManagementScreen(), settings: settings);
     }
 
     return _errorRoute();

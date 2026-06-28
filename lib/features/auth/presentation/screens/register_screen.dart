@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:confetti/confetti.dart';
+import 'package:go_router/go_router.dart';
+
+import '../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final String role;
+
+  const RegisterScreen({
+    super.key,
+    this.role = 'student',
+  });
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -9,71 +20,295 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   int _currentStep = 0;
+
   bool _acceptTerms = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
   String? _selectedRole;
+
   final ScrollController _scrollController = ScrollController();
+  late ConfettiController _confettiController;
 
-  // Consentimientos Paso 3
-  bool _authPrivacy = false;
-  bool _authSharing = false;
-
-  // Controllers Step 1
-  final _nameController = TextEditingController(text: 'Juan Pérez');
-  final _ageController = TextEditingController(text: '16');
-  final _schoolController = TextEditingController(text: 'Preparatoria Central');
-  final _groupCodeController = TextEditingController(text: 'ORI-5B-2026');
-  final _gradeController = TextEditingController(text: '5to B');
-  final _emailController = TextEditingController(text: 'usuario@ejemplo.com');
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
-  // State Step 2 (Student Profile)
-  final List<String> _favoriteSubjects = ['Matemáticas', 'Biología', 'Diseño'];
-  final List<String> _interests = ['Tecnología', 'Salud', 'Arte'];
-  final List<String> _skills = ['Comunicación', 'Creatividad', 'Lógica'];
-  final List<String> _careers = ['Ingeniería en Sistemas', 'Diseño Gráfico'];
-  bool _needsScholarship = true;
-  String _preferredModality = 'En línea';
-  double _certaintyLevel = 3.0;
+  final _ageController = TextEditingController();
+  final _schoolController = TextEditingController();
+  final _specialtyController = TextEditingController();
+
+  final _groupCodeController = TextEditingController();
+  final _groupNameController = TextEditingController();
+
+  final Set<String> _likes = {};
+  final Set<String> _dislikes = {};
+  final Set<String> _interests = {};
+  final Set<String> _skills = {};
+
+  bool _needsScholarship = false;
+  bool _studyAbroad = false;
+  double _careerCertainty = 5.0;
+
+  final List<String> _subjectsList = [
+    'Matemáticas',
+    'Física',
+    'Química',
+    'Biología',
+    'Programación',
+    'Español',
+    'Historia',
+    'Inglés',
+    'Arte',
+    'Educación Física',
+    'Otra',
+  ];
+
+  final List<String> _areasList = [
+    'Tecnología',
+    'Robótica',
+    'Medicina',
+    'Educación',
+    'Negocios',
+    'Arte',
+    'Música',
+    'Deportes',
+    'Derecho',
+    'Psicología',
+    'Comunicación',
+    'Medio ambiente',
+    'Investigación',
+    'Otra',
+  ];
+
+  final List<String> _skillsList = [
+    'Liderazgo',
+    'Comunicación',
+    'Creatividad',
+    'Pensamiento lógico',
+    'Resolución de problemas',
+    'Trabajo en equipo',
+    'Organización',
+    'Programación',
+    'Diseño',
+    'Investigación',
+    'Empatía',
+    'Otra',
+  ];
+
+  bool get _isStudent =>
+      _selectedRole == 'student' || _selectedRole == 'estudiante';
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _selectedRole = ModalRoute.of(context)?.settings.arguments as String? ?? 'student';
+  void initState() {
+    super.initState();
+    _selectedRole = widget.role;
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 1),
+    );
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _ageController.dispose();
-    _schoolController.dispose();
-    _groupCodeController.dispose();
-    _gradeController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _ageController.dispose();
+    _schoolController.dispose();
+    _specialtyController.dispose();
+    _groupCodeController.dispose();
+    _groupNameController.dispose();
     _scrollController.dispose();
+    _confettiController.dispose();
     super.dispose();
   }
 
   void _scrollToTop() {
     if (_scrollController.hasClients) {
-      _scrollController.jumpTo(0);
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _showMessage(String message, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.redAccent : const Color(0xFF311B92),
+      ),
+    );
+  }
+
+  bool _validateCurrentStep() {
+    if (_currentStep == 0) {
+      if (_nameController.text.trim().isEmpty ||
+          _emailController.text.trim().isEmpty ||
+          _passwordController.text.trim().isEmpty ||
+          _confirmPasswordController.text.trim().isEmpty) {
+        _showMessage('Completa todos los campos obligatorios');
+        return false;
+      }
+
+      if (_passwordController.text.trim() !=
+          _confirmPasswordController.text.trim()) {
+        _showMessage('Las contraseñas no coinciden');
+        return false;
+      }
+
+      if (!_acceptTerms) {
+        _showMessage('Debes aceptar los términos y condiciones');
+        return false;
+      }
+    }
+
+    if (_isStudent && _currentStep == 1) {
+      if (_likes.isEmpty ||
+          _dislikes.isEmpty ||
+          _interests.isEmpty ||
+          _skills.isEmpty) {
+        _showMessage('Completa tu perfil vocacional');
+        return false;
+      }
+    }
+
+    if (_isStudent && _currentStep == 2) {
+      if (_groupCodeController.text.trim().isEmpty) {
+        _showMessage('Ingresa el código del grupo');
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  Future<void> _handleRegister() async {
+    if (!_validateCurrentStep()) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final router = GoRouter.of(context);
+
+    final String mappedRole = _isStudent ? 'estudiante' : 'orientador';
+
+    final Map<String, dynamic> studentProfile = {
+      'subjectsLiked': _likes.map((e) => e.toString()).toList(),
+      'subjectsDisliked': _dislikes.map((e) => e.toString()).toList(),
+      'interests': _interests.map((e) => e.toString()).toList(),
+      'skills': _skills.map((e) => e.toString()).toList(),
+      'needsScholarship': _needsScholarship,
+      'studyAbroad': _studyAbroad,
+      'vocationalClarity': _careerCertainty.round().clamp(1, 10),
+    };
+
+    final Map<String, dynamic> counselorData = {
+      'age': int.tryParse(_ageController.text.trim()) ?? 0,
+      'institution': _schoolController.text.trim(),
+      'specialty': _specialtyController.text.trim(),
+      'group': {
+        'name': _groupNameController.text.trim().isEmpty
+            ? 'Mi Grupo'
+            : _groupNameController.text.trim(),
+        'accessCode': _groupCodeController.text.trim(),
+      },
+    };
+
+    final success = await authProvider.register(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+      name: _nameController.text.trim(),
+      role: mappedRole,
+      studentProfile: _isStudent ? studentProfile : null,
+      accessCode: _isStudent ? _groupCodeController.text.trim() : null,
+      additionalData: _isStudent ? null : counselorData,
+    );
+
+    if (success && mounted) {
+      _confettiController.play();
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 280.w,
+                padding: EdgeInsets.symmetric(
+                  vertical: 40.h,
+                  horizontal: 20.w,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24.r),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.celebration,
+                      color: const Color(0xFFFFD700),
+                      size: 100.sp,
+                    ),
+                    SizedBox(height: 24.h),
+                    Text(
+                      'Cuenta creada',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 24.sp,
+                        color: const Color(0xFF1D1B4B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                colors: const [
+                  Colors.amber,
+                  Colors.orange,
+                  Colors.red,
+                  Colors.pink,
+                  Colors.purple,
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 1500));
+
+      if (mounted) {
+        router.go('/login');
+      }
+    } else if (mounted) {
+      _showMessage(authProvider.errorMessage ?? 'Error al registrar');
     }
   }
 
   void _nextStep() {
+    if (!_validateCurrentStep()) return;
+
     if (_currentStep < 2) {
       setState(() => _currentStep++);
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToTop());
+      _scrollToTop();
     } else {
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
+      _handleRegister();
     }
   }
 
-  void _prevStep() {
+  void _previousStep() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToTop());
+      _scrollToTop();
     } else {
       Navigator.pop(context);
     }
@@ -81,471 +316,511 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool isStudent = _selectedRole == 'student';
+    final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: _prevStep,
+          onPressed: _previousStep,
         ),
         title: Text(
-          isStudent ? 'Registro Estudiante' : 'Registro Orientador',
-          style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+          _isStudent ? 'Registro Estudiante' : 'Registro Orientador',
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
       ),
       body: Column(
         children: [
-          // Step Progress Indicator
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 40.0),
+            padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 40.w),
             child: Row(
               children: [
                 _buildStepCircle(icon: Icons.person, step: 0),
                 _buildStepLine(step: 0),
-                _buildStepCircle(icon: Icons.menu_book, step: 1),
+                _buildStepCircle(
+                  icon: _isStudent ? Icons.psychology : Icons.work,
+                  step: 1,
+                ),
                 _buildStepLine(step: 1),
-                _buildStepCircle(icon: Icons.check, step: 2),
+                _buildStepCircle(
+                  icon: _isStudent ? Icons.groups : Icons.group_add,
+                  step: 2,
+                ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(child: Center(child: _buildStepLabel('Cuenta', 0))),
-                Expanded(child: Center(child: _buildStepLabel('Perfil', 1))),
-                Expanded(child: Center(child: _buildStepLabel('Finalizar', 2))),
-              ],
-            ),
-          ),
-          
           Expanded(
             child: SingleChildScrollView(
               controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: _buildCurrentStepContent(),
             ),
           ),
-          
-          _buildBottomAction(),
+          _buildBottomAction(authProvider.isLoading),
         ],
       ),
     );
   }
 
   Widget _buildCurrentStepContent() {
-    switch (_currentStep) {
-      case 0: return _buildStepAccount();
-      case 1: return _buildStepCompleteProfile();
-      case 2: return _buildStepFinalize();
-      default: return const SizedBox.shrink();
+    if (_currentStep == 0) return _buildStepAccount();
+
+    if (_isStudent) {
+      return _currentStep == 1
+          ? _buildStepVocationalProfile()
+          : _buildStepJoinGroup();
     }
+
+    return _currentStep == 1
+        ? _buildStepCounselorProfile()
+        : _buildStepInitialGroup();
   }
 
-  // --- PASO 1 ---
   Widget _buildStepAccount() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Crea tu cuenta', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        const SizedBox(height: 8),
-        const Text('Comienza tu viaje hacia el éxito profesional hoy mismo.', style: TextStyle(fontSize: 14, color: Colors.grey)),
-        const SizedBox(height: 32),
-
-        _buildSectionHeader('DATOS PERSONALES', Icons.person_outline),
-        _buildInputField(label: 'Nombre Completo', hint: 'Ej. Juan Pérez', icon: Icons.person_outline, controller: _nameController),
-        const SizedBox(height: 16),
-        _buildInputField(label: 'Edad', hint: '16', icon: Icons.calendar_today_outlined, controller: _ageController),
-        const SizedBox(height: 24),
-
-        _buildSectionHeader('INFORMACIÓN ACADÉMICA', Icons.school_outlined),
-        _buildInputField(label: 'Institución Educativa', hint: 'Nombre de tu escuela', icon: Icons.business_outlined, controller: _schoolController),
-        const SizedBox(height: 16),
-        _buildInputField(label: 'Codigo del Grupo', hint: 'Ej. 01546', icon: Icons.menu_book_outlined, controller: _groupCodeController),
-        const SizedBox(height: 24),
-
-        _buildSectionHeader('SEGURIDAD', Icons.lock_outline),
-        _buildInputField(label: 'Correo Electrónico', hint: 'usuario@ejemplo.com', icon: Icons.email_outlined, controller: _emailController),
-        const SizedBox(height: 16),
-        _buildInputField(
-          label: 'Contraseña', 
-          hint: 'Minimo 8 caracteres', 
-          icon: Icons.lock_outline, 
-          isPassword: _obscurePassword,
-          controller: _passwordController,
-          suffix: IconButton(
-            icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 20, color: Colors.grey),
-            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+        const Text(
+          'Crear cuenta',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1D1B4B),
           ),
         ),
-        const SizedBox(height: 24),
-
+        SizedBox(height: 8.h),
+        const Text(
+          'Información personal',
+          style: TextStyle(color: Colors.grey),
+        ),
+        SizedBox(height: 32.h),
+        _buildInputField(
+          label: 'Nombre completo *',
+          hint: 'Ej. Juan Pérez',
+          icon: Icons.person_outline,
+          controller: _nameController,
+        ),
+        SizedBox(height: 16.h),
+        _buildInputField(
+          label: 'Correo electrónico *',
+          hint: 'juan@gmail.com',
+          icon: Icons.email_outlined,
+          controller: _emailController,
+        ),
+        SizedBox(height: 16.h),
+        _buildInputField(
+          label: 'Contraseña *',
+          hint: '••••••••',
+          icon: Icons.lock_outline,
+          isPassword: true,
+          controller: _passwordController,
+          isObs: _obscurePassword,
+          onToggleObs: () {
+            setState(() => _obscurePassword = !_obscurePassword);
+          },
+        ),
+        SizedBox(height: 16.h),
+        _buildInputField(
+          label: 'Confirmar contraseña *',
+          hint: '••••••••',
+          icon: Icons.lock_reset,
+          isPassword: true,
+          controller: _confirmPasswordController,
+          isObs: _obscureConfirmPassword,
+          onToggleObs: () {
+            setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+          },
+        ),
+        SizedBox(height: 24.h),
         Row(
           children: [
             Checkbox(
               value: _acceptTerms,
-              onChanged: (val) => setState(() => _acceptTerms = val ?? false),
+              onChanged: (v) {
+                setState(() => _acceptTerms = v ?? false);
+              },
               activeColor: const Color(0xFF311B92),
             ),
             const Expanded(
-              child: Text('Acepto los Términos y Condiciones así como la Política de Privacidad.', style: TextStyle(fontSize: 12, color: Colors.black87)),
+              child: Text('Acepto los términos y condiciones'),
             ),
           ],
         ),
-        const SizedBox(height: 24),
       ],
     );
   }
 
-  // --- PASO 2 ---
-  Widget _buildStepCompleteProfile() {
+  Widget _buildStepVocationalProfile() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Completa tu perfil', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        const SizedBox(height: 8),
-        const Text('Cuéntanos más sobre ti para personalizar tu experiencia.', style: TextStyle(fontSize: 14, color: Colors.grey)),
-        const SizedBox(height: 24),
-
-        _buildAccountSummaryCard(),
-
-        const SizedBox(height: 24),
-        _buildChipSection('Materias favoritas', _favoriteSubjects, Icons.star_border),
-        _buildChipSection('Intereses', _interests, Icons.favorite_border),
-        _buildChipSection('Habilidades', _skills, Icons.bolt),
-        _buildChipSection('Carreras consideradas', _careers, Icons.work_outline),
-
-        const SizedBox(height: 16),
-        _buildToggleField('¿Necesitas beca?', ['Si', 'No'], _needsScholarship ? 'Si' : 'No', (v) => setState(() => _needsScholarship = v == 'Si')),
-        const SizedBox(height: 16),
-        _buildToggleField('Modalidad preferida', ['Presencial', 'En línea', 'Mixta'], _preferredModality, (v) => setState(() => _preferredModality = v)),
-        
-        const SizedBox(height: 24),
-        _buildSecuritySlider(),
-        const SizedBox(height: 40),
-      ],
-    );
-  }
-
-  // --- PASO 3 ---
-  Widget _buildStepFinalize() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Finaliza tu registro', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        const SizedBox(height: 8),
-        const Text('Revisa tu información y confirma para crear tu cuenta.', style: TextStyle(fontSize: 14, color: Colors.grey)),
-        const SizedBox(height: 24),
-
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey[100]!)),
-          child: Column(
-            children: [
-              _buildFinalSummaryRow(Icons.description_outlined, 'Resumen final', '', isHeader: true),
-              const SizedBox(height: 12),
-              _buildFinalSummaryRow(Icons.person_outline, 'Nombre', _nameController.text),
-              _buildFinalSummaryRow(Icons.calendar_today_outlined, 'Edad', _ageController.text),
-              _buildFinalSummaryRow(Icons.account_balance_outlined, 'Escuela', _schoolController.text),
-              _buildFinalSummaryRow(Icons.book_outlined, 'Grado / Grupo', _gradeController.text),
-              _buildFinalSummaryRow(Icons.people_outline, 'Código de grupo', _groupCodeController.text),
-              _buildFinalSummaryRow(Icons.email_outlined, 'Correo', _emailController.text),
-              _buildFinalSummaryRow(Icons.star_border, 'Materias', _favoriteSubjects.join(', ')),
-              _buildFinalSummaryRow(Icons.verified_user_outlined, 'Seguridad', '${_certaintyLevel.round()}/5'),
-            ],
+        const Text(
+          'Cuéntanos sobre ti',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1D1B4B),
           ),
         ),
-
-        const SizedBox(height: 24),
-        _buildSectionHeader('Consentimientos', Icons.verified_user_outlined),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: const Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(12)),
-          child: Column(
-            children: [
-              _buildConsentRow('Autorizo el tratamiento de mis datos personales.', _authPrivacy, (val) => setState(() => _authPrivacy = val!)),
-              const Divider(height: 1),
-              _buildConsentRow('Autorizo compartir mi información con mi orientador.', _authSharing, (val) => setState(() => _authSharing = val!)),
-            ],
-          ),
+        SizedBox(height: 24.h),
+        _buildMultiSelect('Materias que te gustan *', _subjectsList, _likes),
+        _buildMultiSelect(
+          'Materias que no te gustan *',
+          _subjectsList,
+          _dislikes,
         ),
-
-        const SizedBox(height: 24),
-        _buildSectionHeader('Antes de continuar', Icons.assignment_turned_in_outlined),
-        Column(
+        _buildMultiSelect(
+          '¿Qué áreas te interesan? *',
+          _areasList,
+          _interests,
+        ),
+        _buildMultiSelect(
+          '¿Cuáles consideras que son tus habilidades? *',
+          _skillsList,
+          _skills,
+        ),
+        SizedBox(height: 16.h),
+        _buildRadioOption(
+          '¿Necesitas apoyo mediante una beca? *',
+          _needsScholarship,
+              (v) => setState(() => _needsScholarship = v),
+        ),
+        SizedBox(height: 16.h),
+        _buildRadioOption(
+          '¿Te gustaría estudiar en el extranjero? *',
+          _studyAbroad,
+              (v) => setState(() => _studyAbroad = v),
+        ),
+        SizedBox(height: 24.h),
+        Text(
+          '¿Qué tan claro tienes qué carrera estudiar? *',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
+        ),
+        Slider(
+          value: _careerCertainty,
+          min: 1,
+          max: 10,
+          divisions: 9,
+          label: _careerCertainty.round().toString(),
+          activeColor: const Color(0xFF311B92),
+          onChanged: (v) {
+            setState(() => _careerCertainty = v);
+          },
+        ),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildCheckItem('Tus datos de cuenta están completos'),
-            _buildCheckItem('Tu perfil vocacional inicial fue capturado'),
-            _buildCheckItem('Te unirás al grupo de tu orientador automáticamente'),
+            Text(
+              'Nada claro',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            Text(
+              'Muy claro',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
           ],
         ),
-        const SizedBox(height: 40),
+        SizedBox(height: 40.h),
       ],
     );
   }
 
-  // --- WIDGETS AUXILIARES ---
-
-  Widget _buildSectionHeader(String title, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12, top: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(8)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: const Color(0xFF311B92)),
-          const SizedBox(width: 8),
-          Text(title, style: const TextStyle(color: Color(0xFF311B92), fontWeight: FontWeight.bold, fontSize: 11)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInputField({required String label, required String hint, required IconData icon, bool isPassword = false, Widget? suffix, TextEditingController? controller}) {
+  Widget _buildStepJoinGroup() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        const SizedBox(height: 6),
+        const Text(
+          'Unirse a un grupo',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1D1B4B),
+          ),
+        ),
+        SizedBox(height: 8.h),
+        const Text(
+          'Ingresa el código que te dio tu orientador.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        SizedBox(height: 32.h),
+        _buildInputField(
+          label: 'Código del grupo *',
+          hint: 'Ej. INV-69941',
+          icon: Icons.qr_code,
+          controller: _groupCodeController,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepCounselorProfile() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Perfil profesional',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1D1B4B),
+          ),
+        ),
+        SizedBox(height: 32.h),
+        _buildInputField(
+          label: 'Edad',
+          hint: 'Ej. 35',
+          icon: Icons.calendar_today,
+          controller: _ageController,
+        ),
+        SizedBox(height: 16.h),
+        _buildInputField(
+          label: 'Institución',
+          hint: 'Ej. Prepa Sur',
+          icon: Icons.business,
+          controller: _schoolController,
+        ),
+        SizedBox(height: 16.h),
+        _buildInputField(
+          label: 'Especialidad / Cargo',
+          hint: 'Ej. Psicólogo Educativo',
+          icon: Icons.badge,
+          controller: _specialtyController,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepInitialGroup() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Crear mi primer grupo',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1D1B4B),
+          ),
+        ),
+        SizedBox(height: 32.h),
+        _buildInputField(
+          label: 'Nombre del grupo',
+          hint: 'Ej. 6to Semestre A',
+          icon: Icons.groups,
+          controller: _groupNameController,
+        ),
+        SizedBox(height: 16.h),
+        _buildInputField(
+          label: 'Código de acceso inicial',
+          hint: 'Ej. GRUPO-2024',
+          icon: Icons.vpn_key,
+          controller: _groupCodeController,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputField({
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool isPassword = false,
+    bool isObs = false,
+    VoidCallback? onToggleObs,
+    TextEditingController? controller,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 6.h),
         TextFormField(
           controller: controller,
-          obscureText: isPassword,
+          obscureText: isPassword && isObs,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-            prefixIcon: Icon(icon, size: 18, color: Colors.grey[600]),
-            suffixIcon: suffix,
+            prefixIcon: Icon(icon, size: 18),
+            suffixIcon: isPassword
+                ? IconButton(
+              icon: Icon(isObs ? Icons.visibility : Icons.visibility_off),
+              onPressed: onToggleObs,
+            )
+                : null,
             filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[200]!)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[200]!)),
+            fillColor: const Color(0xFFF9FAFB),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF311B92), width: 1.5),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildToggleField(String title, List<String> options, String current, Function(String) onSelect) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(title.contains('beca') ? Icons.school_outlined : Icons.computer_outlined, size: 18, color: const Color(0xFF311B92)),
-              const SizedBox(width: 8),
-              Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1D1B4B)))),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(color: const Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(10)),
-            child: Row(
-              children: options.map((opt) {
-                bool isSelected = opt == current;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => onSelect(opt),
-                    child: Container(
-                      height: 38,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFFF5F3FF) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: isSelected ? Border.all(color: const Color(0xFFDDD6FE)) : null,
-                      ),
-                      child: Text(opt, 
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11, 
-                          color: isSelected ? const Color(0xFF311B92) : Colors.grey[600], 
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-                        )
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildMultiSelect(
+      String title,
+      List<String> options,
+      Set<String> selection,
+      ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
+        ),
+        SizedBox(height: 8.h),
+        Wrap(
+          spacing: 8.w,
+          runSpacing: 8.h,
+          children: options.map((opt) {
+            return FilterChip(
+              label: Text(opt, style: TextStyle(fontSize: 11.sp)),
+              selected: selection.contains(opt),
+              onSelected: (v) {
+                setState(() {
+                  if (v) {
+                    selection.add(opt);
+                  } else {
+                    selection.remove(opt);
+                  }
+                });
+              },
+              selectedColor: const Color(0xFF311B92).withOpacity(0.2),
+              checkmarkColor: const Color(0xFF311B92),
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 16.h),
+      ],
     );
   }
 
-  Widget _buildBottomAction() {
-    return Container(
-      padding: const EdgeInsets.all(24.0),
-      decoration: BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.grey[100]!))),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              if (_currentStep > 0) ...[
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _prevStep,
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(56),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFF311B92))),
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                    child: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Volver', style: TextStyle(color: Color(0xFF311B92), fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-              ],
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: (_currentStep == 0 && !_acceptTerms) ? null : _nextStep,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF311B92),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(56),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(_currentStep == 0 ? 'Registrarse' : (_currentStep == 1 ? 'Continuar' : 'Crear cuenta'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.chevron_right, size: 18),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (_currentStep == 0) ...[
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('¿Ya tienes una cuenta? ', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Text('Inicia sesión', style: TextStyle(color: Color(0xFF311B92), fontWeight: FontWeight.bold, fontSize: 13)),
-                ),
-              ],
+  Widget _buildRadioOption(
+      String title,
+      bool current,
+      Function(bool) onChanged,
+      ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
+        ),
+        Row(
+          children: [
+            Radio<bool>(
+              value: true,
+              groupValue: current,
+              onChanged: (v) => onChanged(v ?? false),
+              activeColor: const Color(0xFF311B92),
             ),
+            const Text('Sí'),
+            const SizedBox(width: 20),
+            Radio<bool>(
+              value: false,
+              groupValue: current,
+              onChanged: (v) => onChanged(v ?? false),
+              activeColor: const Color(0xFF311B92),
+            ),
+            const Text('No'),
           ],
-        ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomAction(bool isLoading) {
+    String buttonText = 'Siguiente';
+
+    if (_currentStep == 2) {
+      buttonText = _isStudent ? 'Crear cuenta y unirme' : 'Finalizar registro';
+    }
+
+    return Container(
+      padding: EdgeInsets.all(24.w),
+      child: ElevatedButton(
+        onPressed: isLoading ? null : _nextStep,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF311B92),
+          foregroundColor: Colors.white,
+          minimumSize: Size.fromHeight(56.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+        ),
+        child: isLoading
+            ? const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          ),
+        )
+            : Text(buttonText),
       ),
     );
   }
 
-  // --- OTROS WIDGETS ---
-  Widget _buildStepCircle({required IconData icon, required int step}) {
-    bool isCompleted = _currentStep > step;
-    bool isActive = _currentStep == step;
-    Color color = (isActive || isCompleted) ? const Color(0xFF311B92) : Colors.grey[300]!;
+  Widget _buildStepCircle({
+    required IconData icon,
+    required int step,
+  }) {
+    final bool done = _currentStep > step;
+    final bool active = _currentStep == step;
+
     return Container(
-      width: 36, height: 36,
-      decoration: BoxDecoration(color: isCompleted ? const Color(0xFF311B92) : Colors.white, shape: BoxShape.circle, border: Border.all(color: color, width: 2)),
-      child: Icon(isCompleted ? Icons.check : icon, size: 18, color: isCompleted ? Colors.white : color),
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: done ? const Color(0xFF311B92) : Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: active || done ? const Color(0xFF311B92) : Colors.grey[300]!,
+          width: 2,
+        ),
+      ),
+      child: Icon(
+        done ? Icons.check : icon,
+        size: 18,
+        color: done
+            ? Colors.white
+            : active
+            ? const Color(0xFF311B92)
+            : Colors.grey[300],
+      ),
     );
   }
 
   Widget _buildStepLine({required int step}) {
-    bool isCompleted = _currentStep > step;
-    return Expanded(child: Container(height: 2, color: isCompleted ? const Color(0xFF311B92) : Colors.grey[200]));
-  }
-
-  Widget _buildStepLabel(String label, int step) {
-    bool isActive = _currentStep == step;
-    return Text(label, style: TextStyle(color: isActive ? const Color(0xFF311B92) : Colors.grey, fontSize: 12, fontWeight: isActive ? FontWeight.bold : FontWeight.normal));
-  }
-
-  Widget _buildAccountSummaryCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey[100]!), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]),
-      child: Column(
-        children: [
-          Row(children: [const Icon(Icons.person_outline, size: 18, color: Color(0xFF311B92)), const SizedBox(width: 8), const Text('Resumen de tu cuenta', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B)))]),
-          const SizedBox(height: 16),
-          Row(children: [Expanded(child: _buildSummaryField('Nombre', _nameController.text)), Expanded(child: _buildSummaryField('Grado', _gradeController.text))]),
-          const SizedBox(height: 12),
-          Row(children: [Expanded(child: _buildSummaryField('Edad', _ageController.text)), Expanded(child: _buildSummaryField('Código', _groupCodeController.text))]),
-        ],
+    return Expanded(
+      child: Container(
+        height: 2,
+        color: _currentStep > step
+            ? const Color(0xFF311B92)
+            : Colors.grey[200],
       ),
-    );
-  }
-
-  Widget _buildSummaryField(String label, String value) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)), Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)]);
-  }
-
-  Widget _buildChipSection(String title, List<String> items, IconData icon) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Icon(icon, size: 18, color: const Color(0xFF311B92)), const SizedBox(width: 8), Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))]),
-      const SizedBox(height: 12),
-      Wrap(spacing: 8, runSpacing: 8, children: [...items.map((item) => Chip(label: Text(item, style: const TextStyle(fontSize: 11)), backgroundColor: const Color(0xFFF5F3FF), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none))), ActionChip(label: const Text('+ Agregar', style: TextStyle(fontSize: 11)), onPressed: () {})]),
-      const SizedBox(height: 20),
-    ]);
-  }
-
-  Widget _buildSecuritySlider() {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [const Icon(Icons.verified_user_outlined, size: 18, color: Color(0xFF311B92)), const SizedBox(width: 8), const Text('Nivel de seguridad', style: TextStyle(fontWeight: FontWeight.bold))]),
-      Slider(value: _certaintyLevel, min: 1, max: 5, divisions: 4, label: _certaintyLevel.round().toString(), activeColor: const Color(0xFF311B92), onChanged: (v) => setState(() => _certaintyLevel = v)),
-    ]);
-  }
-
-  Widget _buildFinalSummaryRow(IconData icon, String label, String value, {bool isHeader = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6), 
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 16, color: Colors.grey), 
-          const SizedBox(width: 12), 
-          Expanded(flex: 3, child: Text(label, style: TextStyle(fontSize: 12, fontWeight: isHeader ? FontWeight.bold : FontWeight.normal))), 
-          if (!isHeader) Expanded(flex: 4, child: Text(value, textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)))
-        ]
-      )
-    );
-  }
-
-  Widget _buildConsentRow(String text, bool value, Function(bool?) onChanged) {
-    return InkWell(
-      onTap: () => onChanged(!value),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 24, width: 24, child: Checkbox(value: value, onChanged: onChanged, activeColor: const Color(0xFF311B92), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)))),
-            const SizedBox(width: 12),
-            Expanded(child: Text(text, style: const TextStyle(fontSize: 12, height: 1.4))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCheckItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.check_circle_outline, color: Colors.green, size: 18), const SizedBox(width: 12), Expanded(child: Text(text, style: const TextStyle(fontSize: 13, color: Colors.black87)))]),
     );
   }
 }

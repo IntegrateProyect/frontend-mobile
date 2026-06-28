@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../components/onboarding_item.dart';
 import '../../domain/entities/onboarding_entity.dart';
 
@@ -16,20 +17,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<OnboardingEntity> _items = [
     OnboardingEntity(
       title: 'Chatbot Vocacional',
-      description:
-      'Resuelve tus dudas sobre carreras, becas y universidades con ayuda inmediata y personalizada.',
+      description: 'Resuelve tus dudas sobre carreras, becas y universidades con ayuda inmediata.',
       image: 'assets/images/onboarding1.png',
     ),
     OnboardingEntity(
       title: 'Carreras y Universidades',
-      description:
-      'Recibe recomendaciones según tus intereses y descubre opciones que sí van contigo.',
+      description: 'Recibe recomendaciones según tus intereses y descubre opciones para ti.',
       image: 'assets/images/onboarding2.png',
     ),
     OnboardingEntity(
-      title: 'Acompañamiento del Orientador',
-      description:
-      'No estás solo: recibe apoyo y seguimiento durante todo tu proceso vocacional.',
+      title: 'Acompañamiento',
+      description: 'No estás solo: recibe apoyo durante todo tu proceso vocacional.',
       image: 'assets/images/onboarding3.png',
     ),
   ];
@@ -41,7 +39,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _goToLogin() {
-    Navigator.pushReplacementNamed(context, '/login');
+    context.go('/login');
   }
 
   void _nextPage() {
@@ -58,15 +56,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     const Color primaryPurple = Color(0xFF311B92);
-    const Color darkText = Color(0xFF1D1B4B);
-    const Color inactiveDot = Color(0xFFD1D5DB);
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            // Parte superior
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: Row(
@@ -74,59 +69,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   TextButton(
                     onPressed: _goToLogin,
-                    child: const Text(
-                      'Saltar',
-                      style: TextStyle(
-                        color: darkText,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
-                    ),
+                    child: const Text('Saltar', style: TextStyle(color: Color(0xFF1D1B4B), fontWeight: FontWeight.w700, fontSize: 18)),
                   ),
-
                   Row(
-                    children: List.generate(
-                      _items.length,
-                          (index) {
-                        final bool isActive = _currentPage == index;
-
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          height: 8,
-                          width: isActive ? 28 : 8,
-                          decoration: BoxDecoration(
-                            color: isActive ? primaryPurple : inactiveDot,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        );
-                      },
-                    ),
+                    children: List.generate(_items.length, (index) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        height: 8,
+                        width: _currentPage == index ? 28 : 8,
+                        decoration: BoxDecoration(
+                          color: _currentPage == index ? primaryPurple : const Color(0xFFD1D5DB),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      );
+                    }),
                   ),
-
                   const SizedBox(width: 70),
                 ],
               ),
             ),
-
-            // Contenido del onboarding
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _items.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  return OnboardingItem(
-                    item: _items[index],
-                  );
-                },
+                onPageChanged: (index) => setState(() => _currentPage = index),
+                itemBuilder: (context, index) => OnboardingItem(item: _items[index]),
               ),
             ),
-
-            // Botón inferior
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: SizedBox(
@@ -137,33 +106,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryPurple,
                     foregroundColor: Colors.white,
-                    elevation: 4,
-                    shadowColor: primaryPurple.withOpacity(0.35),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _currentPage < _items.length - 1
-                            ? 'Continuar'
-                            : 'Comenzar',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Icon(
-                        _currentPage < _items.length - 1
-                            ? Icons.arrow_forward_ios
-                            : Icons.check,
-                        size: 18,
-                      ),
-                    ],
-                  ),
+                  child: Text(_currentPage < _items.length - 1 ? 'Continuar' : 'Comenzar', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                 ),
               ),
             ),
