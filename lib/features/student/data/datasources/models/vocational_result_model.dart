@@ -1,4 +1,3 @@
-
 import '../../../domain/entities/vocational_result_entity.dart';
 
 class VocationalResultModel extends VocationalResultEntity {
@@ -10,11 +9,17 @@ class VocationalResultModel extends VocationalResultEntity {
   });
 
   factory VocationalResultModel.fromJson(Map<String, dynamic> json) {
+    // Manejo robusto de los puntajes para asegurar que sean double
+    final Map<String, dynamic> rawScores = json['scores'] ?? {};
+    final Map<String, double> processedScores = rawScores.map(
+      (key, value) => MapEntry(key, (value is num) ? value.toDouble() : 0.0),
+    );
+
     return VocationalResultModel(
       id: json['id'] ?? '',
       date: json['date'] ?? '',
       topCareer: json['topCareer'] ?? '',
-      scores: Map<String, double>.from(json['scores'] ?? {}),
+      scores: processedScores,
     );
   }
 
