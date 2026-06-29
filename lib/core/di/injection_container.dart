@@ -54,6 +54,13 @@ import '../../features/vocational_games/domain/usecases/finish_game_usecase.dart
 import '../../features/vocational_games/domain/usecases/submit_game_result_usecase.dart';
 import '../../features/vocational_games/domain/usecases/get_game_questions_usecase.dart';
 import '../../features/vocational_games/presentation/providers/games_provider.dart';
+
+// Chat
+import '../../features/chat/data/repositories/chat_repository_impl.dart';
+import '../../features/chat/domain/repositories/chat_repository.dart';
+import '../../features/chat/domain/usecases/chat_usecases.dart';
+import '../../features/chat/presentation/providers/chat_provider.dart';
+
 final sl = GetIt.instance;
 
 Future<void> init() async {
@@ -266,5 +273,41 @@ Future<void> init() async {
           sendAnswerUseCase: sl<SendGameAnswerUseCase>(),
           finishGameUseCase: sl<FinishGameUseCase>(),
         ),
+  );
+
+  // --- CHAT ---
+  sl.registerLazySingleton<ChatRepository>(
+        () => ChatRepositoryImpl(
+      api: sl<IApi>(),
+      userService: sl<UserService>(),
+    ),
+  );
+
+  sl.registerLazySingleton<GetChatContactsUseCase>(
+        () => GetChatContactsUseCase(sl<ChatRepository>()),
+  );
+
+  sl.registerLazySingleton<GetChatHistoryUseCase>(
+        () => GetChatHistoryUseCase(sl<ChatRepository>()),
+  );
+
+  sl.registerLazySingleton<SendChatMessageUseCase>(
+        () => SendChatMessageUseCase(sl<ChatRepository>()),
+  );
+
+  sl.registerLazySingleton<ConnectChatSocketUseCase>(
+        () => ConnectChatSocketUseCase(sl<ChatRepository>()),
+  );
+
+  sl.registerLazySingleton<DisconnectChatSocketUseCase>(
+        () => DisconnectChatSocketUseCase(sl<ChatRepository>()),
+  );
+
+  sl.registerLazySingleton<MarkMessagesAsReadUseCase>(
+        () => MarkMessagesAsReadUseCase(sl<ChatRepository>()),
+  );
+
+  sl.registerFactory<ChatProvider>(
+        () => ChatProvider(repository: sl<ChatRepository>()),
   );
 }
