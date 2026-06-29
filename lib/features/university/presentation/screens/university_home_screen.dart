@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
 
 class UniversityHomeScreen extends StatelessWidget {
   const UniversityHomeScreen({super.key});
@@ -9,6 +12,16 @@ class UniversityHomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Panel de Universidad'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            onPressed: () async {
+              final authProvider = context.read<AuthProvider>();
+              await authProvider.logout();
+              if (context.mounted) {
+                context.go('/login');
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {},

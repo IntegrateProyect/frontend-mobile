@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-import '../providers/student_home_provider.dart';
-import '../../../../core/routes/AppRoutes.dart';
+import 'package:orientate/features/student/presentation/providers/student_home_provider.dart';
+import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
+import 'package:orientate/core/routes/AppRoutes.dart';
 
 class StudentHomeScreen extends StatefulWidget {
   const StudentHomeScreen({super.key});
@@ -212,6 +213,16 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           IconButton(
             icon: Icon(Icons.notifications_none, color: Colors.grey[700]),
             onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            onPressed: () async {
+              final authProvider = context.read<AuthProvider>();
+              await authProvider.logout();
+              if (mounted) {
+                context.go('/login');
+              }
+            },
           ),
           Padding(
             padding: EdgeInsets.only(right: 16.w),

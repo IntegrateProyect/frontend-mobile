@@ -24,8 +24,10 @@ import 'package:orientate/features/student/presentation/screens/favorites_screen
 import 'package:orientate/features/student/presentation/screens/request_support_screen.dart';
 import 'package:orientate/features/student/presentation/screens/vocational_route_screen.dart';
 
-// Chatbot
+// Chatbot & Chat
 import 'package:orientate/features/chatbot/presentation/screens/chat_screen.dart';
+import 'package:orientate/features/chat/presentation/screens/chat_contacts_screen.dart';
+import 'package:orientate/features/chat/presentation/screens/real_chat_screen.dart';
 
 // Games
 import 'package:orientate/features/vocational_games/presentation/screens/games_list_screen.dart';
@@ -94,9 +96,20 @@ class RouteGenerator {
       return MaterialPageRoute(builder: (_) => const VocationalRouteScreen(), settings: settings);
     }
 
-    // Chatbot
+    // Chat
     else if (name == AppRoutes.chat.path) {
       return MaterialPageRoute(builder: (_) => const ChatScreen(), settings: settings);
+    } else if (name == AppRoutes.chatContacts.path) {
+      return MaterialPageRoute(builder: (_) => const ChatContactsScreen(), settings: settings);
+    } else if (name == AppRoutes.realChat.path) {
+      final args = settings.arguments as Map<String, dynamic>;
+      return MaterialPageRoute(
+        builder: (_) => RealChatScreen(
+          contactId: args['contactId'],
+          contactName: args['contactName'],
+        ),
+        settings: settings
+      );
     }
 
     // Games

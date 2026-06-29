@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/admin_provider.dart';
-import '../components/admin_stat_card.dart';
+import 'package:go_router/go_router.dart';
+import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
+import 'package:orientate/features/admin/presentation/providers/admin_provider.dart';
+import 'package:orientate/features/admin/presentation/components/admin_stat_card.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -42,7 +44,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.redAccent),
-            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+            onPressed: () async {
+              final authProvider = context.read<AuthProvider>();
+              await authProvider.logout();
+              if (mounted) {
+                context.go('/login');
+              }
+            },
           ),
         ],
       ),
