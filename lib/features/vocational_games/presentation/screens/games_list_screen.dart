@@ -51,7 +51,9 @@ class _GamesListScreenState extends State<GamesListScreen> {
         color: primaryColor,
         onRefresh: provider.fetchGames,
         child: provider.isLoading || provider.isLoadingQuestions
-            ? const Center(child: CircularProgressIndicator(color: primaryColor))
+            ? const Center(
+          child: CircularProgressIndicator(color: primaryColor),
+        )
             : provider.miniGames.isEmpty
             ? _buildEmpty(provider)
             : ListView(
@@ -94,7 +96,11 @@ class _GamesListScreenState extends State<GamesListScreen> {
       padding: const EdgeInsets.all(24),
       children: [
         const SizedBox(height: 160),
-        const Icon(Icons.sports_esports_outlined, size: 70, color: Colors.grey),
+        const Icon(
+          Icons.sports_esports_outlined,
+          size: 70,
+          color: Colors.grey,
+        ),
         const SizedBox(height: 16),
         const Center(
           child: Text(
@@ -123,17 +129,23 @@ class _GamesListScreenState extends State<GamesListScreen> {
     final data = _gameVisual(miniGame.category);
     final activeGame = provider.activeGame;
     final progress = (miniGame.questions.length / 10).clamp(0.1, 1.0);
+    final status = provider.getMiniGameStatus(miniGame.statusKey);
 
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         if (activeGame == null) return;
 
-        provider.selectMiniGame(miniGame);
+        await provider.selectMiniGame(miniGame);
+
+        if (!mounted) return;
 
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => GameDetailScreen(game: activeGame),
+            builder: (_) => GameDetailScreen(
+              game: activeGame,
+              miniGameKey: miniGame.statusKey,
+            ),
           ),
         );
       },
@@ -216,46 +228,71 @@ class _GamesListScreenState extends State<GamesListScreen> {
                 ),
               ],
             ),
+
             const SizedBox(height: 18),
-            Row(
+
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircularPercentIndicator(
-                  radius: 29,
-                  lineWidth: 7,
-                  percent: progress.toDouble(),
-                  progressColor: Colors.white,
-                  backgroundColor: Colors.white.withOpacity(0.25),
-                  center: Text(
-                    '${miniGame.questions.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
+                Row(
+                  children: [
+                    CircularPercentIndicator(
+                      radius: 29,
+                      lineWidth: 7,
+                      percent: progress.toDouble(),
+                      progressColor: Colors.white,
+                      backgroundColor: Colors.white.withOpacity(0.25),
+                      center: Text(
+                        '${miniGame.questions.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        '${miniGame.questions.length} retos disponibles',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    '${miniGame.questions.length} retos disponibles',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
+
+                const SizedBox(height: 14),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatusBadge(status),
                     ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Text(
-                    'Jugar',
-                    style: TextStyle(
-                      color: data.mainColor,
-                      fontWeight: FontWeight.w900,
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Text(
+                        status == MiniGameStatus.completed ? 'Ver' : 'Jugar',
+                        style: TextStyle(
+                          color: data.mainColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -265,6 +302,61 @@ class _GamesListScreenState extends State<GamesListScreen> {
           .animate()
           .fadeIn(delay: (index * 90).ms)
           .slideY(begin: 0.18, curve: Curves.easeOutBack),
+    );
+  }
+
+  Widget _buildStatusBadge(MiniGameStatus status) {
+    String text;
+    Color color;
+    IconData icon;
+
+    switch (status) {
+      case MiniGameStatus.completed:
+        text = 'Completado';
+        color = Colors.green;
+        icon = Icons.check_circle;
+        break;
+      case MiniGameStatus.inProgress:
+        text = 'En progreso';
+        color = Colors.orange;
+        icon = Icons.timelapse;
+        break;
+      case MiniGameStatus.notStarted:
+        text = 'Sin iniciar';
+        color = Colors.grey;
+        icon = Icons.radio_button_unchecked;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 18,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
