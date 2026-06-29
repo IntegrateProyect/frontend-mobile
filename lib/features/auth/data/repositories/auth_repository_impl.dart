@@ -20,6 +20,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required String name,
     required String role,
+    required bool privacyAccepted,
     Map<String, dynamic>? additionalData,
   }) async {
     final userModel = await remoteDataSource.register(
@@ -27,6 +28,7 @@ class AuthRepositoryImpl implements AuthRepository {
       password,
       name,
       role,
+      privacyAccepted: privacyAccepted,
       additionalData: additionalData,
     );
     return AuthMapper.toEntity(userModel);

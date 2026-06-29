@@ -187,6 +187,7 @@ class AuthProvider extends ChangeNotifier {
     required String password,
     required String name,
     required String role,
+    required bool privacyAccepted,
     Map<String, dynamic>? studentProfile,
     String? accessCode,
     Map<String, dynamic>? additionalData,
@@ -213,6 +214,10 @@ class AuthProvider extends ChangeNotifier {
       final roleError = _validateRole(normalizedRole);
       if (roleError != null) throw Exception(roleError);
 
+      if (!privacyAccepted) {
+        throw Exception('Debe aceptar el aviso de privacidad para poder registrarse.');
+      }
+
       if (normalizedRole == 'estudiante') {
         final profileError = _validateStudentProfile(studentProfile);
         if (profileError != null) throw Exception(profileError);
@@ -226,6 +231,7 @@ class AuthProvider extends ChangeNotifier {
         password: normalizedPassword,
         name: normalizedName,
         role: normalizedRole,
+        privacyAccepted: privacyAccepted,
         additionalData: additionalData,
       );
 

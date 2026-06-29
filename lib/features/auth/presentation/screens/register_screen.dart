@@ -291,6 +291,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: _passwordController.text.trim(),
       name: _nameController.text.trim(),
       role: mappedRole,
+      privacyAccepted: _acceptTerms,
       studentProfile: _isStudent ? studentProfile : null,
       accessCode: _isStudent ? _groupCodeController.text.trim() : null,
       additionalData: _isStudent ? null : counselorData,

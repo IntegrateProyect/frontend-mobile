@@ -244,6 +244,20 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              IconButton(
+                icon: Icon(Icons.chat_bubble_outline_rounded, size: 20.sp, color: primaryColor),
+                onPressed: () {
+                  context.push(
+                    AppRoutes.realChat.path,
+                    extra: {
+                      'contactId': student.id,
+                      'contactName': student.name,
+                    },
+                  );
+                },
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Enviar mensaje',
+              ),
               TextButton(
                 onPressed: () {},
                 style: TextButton.styleFrom(visualDensity: VisualDensity.compact),

@@ -15,6 +15,8 @@ import '../../features/counselor/presentation/screens/vocational_map_screen.dart
 import '../../features/admin/presentation/screens/admin_home_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_home_screen.dart';
 import '../../features/university/presentation/screens/university_home_screen.dart';
+import '../../features/chat/presentation/screens/chat_contacts_screen.dart';
+import '../../features/chat/presentation/screens/real_chat_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
@@ -49,6 +51,19 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/student-profile', builder: (context, state) => const StudentProfileScreen()),
     GoRoute(path: '/vocational-results', builder: (context, state) => const VocationalResultsScreen()),
     GoRoute(path: '/games', builder: (context, state) => const GamesListScreen()),
+
+    // Rutas de Chat
+    GoRoute(path: '/chat-contacts', builder: (context, state) => const ChatContactsScreen()),
+    GoRoute(
+      path: '/real-chat',
+      builder: (context, state) {
+        final args = state.extra as Map<String, dynamic>;
+        return RealChatScreen(
+          contactId: args['contactId'],
+          contactName: args['contactName'],
+        );
+      },
+    ),
 
     // Rutas de Counselor
     GoRoute(path: '/counselor-home', builder: (context, state) => const CounselorHomeScreen()),
