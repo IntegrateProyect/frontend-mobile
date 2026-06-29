@@ -39,6 +39,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
               title: const Text('Unirme a grupo'),
               content: TextField(
                 controller: controller,
@@ -104,6 +107,87 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         );
       },
     );
+  }
+
+  void _showGroupDetailsDialog(StudentHomeProvider provider) {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: const Row(
+            children: [
+              Icon(
+                Icons.groups_2_outlined,
+                color: Color(0xFF311B92),
+              ),
+              SizedBox(width: 8),
+              Text('Mi grupo escolar'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Nombre del grupo',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                provider.currentGroupName,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Código',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 4),
+              SelectableText(
+                provider.currentGroupCode,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF311B92),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handleGroupTap(StudentHomeProvider provider) {
+    if (provider.hasGroup) {
+      _showGroupDetailsDialog(provider);
+    } else {
+      _showJoinGroupDialog(provider);
+    }
   }
 
   @override
@@ -199,10 +283,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               ),
               SizedBox(width: 12.w),
               Expanded(
-                child: _buildMiniStat(
-                  icon: Icons.groups_2_outlined,
-                  value: provider.hasGroup ? 'Sí' : 'No',
-                  label: 'Grupo',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(22.r),
+                  onTap: () => _handleGroupTap(provider),
+                  child: _buildMiniStat(
+                    icon: Icons.groups_2_outlined,
+                    value: provider.hasGroup ? 'Sí' : 'No',
+                    label: 'Grupo',
+                  ),
                 ),
               ),
             ],
@@ -244,10 +332,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 title: 'Grupo',
                 description: provider.hasGroup ? 'Ver grupo' : 'Unirme',
                 color: const Color(0xFFFF8A00),
-                onTap: () {
-                  if (provider.hasGroup) return;
-                  _showJoinGroupDialog(provider);
-                },
+                onTap: () => _handleGroupTap(provider),
               ),
               _buildActionTile(
                 icon: Icons.insights_outlined,
@@ -264,10 +349,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             description: provider.groupDescription,
             icon: Icons.school_outlined,
             buttonText: provider.hasGroup ? 'Ver grupo' : 'Ingresar código',
-            onTap: () {
-              if (provider.hasGroup) return;
-              _showJoinGroupDialog(provider);
-            },
+            onTap: () => _handleGroupTap(provider),
           ),
         ],
       ),
