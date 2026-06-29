@@ -813,4 +813,34 @@ class API implements IApi {
       return [];
     }
   }
-}
+
+  @override
+  Future<List<dynamic>> getStudentGroups(String token) async {
+    final url = '$_baseUrl/students/groups';
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: getHeaders(token),
+      );
+
+      final dynamic result = processResponse(response);
+
+      if (result is List) {
+        return result;
+      }
+
+      if (result is Map && result['data'] is List) {
+        return result['data'];
+      }
+
+      if (result is Map && result['groups'] is List) {
+        return result['groups'];
+      }
+
+      return [];
+    } catch (e) {
+      ApiLogger.error('GET', url, e);
+      return [];
+    }
+  }}

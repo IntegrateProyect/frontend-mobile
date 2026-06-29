@@ -30,24 +30,41 @@ class StudentHomeProvider extends ChangeNotifier {
   StudentProfileEntity? _profile;
   List<VocationalResultEntity> _results = [];
   List<dynamic> _availableGames = [];
+  List<dynamic> _studentGroups = [];
 
   bool _isLoading = false;
   String? _errorMessage;
 
-  String? _cachedGroupCode;
-
   StudentProfileEntity? get profile => _profile;
   List<VocationalResultEntity> get results => _results;
   List<dynamic> get availableGames => _availableGames;
+  List<dynamic> get studentGroups => _studentGroups;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  bool get hasGroup {
-    final groupName = _profile?.groupName?.trim();
-    final groupCode = _profile?.groupCode?.trim() ?? _cachedGroupCode?.trim();
+  bool get hasGroup => _studentGroups.isNotEmpty;
 
-    return (groupName != null && groupName.isNotEmpty) ||
-        (groupCode != null && groupCode.isNotEmpty);
+  Map<String, dynamic>? get currentGroup {
+    if (_studentGroups.isEmpty) return null;
+    final raw = _studentGroups.first;
+    if (raw is Map<String, dynamic>) return raw;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return null;
+  }
+
+  String get currentGroupName {
+    final group = currentGroup;
+    return group?['name']?.toString() ??
+        group?['groupName']?.toString() ??
+        'Grupo asignado';
+  }
+
+  String get currentGroupCode {
+    final group = currentGroup;
+    return group?['accessCode']?.toString() ??
+        group?['access_code']?.toString() ??
+        group?['code']?.toString() ??
+        'Sin código';
   }
 
   String get firstName {
@@ -65,17 +82,7 @@ class StudentHomeProvider extends ChangeNotifier {
       return 'Aún no perteneces a un grupo. Ingresa el código que te dio tu orientador.';
     }
 
-    final groupName = _profile?.groupName?.trim();
-    final groupCode = _profile?.groupCode?.trim() ?? _cachedGroupCode?.trim();
-
-    if (groupName != null && groupName.isNotEmpty) {
-      if (groupCode != null && groupCode.isNotEmpty) {
-        return 'Grupo: $groupName\nCódigo: $groupCode';
-      }
-      return 'Grupo: $groupName';
-    }
-
-    return 'Código: $groupCode';
+    return 'Grupo: $currentGroupName\nCódigo: $currentGroupCode';
   }
 
   Future<void> loadHomeData() async {
@@ -87,18 +94,12 @@ class StudentHomeProvider extends ChangeNotifier {
       await _loadLocalUser();
 
       final remoteProfile = await _safeLoadProfile();
-
       if (remoteProfile != null) {
         _profile = remoteProfile;
-
-        if (_cachedGroupCode != null &&
-            (_profile!.groupCode == null || _profile!.groupCode!.isEmpty)) {
-          _profile = _profile!.copyWith(
-            groupCode: _cachedGroupCode,
-            groupName: _profile!.groupName ?? 'Grupo asignado',
-          );
-        }
       }
+
+      final groups = await _safeLoadStudentGroups();
+      _studentGroups = groups ?? [];
 
       final results = await _safeLoadResults();
       if (results != null) {
@@ -111,7 +112,7 @@ class StudentHomeProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('XXX Error StudentHomeProvider: $e');
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _errorMessage = 'No se pudo cargar la información del alumno.';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -138,40 +139,20 @@ class StudentHomeProvider extends ChangeNotifier {
         throw Exception('No hay sesión activa');
       }
 
-      debugPrint('XXX UNIENDO AL GRUPO: $code');
+      await _api.joinGroup(token, code);
 
-      final response = await _api.joinGroup(token, code);
-
-      debugPrint('XXX JOIN GROUP RESPONSE: $response');
-
-      _cachedGroupCode = code;
-
-      if (_profile != null) {
-        _profile = _profile!.copyWith(
-          groupCode: code,
-          groupName: _profile!.groupName ?? 'Grupo asignado',
-        );
-      }
-
-      await loadHomeData();
+      _studentGroups = await _api.getStudentGroups(token);
 
       return true;
     } catch (e) {
       final message = e.toString();
 
       if (message.contains('Ya eres miembro')) {
-        debugPrint('XXX Ya eres miembro del grupo. Mostrando grupo localmente...');
+        final token = await _userService.getToken();
 
-        _cachedGroupCode = code;
-
-        if (_profile != null) {
-          _profile = _profile!.copyWith(
-            groupCode: code,
-            groupName: _profile!.groupName ?? 'Grupo asignado',
-          );
+        if (token != null && token.isNotEmpty) {
+          _studentGroups = await _api.getStudentGroups(token);
         }
-
-        await loadHomeData();
 
         return true;
       }
@@ -194,8 +175,6 @@ class StudentHomeProvider extends ChangeNotifier {
           id: localUser.id,
           name: localUser.name ?? 'Estudiante',
           email: localUser.email,
-          groupCode: _cachedGroupCode,
-          groupName: _cachedGroupCode != null ? 'Grupo asignado' : null,
         );
       }
     } catch (e) {
@@ -209,6 +188,21 @@ class StudentHomeProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('XXX Perfil remoto no cargado: $e');
       return null;
+    }
+  }
+
+  Future<List<dynamic>?> _safeLoadStudentGroups() async {
+    try {
+      final token = await _userService.getToken();
+
+      if (token == null || token.isEmpty) {
+        return [];
+      }
+
+      return await _api.getStudentGroups(token);
+    } catch (e) {
+      debugPrint('XXX Grupos del alumno no cargados: $e');
+      return [];
     }
   }
 

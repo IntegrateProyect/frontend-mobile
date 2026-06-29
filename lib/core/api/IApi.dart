@@ -1,91 +1,186 @@
 import '../../features/auth/data/datasources/models/user_model.dart';
-
 abstract class IApi {
-  // --- 🔐 SERVICIO DE AUTENTICACIÓN (Auth Service) ---
+  // =========================
+  // 🔐 AUTH SERVICE
+  // =========================
+
   Future<Map<String, dynamic>> checkAuthHealth();
 
-  Future<Map<String, dynamic>> login(String email, String password);
+  Future<Map<String, dynamic>> login(
+      String email,
+      String password,
+      );
 
-  Future<Map<String, dynamic>> register(Map<String, dynamic> data);
+  Future<Map<String, dynamic>> register(
+      Map<String, dynamic> data,
+      );
 
-  Future<Map<String, dynamic>> getMe(String token);
+  Future<Map<String, dynamic>> getMe(
+      String token,
+      );
 
-  Future<Map<String, dynamic>> updateProfile(String token,
-      Map<String, dynamic> data);
+  Future<Map<String, dynamic>> updateProfile(
+      String token,
+      Map<String, dynamic> data,
+      );
 
-  Future<void> logout(String token);
+  Future<void> logout(
+      String token,
+      );
 
-  Future<Map<String, dynamic>> recoverPassword(String email);
+  Future<Map<String, dynamic>> recoverPassword(
+      String email,
+      );
 
-  Future<Map<String, dynamic>> resetPassword(String token, String newPassword);
+  Future<Map<String, dynamic>> resetPassword(
+      String token,
+      String newPassword,
+      );
 
-  Future<Map<String, dynamic>> getRoles(String token);
+  Future<Map<String, dynamic>> getRoles(
+      String token,
+      );
 
-  Future<Map<String, dynamic>> updateUserRole(String token, String userId,
-      String roleName);
+  Future<Map<String, dynamic>> updateUserRole(
+      String token,
+      String userId,
+      String roleName,
+      );
 
-  // --- 👑 SERVICIO DE ADMINISTRADOR (Admin) ---
-  Future<Map<String, dynamic>> getAdminStats(String token);
+  // =========================
+  // 👑 ADMIN SERVICE
+  // =========================
 
-  Future<List<dynamic>> getAllUsers(String token);
+  Future<Map<String, dynamic>> getAdminStats(
+      String token,
+      );
 
-  Future<Map<String, dynamic>> toggleUserStatus(String token, String userId,
-      bool isActive);
+  Future<List<dynamic>> getAllUsers(
+      String token,
+      );
 
-  Future<void> deleteUser(String token, String userId);
+  Future<Map<String, dynamic>> toggleUserStatus(
+      String token,
+      String userId,
+      bool isActive,
+      );
 
-  // --- 🎓 SERVICIO DE ESTUDIANTES (Students) ---
+  Future<void> deleteUser(
+      String token,
+      String userId,
+      );
+
+  // =========================
+  // 🎓 STUDENTS SERVICE
+  // =========================
+
   Future<Map<String, dynamic>> checkStudentsHealth();
 
-  Future<Map<String, dynamic>> createStudentProfile(String token,
-      Map<String, dynamic> data);
+  Future<Map<String, dynamic>> createStudentProfile(
+      String token,
+      Map<String, dynamic> data,
+      );
 
-  Future<Map<String, dynamic>> getStudentProfile(String token);
+  Future<Map<String, dynamic>> getStudentProfile(
+      String token,
+      );
 
-  Future<Map<String, dynamic>> updateStudentProfile(String token,
-      Map<String, dynamic> data);
+  Future<Map<String, dynamic>> updateStudentProfile(
+      String token,
+      Map<String, dynamic> data,
+      );
 
-  Future<Map<String, dynamic>> joinGroup(String token, String accessCode);
+  Future<Map<String, dynamic>> joinGroup(
+      String token,
+      String accessCode,
+      );
 
-  // --- 🎓 SERVICIO DE ORIENTADORES (Counselors) ---
-  Future<Map<String, dynamic>> createGroup(String token,
-      Map<String, dynamic> data);
+  Future<List<dynamic>> getStudentGroups(
+      String token,
+      );
 
-  Future<List<dynamic>> getGroups(String token);
+  // =========================
+  // 🧑‍🏫 COUNSELORS SERVICE
+  // =========================
 
-  Future<List<dynamic>> getGroupStudents(String token, String groupId);
+  Future<Map<String, dynamic>> createGroup(
+      String token,
+      Map<String, dynamic> data,
+      );
 
-  Future<Map<String, dynamic>> getStudentFile(String token, String studentId);
+  Future<List<dynamic>> getGroups(
+      String token,
+      );
 
-  Future<Map<String, dynamic>> registerSession(String token, String studentId,
-      Map<String, dynamic> data);
+  Future<List<dynamic>> getGroupStudents(
+      String token,
+      String groupId,
+      );
 
-  Future<Map<String, dynamic>> createTask(String token,
-      Map<String, dynamic> data);
+  Future<Map<String, dynamic>> getStudentFile(
+      String token,
+      String studentId,
+      );
 
-  Future<List<dynamic>> getCounselorStudents(String token);
+  Future<Map<String, dynamic>> registerSession(
+      String token,
+      String studentId,
+      Map<String, dynamic> data,
+      );
 
-  Future<List<dynamic>> getConsultations(String token);
+  Future<Map<String, dynamic>> createTask(
+      String token,
+      Map<String, dynamic> data,
+      );
 
-  Future<Map<String, dynamic>> getCounselorStats(String token);
+  Future<List<dynamic>> getCounselorStudents(
+      String token,
+      );
 
-  // --- 🎮 SERVICIO DE MINIJUEGOS (Games Service) ---
-// --- 🎮 SERVICIO DE MINIJUEGOS (Games Service) ---
+  Future<List<dynamic>> getConsultations(
+      String token,
+      );
+
+  Future<Map<String, dynamic>> getCounselorStats(
+      String token,
+      );
+
+  // =========================
+  // 🎮 GAMES SERVICE
+  // =========================
+
   Future<Map<String, dynamic>> checkGamesHealth();
 
   Future<List<dynamic>> getGames();
 
-  Future<Map<String, dynamic>> getGameDetail(String token, String gameId);
+  Future<Map<String, dynamic>> getGameDetail(
+      String token,
+      String gameId,
+      );
 
-  Future<List<dynamic>> getGameQuestions(String token, String gameId);
+  Future<List<dynamic>> getGameQuestions(
+      String token,
+      String gameId,
+      );
 
-  Future<Map<String, dynamic>> startGame(String token, String gameId);
+  Future<Map<String, dynamic>> startGame(
+      String token,
+      String gameId,
+      );
 
-  Future<void> sendAnswer(String token, String gameId,
-      Map<String, dynamic> data);
+  Future<void> sendAnswer(
+      String token,
+      String gameId,
+      Map<String, dynamic> data,
+      );
 
-  Future<Map<String, dynamic>> finishGame(String token, String gameId,
-      String sessionId);
+  Future<Map<String, dynamic>> finishGame(
+      String token,
+      String gameId,
+      String sessionId,
+      );
 
-  Future<List<dynamic>> getGameResults(String token);
+  Future<List<dynamic>> getGameResults(
+      String token,
+      );
 }
