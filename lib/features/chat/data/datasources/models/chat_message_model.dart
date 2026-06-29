@@ -12,12 +12,14 @@ class ChatMessageModel extends ChatMessageEntity {
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
     return ChatMessageModel(
-      id: json['id'] ?? '',
-      senderId: json['senderId'] ?? '',
-      receiverId: json['receiverId'] ?? '',
-      text: json['messageText'] ?? '',
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      senderId: (json['senderId'] ?? '').toString(),
+      receiverId: (json['receiverId'] ?? '').toString(),
+      text: (json['messageText'] ?? json['text'] ?? '').toString(),
       isRead: json['isRead'] ?? false,
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt'].toString()) 
+          : DateTime.now(),
     );
   }
 

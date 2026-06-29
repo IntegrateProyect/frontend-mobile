@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/chat_provider.dart';
-import '../../domain/entities/chat_message_entity.dart';
+import 'package:orientate/features/chat/presentation/providers/chat_provider.dart';
+import 'package:orientate/features/chat/domain/entities/chat_message_entity.dart';
+import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 
 class RealChatScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class _RealChatScreenState extends State<RealChatScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<ChatProvider>();
+      provider.connect(); // Aseguramos conexión al entrar
       provider.loadHistory(widget.contactId);
     });
   }
@@ -42,23 +44,47 @@ class _RealChatScreenState extends State<RealChatScreen> {
   }
 
   void _handleSend() {
-    if (_controller.text.trim().isEmpty) return;
-    context.read<ChatProvider>().sendMessage(widget.contactId, _controller.text.trim());
+    final text = _controller.text.trim();
+    debugPrint('XXX CHAT SCREEN: Botón enviar presionado. Texto: "$text"');
+    if (text.isEmpty) {
+      debugPrint('XXX CHAT SCREEN: Cancelado porque el texto está vacío.');
+      return;
+    }
+    
+    final authProvider = context.read<AuthProvider>();
+    final currentUserId = authProvider.user?.id ?? '';
+    debugPrint('XXX CHAT SCREEN: Identidades - Emisor (Yo): "$currentUserId", Receptor (Contacto): "${widget.contactId}"');
+    
+    if (currentUserId.isEmpty) {
+      debugPrint('XXX CHAT SCREEN: Error - currentUserId está vacío.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: No se pudo identificar al usuario actual')),
+      );
+      return;
+    }
+
+    debugPrint('XXX CHAT SCREEN: Llamando a ChatProvider.sendMessage...');
+    context.read<ChatProvider>().sendMessage(widget.contactId, text, currentUserId);
     _controller.clear();
-    // Socket confirmation will trigger notifyListeners and we scroll down
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<ChatProvider>();
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.contactName),
-            const Text(
-              'En línea',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            Text(
+              provider.isConnected ? 'En línea' : 'Conectando...',
+              style: TextStyle(
+                fontSize: 12, 
+                fontWeight: FontWeight.normal,
+                color: provider.isConnected ? Colors.green : Colors.orange,
+              ),
             ),
           ],
         ),
@@ -72,7 +98,19 @@ class _RealChatScreenState extends State<RealChatScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                // Scroll to bottom when new messages arrive
+                if (provider.messages.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey[300]),
+                        const SizedBox(height: 16),
+                        Text('No hay mensajes aún', style: TextStyle(color: Colors.grey[500])),
+                      ],
+                    ),
+                  );
+                }
+
                 WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                 return ListView.builder(
@@ -100,9 +138,9 @@ class _RealChatScreenState extends State<RealChatScreen> {
 
   Widget _buildInputArea() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -115,22 +153,29 @@ class _RealChatScreenState extends State<RealChatScreen> {
         child: Row(
           children: [
             Expanded(
-              child: TextField(
-                controller: _controller,
-                onChanged: (val) {
-                  context.read<ChatProvider>().sendTyping(widget.contactId, val.isNotEmpty);
-                },
-                decoration: const InputDecoration(
-                  hintText: 'Escribe un mensaje...',
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                onSubmitted: (_) => _handleSend(),
+                child: TextField(
+                  controller: _controller,
+                  decoration: const InputDecoration(
+                    hintText: 'Escribe un mensaje...',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  onSubmitted: (_) => _handleSend(),
+                ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.send, color: Colors.blue),
-              onPressed: _handleSend,
+            const SizedBox(width: 8),
+            CircleAvatar(
+              backgroundColor: const Color(0xFF311B92),
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                onPressed: _handleSend,
+              ),
             ),
           ],
         ),
@@ -151,24 +196,27 @@ class _ChatBubble extends StatelessWidget {
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.7,
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: isMe ? Colors.blue : Colors.grey[200],
-          borderRadius: BorderRadius.circular(12).copyWith(
-            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(12),
-            bottomLeft: isMe ? const Radius.circular(12) : const Radius.circular(0),
+          color: isMe ? const Color(0xFF311B92) : Colors.grey[200],
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isMe ? 16 : 4),
+            bottomRight: Radius.circular(isMe ? 4 : 16),
           ),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Text(
               message.text,
               style: TextStyle(
                 color: isMe ? Colors.white : Colors.black87,
+                fontSize: 15,
               ),
             ),
             const SizedBox(height: 4),
