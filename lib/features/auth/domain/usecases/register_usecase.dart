@@ -11,6 +11,7 @@ class RegisterUseCase {
     required String password,
     required String name,
     required String role,
+    required bool privacyAccepted,
     Map<String, dynamic>? additionalData,
   }) {
     return repository.register(
@@ -18,6 +19,7 @@ class RegisterUseCase {
       password: password,
       name: name,
       role: role,
+      privacyAccepted: privacyAccepted,
       additionalData: additionalData,
     );
   }

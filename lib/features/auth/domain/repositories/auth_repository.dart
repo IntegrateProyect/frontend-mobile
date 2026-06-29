@@ -7,6 +7,7 @@ abstract class AuthRepository {
     required String password,
     required String name,
     required String role,
+    required bool privacyAccepted,
     Map<String, dynamic>? additionalData,
   });
   Future<void> logout();

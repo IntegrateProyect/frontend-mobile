@@ -13,6 +13,7 @@ abstract class AuthRemoteDataSource {
       String password,
       String name,
       String role, {
+        required bool privacyAccepted,
         Map<String, dynamic>? additionalData,
       });
 
@@ -61,6 +62,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       String password,
       String name,
       String role, {
+        required bool privacyAccepted,
         Map<String, dynamic>? additionalData,
       }) async {
     await api.register({
@@ -68,6 +70,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       'password': password,
       'name': name,
       'role': role,
+      'privacyAccepted': privacyAccepted,
     });
 
     final loginResponse = await api.login(email, password);

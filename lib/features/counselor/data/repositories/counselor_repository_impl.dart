@@ -1,3 +1,6 @@
+import 'package:orientate/features/student/data/datasources/models/student_profile_model.dart';
+import 'package:orientate/features/student/domain/entities/student_profile_entity.dart';
+
 import '../../../../core/api/IApi.dart';
 import '../../../../core/utils/UserService.dart';
 import '../../../auth/data/datasources/mappers/auth_mapper.dart';
@@ -36,7 +39,6 @@ class CounselorRepositoryImpl implements CounselorRepository {
   @override
   Future<Map<String, dynamic>> createGroup(String name, String? accessCode) async {
     final token = await userService.getToken();
-    // El backend requiere accessCode obligatoriamente
     return await api.createGroup(token ?? '', {
       'name': name,
       'accessCode': accessCode ?? '',
@@ -50,9 +52,10 @@ class CounselorRepositoryImpl implements CounselorRepository {
   }
 
   @override
-  Future<List<dynamic>> getStudents() async {
+  Future<List<StudentProfileEntity>> getStudents() async {
     final token = await userService.getToken();
-    return await api.getCounselorStudents(token ?? '');
+    final List<dynamic> data = await api.getCounselorStudents(token ?? '');
+    return data.map((json) => StudentProfileModel.fromJson(json)).toList();
   }
 
   @override

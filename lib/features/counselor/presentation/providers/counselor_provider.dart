@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:orientate/features/student/domain/entities/student_profile_entity.dart';
 import '../../domain/entities/counselor_profile_entity.dart';
 import '../../domain/entities/student_consultation_entity.dart';
 import '../../domain/usecases/get_groups_usecase.dart';
@@ -23,7 +24,7 @@ class CounselorProvider extends ChangeNotifier {
 
   CounselorProfileEntity? _profile;
   List<dynamic> _groups = [];
-  List<dynamic> _students = [];
+  List<StudentProfileEntity> _students = [];
   List<StudentConsultationEntity> _consultations = [];
   Map<String, dynamic> _stats = {};
   bool _isLoading = false;
@@ -49,7 +50,7 @@ class CounselorProvider extends ChangeNotifier {
 
   CounselorProfileEntity? get profile => _profile;
   List<dynamic> get groups => _groups;
-  List<dynamic> get students => _students;
+  List<StudentProfileEntity> get students => _students;
   List<StudentConsultationEntity> get consultations => _consultations;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -83,7 +84,7 @@ class CounselorProvider extends ChangeNotifier {
       _consultations = results[1] as List<StudentConsultationEntity>;
       _profile = results[2] as CounselorProfileEntity?;
       _stats = results[3] as Map<String, dynamic>;
-      _students = results[4] as List<dynamic>;
+      _students = results[4] as List<StudentProfileEntity>;
     } catch (e) {
       _errorMessage = e.toString();
     } finally {

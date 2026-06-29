@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:orientate/features/student/presentation/providers/student_home_provider.dart';
 import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
@@ -27,85 +28,246 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     });
   }
 
-  void _showJoinGroupDialog(StudentHomeProvider provider) {
-    final controller = TextEditingController();
-
+  void _showProfileRequiredAlert(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        bool isJoining = false;
-
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline_rounded, color: primaryColor, size: 28.sp),
+            SizedBox(width: 12.w),
+            Text(
+              'Perfil Requerido',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: darkText,
+                fontSize: 20.sp,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Para unirte a un grupo escolar, primero debes completar tu perfil vocacional básico.',
+          style: TextStyle(
+            fontSize: 15.sp,
+            color: Colors.grey[700],
+            height: 1.4,
+          ),
+        ),
+        actionsPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Después',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              title: const Text('Unirme a grupo'),
-              content: TextField(
-                controller: controller,
-                textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  labelText: 'Código del grupo',
-                  hintText: 'Ej. INV-69941',
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isJoining
-                      ? null
-                      : () {
-                    Navigator.pop(dialogContext);
-                  },
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: isJoining
-                      ? null
-                      : () async {
-                    setStateDialog(() {
-                      isJoining = true;
-                    });
+              elevation: 0,
+            ),
+            onPressed: () {
+              Navigator.pop(dialogContext); // Cerrar alerta
+              Navigator.pop(context); // Cerrar bottom sheet de unión a grupo
+              context.push(AppRoutes.studentProfile.path);
+            },
+            child: const Text(
+              'Crear Perfil',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                    final success =
-                    await provider.joinGroupByCode(controller.text);
+  void _showJoinGroupDialog(StudentHomeProvider provider) {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
-                    if (!mounted) return;
-
-                    Navigator.pop(dialogContext);
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          success
-                              ? 'Te uniste al grupo correctamente'
-                              : provider.errorMessage ??
-                              'No se pudo unir al grupo',
-                        ),
-                      ),
-                    );
-                  },
-                  child: isJoining
-                      ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24.h,
+          top: 12.h,
+          left: 28.w,
+          right: 28.w,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(40.r)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 45.w,
+                    height: 5.h,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(10.r),
                     ),
-                  )
-                      : const Text('Unirme'),
+                  ),
                 ),
+                SizedBox(height: 30.h),
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(18.r),
+                      ),
+                      child: Icon(Icons.group_add_rounded, 
+                        color: const Color(0xFFFF8A00), size: 30.sp),
+                    ).animate().scale(delay: 100.ms, duration: 400.ms, curve: Curves.easeOutBack),
+                    SizedBox(width: 18.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Unirme a un grupo',
+                            style: TextStyle(
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.w900,
+                              color: darkText
+                            ),
+                          ),
+                          Text(
+                            'Ingresa el código que te proporcionó tu orientador.',
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              color: Colors.grey[500],
+                              fontWeight: FontWeight.w500
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1),
+                SizedBox(height: 35.h),
+                
+                Text(
+                  'CÓDIGO DE ACCESO',
+                  style: TextStyle(
+                    fontSize: 11.sp, 
+                    fontWeight: FontWeight.w800, 
+                    color: Colors.grey[400], 
+                    letterSpacing: 1.2
+                  ),
+                ).animate(delay: 200.ms).fadeIn(),
+                SizedBox(height: 10.h),
+                TextFormField(
+                  controller: controller,
+                  validator: (v) => v!.isEmpty ? 'El código es obligatorio' : null,
+                  textCapitalization: TextCapitalization.characters,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w700, 
+                    letterSpacing: 3.0,
+                    color: darkText
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'INV-00000',
+                    hintStyle: TextStyle(letterSpacing: 1.0, color: Colors.grey[300]),
+                    prefixIcon: const Icon(Icons.vpn_key_outlined, color: Color(0xFFFF8A00)),
+                    filled: true,
+                    fillColor: const Color(0xFFF8F9FE),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20.r),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20.r),
+                      borderSide: const BorderSide(color: Color(0xFFFF8A00), width: 1.5),
+                    ),
+                  ),
+                ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.2),
+                
+                SizedBox(height: 40.h),
+                
+                SizedBox(
+                  width: double.infinity,
+                  height: 62.h,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF8A00),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.r)),
+                      elevation: 8,
+                      shadowColor: const Color(0xFFFF8A00).withOpacity(0.4),
+                    ),
+                    onPressed: provider.isLoading ? null : () async {
+                      if (formKey.currentState!.validate()) {
+                        final success = await provider.joinGroupByCode(controller.text.trim());
+                        
+                        if (!mounted) return;
+                        
+                        if (success) {
+                          Navigator.pop(context);
+                          _showCustomSnackBar(context, '¡Te has unido al grupo correctamente!', Colors.green);
+                        } else {
+                          final errorMessage = provider.errorMessage ?? '';
+                          if (errorMessage.contains('perfil vocacional')) {
+                            _showProfileRequiredAlert(context);
+                          } else {
+                            _showCustomSnackBar(context, errorMessage.isNotEmpty ? errorMessage : 'El código no es válido', Colors.redAccent);
+                          }
+                        }
+                      }
+                    },
+                    child: provider.isLoading 
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text('Confirmar Código',
+                          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900)),
+                  ),
+                ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.1),
+                SizedBox(height: 10.h),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCustomSnackBar(BuildContext context, String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
+        margin: EdgeInsets.all(20.w),
+      ),
     );
   }
 
@@ -210,6 +372,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.chat_bubble_outline_rounded, color: Colors.grey[700]),
+            onPressed: () => context.push(AppRoutes.chatContacts.path),
+          ),
           IconButton(
             icon: Icon(Icons.notifications_none, color: Colors.grey[700]),
             onPressed: () {},
@@ -321,11 +487,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 onTap: () => context.push(AppRoutes.studentProfile.path),
               ),
               _buildActionTile(
-                icon: Icons.extension_outlined,
-                title: 'Minijuegos',
-                description: 'Descubre áreas',
+                icon: Icons.forum_outlined,
+                title: 'Mensajes',
+                description: 'Habla con tu orientador',
                 color: const Color(0xFF00A6A6),
-                onTap: () => context.push(AppRoutes.games.path),
+                onTap: () => context.push(AppRoutes.chatContacts.path),
               ),
               _buildActionTile(
                 icon: Icons.groups_2_outlined,
