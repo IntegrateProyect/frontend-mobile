@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:orientate/features/counselor/presentation/providers/counselor_provider.dart';
 import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
 import 'package:orientate/core/routes/AppRoutes.dart';
+import 'package:orientate/features/student/domain/entities/student_profile_entity.dart';
 
 class CounselorHomeScreen extends StatefulWidget {
   const CounselorHomeScreen({super.key});
@@ -15,6 +16,7 @@ class CounselorHomeScreen extends StatefulWidget {
 
 class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
   int _selectedIndex = 0;
+  static const Color primaryColor = Color(0xFF311B92);
 
   @override
   void initState() {
@@ -27,7 +29,6 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CounselorProvider>();
-    const Color primaryColor = Color(0xFF311B92);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
@@ -40,6 +41,10 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
         ),
         actions: [
           IconButton(icon: Icon(Icons.search, color: Colors.grey[700]), onPressed: () {}),
+          IconButton(
+            icon: Icon(Icons.chat_bubble_outline_rounded, color: Colors.grey[700]),
+            onPressed: () => context.push(AppRoutes.chatContacts.path),
+          ),
           IconButton(
             icon: Badge(
               backgroundColor: Colors.redAccent,
@@ -72,81 +77,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
       ),
       body: provider.isLoading && provider.groups.isEmpty
           ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : RefreshIndicator(
-              onRefresh: () => provider.loadDashboardData(),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionHeader('Resumen General', trailing: 'Actualizado hoy'),
-                    SizedBox(height: 16.h),
-                    
-                    Row(
-                      children: [
-                        Expanded(child: _buildMainStatCard('ALUMNOS TOTALES', provider.totalStudentsCount.toString(), Icons.people_outline, Colors.blue, 'Inscritos en el ciclo')),
-                        SizedBox(width: 12.w),
-                        Expanded(child: _buildMainStatCard('ACTIVOS', provider.activeStudentsCount.toString(), Icons.trending_up, Colors.purple, 'Participación mensual')),
-                      ],
-                    ),
-                    SizedBox(height: 12.h),
-                    Row(
-                      children: [
-                        Expanded(child: _buildMainStatCard('SIN AVANCE', provider.lowProgressCount.toString(), Icons.person_off_outlined, Colors.grey, 'Últimos 15 días')),
-                        SizedBox(width: 12.w),
-                        Expanded(child: _buildMainStatCard('INDECISIÓN ALTA', provider.highIndecisionCount.toString(), Icons.error_outline, Colors.red, 'Riesgo de abandono')),
-                      ],
-                    ),
-                    
-                    SizedBox(height: 20.h),
-                    
-                    Container(
-                      padding: EdgeInsets.symmetric(vertical: 16.h),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16.r)),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildMiniStat(provider.solicitudesCount.toString(), 'SOLICITUDES'),
-                          Container(height: 20.h, width: 1.w, color: Colors.grey[100]),
-                          _buildMiniStat(provider.groupsCount.toString(), 'GRUPOS'),
-                          Container(height: 20.h, width: 1.w, color: Colors.grey[100]),
-                          _buildMiniStat(provider.reportesCount.toString(), 'REPORTES'),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: 32.h),
-                    _buildSectionHeader('Alertas Prioritarias', hasDot: provider.consultations.isNotEmpty, trailing: 'Ver todas'),
-                    SizedBox(height: 16.h),
-                    
-                    if (provider.consultations.isEmpty)
-                      const Center(child: Text('No hay alertas pendientes', style: TextStyle(color: Colors.grey)))
-                    else
-                      ...provider.consultations.take(3).map((alert) => _buildAlertItem(alert.studentName, alert.message, 'Hace poco')),
-
-                    SizedBox(height: 32.h),
-                    _buildSectionHeader('Herramientas y Acciones'),
-                    SizedBox(height: 16.h),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      childAspectRatio: 1.4,
-                      crossAxisSpacing: 12.w,
-                      mainAxisSpacing: 12.w,
-                      children: [
-                        _buildQuickAction('Mapa Vocacional', Icons.map_outlined, () => context.push(AppRoutes.vocationalMap.path), highlight: true),
-                        _buildQuickAction('Crear Grupo', Icons.group_add_outlined, () => _showCreateGroupDialog(context)),
-                        _buildQuickAction('Nueva Sesión', Icons.assignment_ind_outlined, () {}),
-                        _buildQuickAction('Ver Reportes', Icons.description_outlined, () {}),
-                      ],
-                    ),
-                    SizedBox(height: 40.h),
-                  ],
-                ),
-              ),
-            ),
+          : _buildBody(provider),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         type: BottomNavigationBarType.fixed,
@@ -154,13 +85,208 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
         unselectedItemColor: Colors.grey[400],
         onTap: (index) => setState(() => _selectedIndex = index),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: 'Dashboard'),
+          BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: 'Resumen'),
           BottomNavigationBarItem(icon: Icon(Icons.groups_outlined), label: 'Grupos'),
           BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Alumnos'),
           BottomNavigationBarItem(icon: Icon(Icons.warning_amber_rounded), label: 'Alertas'),
           BottomNavigationBarItem(icon: Icon(Icons.description_outlined), label: 'Reportes'),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody(CounselorProvider provider) {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildDashboardTab(provider);
+      case 2:
+        return _buildStudentsTab(provider);
+      default:
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.construction, size: 64.sp, color: Colors.grey[300]),
+              SizedBox(height: 16.h),
+              Text('Sección en desarrollo', style: TextStyle(color: Colors.grey, fontSize: 16.sp)),
+            ],
+          ),
+        );
+    }
+  }
+
+  Widget _buildDashboardTab(CounselorProvider provider) {
+    return RefreshIndicator(
+      onRefresh: () => provider.loadDashboardData(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('Resumen General', trailing: 'Actualizado hoy'),
+            SizedBox(height: 16.h),
+            Row(
+              children: [
+                Expanded(child: _buildMainStatCard('ALUMNOS TOTALES', provider.totalStudentsCount.toString(), Icons.people_outline, Colors.blue, 'Inscritos en el ciclo')),
+                SizedBox(width: 12.w),
+                Expanded(child: _buildMainStatCard('ACTIVOS', provider.activeStudentsCount.toString(), Icons.trending_up, Colors.purple, 'Participación mensual')),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              children: [
+                Expanded(child: _buildMainStatCard('SIN AVANCE', provider.lowProgressCount.toString(), Icons.person_off_outlined, Colors.grey, 'Últimos 15 días')),
+                SizedBox(width: 12.w),
+                Expanded(child: _buildMainStatCard('INDECISIÓN ALTA', provider.highIndecisionCount.toString(), Icons.error_outline, Colors.red, 'Riesgo de abandono')),
+              ],
+            ),
+            SizedBox(height: 20.h),
+            _buildMiniStatsRow(provider),
+            SizedBox(height: 32.h),
+            _buildSectionHeader('Alertas Prioritarias', hasDot: provider.consultations.isNotEmpty, trailing: 'Ver todas'),
+            SizedBox(height: 16.h),
+            if (provider.consultations.isEmpty)
+              const Center(child: Text('No hay alertas pendientes', style: TextStyle(color: Colors.grey)))
+            else
+              ...provider.consultations.take(3).map((alert) => _buildAlertItem(alert.studentName, alert.message, 'Hace poco')),
+            SizedBox(height: 32.h),
+            _buildSectionHeader('Herramientas y Acciones'),
+            SizedBox(height: 16.h),
+            _buildQuickActionsGrid(),
+            SizedBox(height: 40.h),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudentsTab(CounselorProvider provider) {
+    if (provider.students.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_search_outlined, size: 80.sp, color: Colors.grey[300]),
+            SizedBox(height: 16.h),
+            Text('No hay alumnos registrados aún', style: TextStyle(fontSize: 16.sp, color: Colors.grey[600], fontWeight: FontWeight.w600)),
+            SizedBox(height: 8.h),
+            Text('Comparte el código de grupo para que se unan.', style: TextStyle(fontSize: 13.sp, color: Colors.grey[400])),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => provider.loadDashboardData(),
+      child: ListView.builder(
+        padding: EdgeInsets.all(20.w),
+        itemCount: provider.students.length,
+        itemBuilder: (context, index) {
+          final student = provider.students[index];
+          return _buildStudentCard(student);
+        },
+      ),
+    );
+  }
+
+  Widget _buildStudentCard(StudentProfileEntity student) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 26.r,
+                backgroundColor: primaryColor.withOpacity(0.1),
+                child: Text(
+                  student.name.isNotEmpty ? student.name[0].toUpperCase() : '?',
+                  style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 18.sp),
+                ),
+              ),
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(student.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp, color: const Color(0xFF1D1B4B))),
+                    Text(student.email, style: TextStyle(fontSize: 12.sp, color: Colors.grey[500])),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(10.r)),
+                child: Text(
+                  '${student.vocationalClarity * 10}% Claridad',
+                  style: TextStyle(color: Colors.green[700], fontSize: 10.sp, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          Divider(height: 24.h, color: Colors.grey[50]),
+          Row(
+            children: [
+              Icon(Icons.star_outline_rounded, size: 14.sp, color: Colors.orange),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  student.interests.isNotEmpty ? student.interests.join(' • ') : 'Sin intereses definidos',
+                  style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              TextButton(
+                onPressed: () {},
+                style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                child: Text('Ver Perfil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp, color: primaryColor)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniStatsRow(CounselorProvider provider) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 16.h),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16.r)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildMiniStat(provider.solicitudesCount.toString(), 'SOLICITUDES'),
+          Container(height: 20.h, width: 1.w, color: Colors.grey[100]),
+          _buildMiniStat(provider.groupsCount.toString(), 'GRUPOS'),
+          Container(height: 20.h, width: 1.w, color: Colors.grey[100]),
+          _buildMiniStat(provider.reportesCount.toString(), 'REPORTES'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsGrid() {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      childAspectRatio: 1.4,
+      crossAxisSpacing: 12.w,
+      mainAxisSpacing: 12.w,
+      children: [
+        _buildQuickAction('Mapa Vocacional', Icons.map_outlined, () => context.push(AppRoutes.vocationalMap.path), highlight: true),
+        _buildQuickAction('Crear Grupo', Icons.group_add_outlined, () => _showCreateGroupDialog(context)),
+        _buildQuickAction('Nueva Sesión', Icons.assignment_ind_outlined, () {}),
+        _buildQuickAction('Ver Reportes', Icons.description_outlined, () {}),
+      ],
     );
   }
 
