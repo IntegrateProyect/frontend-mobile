@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import '../providers/counselor_provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:orientate/features/counselor/presentation/providers/counselor_provider.dart';
+import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
+import 'package:orientate/core/routes/AppRoutes.dart';
 
 class CounselorHomeScreen extends StatefulWidget {
   const CounselorHomeScreen({super.key});
@@ -44,6 +47,16 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
               child: Icon(Icons.notifications_none_outlined, color: Colors.grey[700]),
             ),
             onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            onPressed: () async {
+              final authProvider = context.read<AuthProvider>();
+              await authProvider.logout();
+              if (mounted) {
+                context.go('/login');
+              }
+            },
           ),
           Padding(
             padding: EdgeInsets.only(right: 16.w, left: 8.w),
@@ -113,18 +126,20 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
                       ...provider.consultations.take(3).map((alert) => _buildAlertItem(alert.studentName, alert.message, 'Hace poco')),
 
                     SizedBox(height: 32.h),
-                    _buildSectionHeader('Accesos Directos'),
+                    _buildSectionHeader('Herramientas y Acciones'),
                     SizedBox(height: 16.h),
                     GridView.count(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       crossAxisCount: 2,
-                      childAspectRatio: 1.5,
+                      childAspectRatio: 1.4,
                       crossAxisSpacing: 12.w,
                       mainAxisSpacing: 12.w,
                       children: [
-                        _buildQuickAction('Crear Grupo', Icons.add_circle_outline, () => _showCreateGroupDialog(context)),
+                        _buildQuickAction('Mapa Vocacional', Icons.map_outlined, () => context.push(AppRoutes.vocationalMap.path), highlight: true),
+                        _buildQuickAction('Crear Grupo', Icons.group_add_outlined, () => _showCreateGroupDialog(context)),
                         _buildQuickAction('Nueva Sesión', Icons.assignment_ind_outlined, () {}),
+                        _buildQuickAction('Ver Reportes', Icons.description_outlined, () {}),
                       ],
                     ),
                     SizedBox(height: 40.h),
@@ -196,51 +211,150 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
     );
   }
 
-  Widget _buildQuickAction(String title, IconData icon, VoidCallback onTap) {
+  Widget _buildQuickAction(String title, IconData icon, VoidCallback onTap, {bool highlight = false}) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(20.r),
       child: Container(
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20.r), border: Border.all(color: Colors.grey[100]!)),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(icon, color: const Color(0xFF311B92), size: 28.sp), SizedBox(height: 8.h), Text(title, style: const TextStyle(fontWeight: FontWeight.bold))]),
+        decoration: BoxDecoration(
+          color: highlight ? const Color(0xFFF5F3FF) : Colors.white,
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(color: highlight ? const Color(0xFFDED9FF) : Colors.grey[100]!),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: const Color(0xFF311B92), size: 28.sp),
+            SizedBox(height: 8.h),
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.sp, color: const Color(0xFF1D1B4B)))
+          ]
+        ),
       ),
     );
   }
 
   void _showCreateGroupDialog(BuildContext context) {
     final nameController = TextEditingController();
-    final codeController = TextEditingController(); // Nuevo campo para el código de acceso
+    final codeController = TextEditingController();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-        title: const Text('Nuevo Grupo', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nombre del grupo', hintText: 'Ej. 6to A')),
-            SizedBox(height: 12.h),
-            TextField(controller: codeController, decoration: const InputDecoration(labelText: 'Código de acceso', hintText: 'Ej. ORIENTA2024')),
-          ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          top: 24.h,
+          left: 24.w,
+          right: 24.w,
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF311B92), foregroundColor: Colors.white),
-            onPressed: () async {
-              if (nameController.text.isNotEmpty && codeController.text.isNotEmpty) {
-                final success = await context.read<CounselorProvider>().createGroup(nameController.text, codeController.text);
-                if (success && mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Grupo creado correctamente')));
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.read<CounselorProvider>().errorMessage ?? 'Error')));
-                }
-              }
-            }, 
-            child: const Text('Crear')
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+              ),
+              SizedBox(height: 24.h),
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(10.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F3FF),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Icon(Icons.group_add_outlined, color: const Color(0xFF311B92), size: 24.sp),
+                  ),
+                  SizedBox(width: 16.w),
+                  Text(
+                    'Crear Nuevo Grupo',
+                    style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900, color: const Color(0xFF1D1B4B)),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'Define un nombre y un código único para que tus alumnos puedan unirse.',
+                style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 24.h),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Nombre del grupo',
+                  hintText: 'Ej. 6to Semestre A',
+                  prefixIcon: const Icon(Icons.edit_outlined),
+                  filled: true,
+                  fillColor: const Color(0xFFF8F9FE),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16.r),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              SizedBox(height: 16.h),
+              TextField(
+                controller: codeController,
+                decoration: InputDecoration(
+                  labelText: 'Código de acceso',
+                  hintText: 'Ej. ORIENTA2024',
+                  prefixIcon: const Icon(Icons.vpn_key_outlined),
+                  helperText: 'Este código es el que compartirás con tus alumnos.',
+                  filled: true,
+                  fillColor: const Color(0xFFF8F9FE),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16.r),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                textCapitalization: TextCapitalization.characters,
+              ),
+              SizedBox(height: 32.h),
+              SizedBox(
+                width: double.infinity,
+                height: 56.h,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF311B92),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                    elevation: 0,
+                  ),
+                  onPressed: () async {
+                    if (nameController.text.isNotEmpty && codeController.text.isNotEmpty) {
+                      final success = await context.read<CounselorProvider>().createGroup(nameController.text, codeController.text);
+                      if (success && mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Grupo creado correctamente'),
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: Text('Crear Grupo', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              SizedBox(height: 32.h),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

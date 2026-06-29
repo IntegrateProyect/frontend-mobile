@@ -69,8 +69,11 @@ abstract class IApi {
 
   Future<Map<String, dynamic>> getCounselorStats(String token);
 
+  // --- 💬 SERVICIO DE CHAT (Chat Service) ---
+  Future<Map<String, dynamic>> getChatHistory(String token, String partnerId, {int limit = 50, int offset = 0});
+  Future<Map<String, dynamic>> getChatContacts(String token);
+
   // --- 🎮 SERVICIO DE MINIJUEGOS (Games Service) ---
-// --- 🎮 SERVICIO DE MINIJUEGOS (Games Service) ---
   Future<Map<String, dynamic>> checkGamesHealth();
 
   Future<List<dynamic>> getGames();

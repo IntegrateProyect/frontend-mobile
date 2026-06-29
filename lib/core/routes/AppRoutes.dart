@@ -21,8 +21,10 @@ enum AppRoutes {
   requestSupport('/request-support'),
   vocationalRoute('/vocational-route'),
 
-  // Chatbot
-  chat('/chat'),
+  // Chat
+  chat('/chat'), // Chatbot
+  chatContacts('/chat-contacts'),
+  realChat('/real-chat'),
 
   // Games
   games('/games'),
@@ -31,6 +33,7 @@ enum AppRoutes {
   // Counselor
   counselorHome('/counselor-home'),
   counselorProfile('/counselor-profile'),
+  vocationalMap('/vocational-map'),
 
   // University Institution
   universityHome('/university-home'),

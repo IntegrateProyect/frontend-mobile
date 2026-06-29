@@ -12,6 +12,7 @@ import 'features/student/presentation/providers/student_home_provider.dart';
 import 'features/student/presentation/providers/student_profile_provider.dart';
 import 'features/student/presentation/providers/student_results_provider.dart';
 import 'features/vocational_games/presentation/providers/games_provider.dart';
+import 'features/chat/presentation/providers/chat_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => di.sl<StudentProfileProvider>()),
         ChangeNotifierProvider(create: (_) => di.sl<StudentResultsProvider>()),
         ChangeNotifierProvider(create: (_) => di.sl<GamesProvider>()),
+        ChangeNotifierProvider(create: (_) => di.sl<ChatProvider>()),
       ],
       child: const MyApp(),
     ),

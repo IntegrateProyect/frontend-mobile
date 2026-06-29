@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
 import '../components/success_story_card.dart';
 import '../../domain/entities/success_story_entity.dart';
 
@@ -11,6 +14,16 @@ class AlumniHomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Panel de Egresado'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            onPressed: () async {
+              final authProvider = context.read<AuthProvider>();
+              await authProvider.logout();
+              if (context.mounted) {
+                context.go('/login');
+              }
+            },
+          ),
           IconButton(icon: const Icon(Icons.person), onPressed: () {}),
         ],
       ),

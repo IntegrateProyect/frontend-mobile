@@ -639,6 +639,43 @@ class API implements IApi {
     }
   }
 
+  // --- 💬 SERVICIO DE CHAT ---
+
+  @override
+  Future<Map<String, dynamic>> getChatHistory(String token, String partnerId,
+      {int limit = 50, int offset = 0}) async {
+    final url = '$_baseUrl/chat/history/$partnerId?limit=$limit&offset=$offset';
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: getHeaders(token),
+      );
+
+      return processResponse(response);
+    } catch (e) {
+      ApiLogger.error('GET', url, e);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getChatContacts(String token) async {
+    final url = '$_baseUrl/chat/contacts';
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: getHeaders(token),
+      );
+
+      return processResponse(response);
+    } catch (e) {
+      ApiLogger.error('GET', url, e);
+      rethrow;
+    }
+  }
+
   // --- 🎮 SERVICIO DE MINIJUEGOS ---
 
   @override
