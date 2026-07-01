@@ -44,16 +44,41 @@ class StudentHomeProvider extends ChangeNotifier {
 
   bool get hasGroup => _studentGroups.isNotEmpty;
 
+  String get firstName {
+    final name = _profile?.name.trim();
+
+    if (name != null &&
+        name.isNotEmpty &&
+        name.toLowerCase() != 'estudiante') {
+      return name.split(' ').first;
+    }
+
+    final email = _profile?.email.trim();
+
+    if (email != null && email.isNotEmpty) {
+      final beforeAt = email.split('@').first;
+      if (beforeAt.isNotEmpty) {
+        return beforeAt;
+      }
+    }
+
+    return 'Estudiante';
+  }
+
   Map<String, dynamic>? get currentGroup {
     if (_studentGroups.isEmpty) return null;
+
     final raw = _studentGroups.first;
+
     if (raw is Map<String, dynamic>) return raw;
     if (raw is Map) return Map<String, dynamic>.from(raw);
+
     return null;
   }
 
   String get currentGroupName {
     final group = currentGroup;
+
     return group?['name']?.toString() ??
         group?['groupName']?.toString() ??
         'Grupo asignado';
@@ -61,20 +86,11 @@ class StudentHomeProvider extends ChangeNotifier {
 
   String get currentGroupCode {
     final group = currentGroup;
+
     return group?['accessCode']?.toString() ??
         group?['access_code']?.toString() ??
         group?['code']?.toString() ??
         'Sin código';
-  }
-
-  String get firstName {
-    final name = _profile?.name.trim();
-
-    if (name != null && name.isNotEmpty) {
-      return name.split(' ').first;
-    }
-
-    return 'Estudiante';
   }
 
   String get groupDescription {
@@ -91,22 +107,25 @@ class StudentHomeProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Cargar usuario local primero para UI rápida
       await _loadLocalUser();
 
-      // 2. Cargar datos remotos en paralelo
-      final results = await Future.wait([
-        _safeLoadProfile(),
-        _safeLoadStudentGroups(),
-        _safeLoadResults(),
-        _safeLoadGames(),
-      ]);
+      final remoteProfile = await _safeLoadProfile();
+      if (remoteProfile != null) {
+        _profile = remoteProfile;
+      }
 
-      if (results[0] != null) _profile = results[0] as StudentProfileEntity;
-      _studentGroups = results[1] as List<dynamic>? ?? [];
-      if (results[2] != null) _results = results[2] as List<VocationalResultEntity>;
-      if (results[3] != null) _availableGames = results[3] as List<dynamic>;
+      final groups = await _safeLoadStudentGroups();
+      _studentGroups = groups ?? [];
 
+      final results = await _safeLoadResults();
+      if (results != null) {
+        _results = results;
+      }
+
+      final games = await _safeLoadGames();
+      if (games != null) {
+        _availableGames = games;
+      }
     } catch (e) {
       debugPrint('XXX Error StudentHomeProvider: $e');
       _errorMessage = 'No se pudo cargar la información del alumno.';
@@ -167,21 +186,12 @@ class StudentHomeProvider extends ChangeNotifier {
     try {
       final localUser = await _userService.getUser();
 
-      if (localUser != null) {
-        // Actualizamos o creamos el perfil con los datos locales (incluyendo imagen)
-        if (_profile == null) {
-          _profile = StudentProfileEntity(
-            id: localUser.id,
-            name: localUser.name ?? 'Estudiante',
-            email: localUser.email,
-            profileImageUrl: localUser.avatarUrl ?? localUser.photoUrl,
-          );
-        } else {
-          _profile = _profile!.copyWith(
-            name: localUser.name,
-            profileImageUrl: localUser.avatarUrl ?? localUser.photoUrl,
-          );
-        }
+      if (localUser != null && _profile == null) {
+        _profile = StudentProfileEntity(
+          id: localUser.id,
+          name: _cleanName(localUser.name),
+          email: localUser.email,
+        );
       }
     } catch (e) {
       debugPrint('XXX Usuario local no cargado: $e');
@@ -190,7 +200,16 @@ class StudentHomeProvider extends ChangeNotifier {
 
   Future<StudentProfileEntity?> _safeLoadProfile() async {
     try {
-      return await _getProfileUseCase.call();
+      final profile = await _getProfileUseCase.call();
+
+      if (profile.name.trim().isEmpty ||
+          profile.name.trim().toLowerCase() == 'estudiante') {
+        return profile.copyWith(
+          name: _nameFromEmail(profile.email),
+        );
+      }
+
+      return profile;
     } catch (e) {
       debugPrint('XXX Perfil remoto no cargado: $e');
       return null;
@@ -228,5 +247,35 @@ class StudentHomeProvider extends ChangeNotifier {
       debugPrint('XXX Juegos no cargados: $e');
       return null;
     }
+  }
+
+  String _cleanName(String? value) {
+    final name = value?.trim();
+
+    if (name == null || name.isEmpty) {
+      return 'Estudiante';
+    }
+
+    if (name.toLowerCase() == 'estudiante') {
+      return 'Estudiante';
+    }
+
+    return name;
+  }
+
+  String _nameFromEmail(String email) {
+    final cleanEmail = email.trim();
+
+    if (cleanEmail.isEmpty) {
+      return 'Estudiante';
+    }
+
+    final beforeAt = cleanEmail.split('@').first;
+
+    if (beforeAt.isEmpty) {
+      return 'Estudiante';
+    }
+
+    return beforeAt;
   }
 }

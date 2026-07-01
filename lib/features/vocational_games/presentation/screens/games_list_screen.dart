@@ -51,27 +51,26 @@ class _GamesListScreenState extends State<GamesListScreen> {
         color: primaryColor,
         onRefresh: provider.fetchGames,
         child: provider.isLoading || provider.isLoadingQuestions
-            ? const Center(
-          child: CircularProgressIndicator(color: primaryColor),
-        )
+            ? const Center(child: CircularProgressIndicator(color: primaryColor))
             : provider.miniGames.isEmpty
             ? _buildEmpty(provider)
             : ListView(
           padding: const EdgeInsets.all(22),
           children: [
             const Text(
-              'Elige tu aventura vocacional',
+              'Elige tu aventura\nvocacional',
               style: TextStyle(
-                fontSize: 25,
+                fontSize: 28,
                 fontWeight: FontWeight.w900,
                 color: darkText,
+                height: 1.1,
               ),
             ).animate().fadeIn().slideX(begin: -0.15),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               'Cada área se juega diferente según el tipo de interés.',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 15,
                 color: Colors.grey[600],
                 height: 1.35,
               ),
@@ -96,11 +95,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
       padding: const EdgeInsets.all(24),
       children: [
         const SizedBox(height: 160),
-        const Icon(
-          Icons.sports_esports_outlined,
-          size: 70,
-          color: Colors.grey,
-        ),
+        const Icon(Icons.sports_esports_outlined, size: 70, color: Colors.grey),
         const SizedBox(height: 16),
         const Center(
           child: Text(
@@ -128,8 +123,8 @@ class _GamesListScreenState extends State<GamesListScreen> {
       ) {
     final data = _gameVisual(miniGame.category);
     final activeGame = provider.activeGame;
-    final progress = (miniGame.questions.length / 10).clamp(0.1, 1.0);
     final status = provider.getMiniGameStatus(miniGame.statusKey);
+    final progress = (miniGame.questions.length / 20).clamp(0.1, 1.0);
 
     return GestureDetector(
       onTap: () async {
@@ -150,153 +145,183 @@ class _GamesListScreenState extends State<GamesListScreen> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        padding: const EdgeInsets.all(18),
+        height: 315,
+        margin: const EdgeInsets.only(bottom: 24),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: data.gradient,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: data.mainColor.withOpacity(0.25),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
+              color: data.mainColor.withOpacity(0.38),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
             ),
           ],
         ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Hero(
-                  tag: 'game_${miniGame.title}',
-                  child: Container(
-                    width: 76,
-                    height: 76,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.92),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Icon(
-                      data.icon,
-                      color: data.mainColor,
-                      size: 38,
-                    ),
-                  )
-                      .animate(onPlay: (controller) => controller.repeat())
-                      .shimmer(duration: 2600.ms),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  data.imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _fallbackGradient(data),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
+              ),
+
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withOpacity(0.62),
+                        Colors.black.withOpacity(0.28),
+                        Colors.black.withOpacity(0.42),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                  ),
+                ),
+              ),
+
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.bottomRight,
+                      radius: 1.0,
+                      colors: [
+                        data.mainColor.withOpacity(0.18),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              Positioned(
+                left: 20,
+                top: 24,
+                child: Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: data.mainColor.withOpacity(0.88),
+                    borderRadius: BorderRadius.circular(26),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.45),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: data.neonColor.withOpacity(0.45),
+                        blurRadius: 18,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    data.icon,
+                    color: Colors.white,
+                    size: 46,
+                  ),
+                ),
+              ),
+
+              Positioned(
+                left: 122,
+                right: 18,
+                top: 24,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      _shadowText(
                         data.label,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.85),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
-                        ),
+                        fontSize: 12,
+                        letterSpacing: 1.5,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
+                      const SizedBox(height: 6),
+                      _shadowText(
                         miniGame.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        miniGame.description,
+                        fontSize: 23,
                         maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.88),
-                          fontSize: 13,
-                          height: 1.3,
-                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _shadowText(
+                        miniGame.description,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        maxLines: 2,
+                        color: Colors.white.withOpacity(0.94),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
 
-            const SizedBox(height: 18),
-
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CircularPercentIndicator(
-                      radius: 29,
-                      lineWidth: 7,
-                      percent: progress.toDouble(),
-                      progressColor: Colors.white,
-                      backgroundColor: Colors.white.withOpacity(0.25),
-                      center: Text(
-                        '${miniGame.questions.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
+              Positioned(
+                left: 24,
+                bottom: 96,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.22),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      CircularPercentIndicator(
+                        radius: 37,
+                        lineWidth: 8,
+                        percent: progress.toDouble(),
+                        progressColor: data.neonColor,
+                        backgroundColor: Colors.white.withOpacity(0.28),
+                        center: Text(
+                          '${miniGame.questions.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                            shadows: [
+                              Shadow(color: Colors.black, blurRadius: 8),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 16),
+                      _shadowText(
+                        '${miniGame.questions.length} retos\ndisponibles',
+                        fontSize: 18,
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: 22,
+                child: Row(
+                  children: [
+                    Expanded(child: _buildStatusButton(status)),
                     const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        '${miniGame.questions.length} retos disponibles',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+                    _buildPlayButton(
+                      data: data,
+                      completed: status == MiniGameStatus.completed,
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 14),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatusBadge(status),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 22,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Text(
-                        status == MiniGameStatus.completed ? 'Ver' : 'Jugar',
-                        style: TextStyle(
-                          color: data.mainColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       )
           .animate()
@@ -305,55 +330,130 @@ class _GamesListScreenState extends State<GamesListScreen> {
     );
   }
 
-  Widget _buildStatusBadge(MiniGameStatus status) {
+  Widget _shadowText(
+      String text, {
+        required double fontSize,
+        Color color = Colors.white,
+        FontWeight fontWeight = FontWeight.w900,
+        double letterSpacing = 0,
+        int maxLines = 1,
+      }) {
+    return Text(
+      text,
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        letterSpacing: letterSpacing,
+        height: 1.12,
+        shadows: const [
+          Shadow(
+            color: Colors.black,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fallbackGradient(_GameVisual data) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: data.gradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusButton(MiniGameStatus status) {
     String text;
-    Color color;
     IconData icon;
 
     switch (status) {
       case MiniGameStatus.completed:
         text = 'Completado';
-        color = Colors.green;
         icon = Icons.check_circle;
         break;
       case MiniGameStatus.inProgress:
         text = 'En progreso';
-        color = Colors.orange;
         icon = Icons.timelapse;
         break;
       case MiniGameStatus.notStarted:
         text = 'Sin iniciar';
-        color = Colors.grey;
         icon = Icons.radio_button_unchecked;
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      height: 56,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: Colors.black.withOpacity(0.28),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.65),
+          width: 1.5,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 18,
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: color,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-              ),
+          Icon(icon, color: Colors.white, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(color: Colors.black, blurRadius: 8),
+              ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayButton({
+    required _GameVisual data,
+    required bool completed,
+  }) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      decoration: BoxDecoration(
+        color: data.neonColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: data.neonColor.withOpacity(0.75),
+            blurRadius: 18,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Text(
+            completed ? 'Ver' : 'Jugar',
+            style: TextStyle(
+              color: data.buttonTextColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            Icons.play_arrow_rounded,
+            color: data.buttonTextColor,
+            size: 24,
           ),
         ],
       ),
@@ -362,68 +462,103 @@ class _GamesListScreenState extends State<GamesListScreen> {
 
   _GameVisual _gameVisual(VocationalCategory category) {
     switch (category) {
-      case VocationalCategory.calculo:
-        return _GameVisual(
-          label: 'LÓGICA',
-          icon: Icons.calculate_outlined,
-          mainColor: const Color(0xFF3949AB),
-          gradient: const [Color(0xFF667EEA), Color(0xFF311B92)],
-        );
-      case VocationalCategory.fisico:
-        return _GameVisual(
-          label: 'CIENCIA FÍSICA',
-          icon: Icons.auto_awesome_outlined,
-          mainColor: const Color(0xFF4527A0),
-          gradient: const [Color(0xFF1D1B4B), Color(0xFF7E57C2)],
-        );
-      case VocationalCategory.biologico:
-        return _GameVisual(
-          label: 'BIOLOGÍA',
-          icon: Icons.biotech_outlined,
-          mainColor: const Color(0xFF2E7D32),
-          gradient: const [Color(0xFF43A047), Color(0xFF00ACC1)],
-        );
-      case VocationalCategory.mecanico:
-        return _GameVisual(
-          label: 'MECÁNICO',
-          icon: Icons.build_circle_outlined,
-          mainColor: const Color(0xFF546E7A),
-          gradient: const [Color(0xFF546E7A), Color(0xFF263238)],
-        );
-      case VocationalCategory.social:
-        return _GameVisual(
-          label: 'SERVICIO',
-          icon: Icons.volunteer_activism_outlined,
-          mainColor: const Color(0xFFD81B60),
-          gradient: const [Color(0xFFF06292), Color(0xFFC2185B)],
-        );
-      case VocationalCategory.literario:
-        return _GameVisual(
-          label: 'LECTURA',
-          icon: Icons.menu_book_outlined,
-          mainColor: const Color(0xFF6D4C41),
-          gradient: const [Color(0xFF8D6E63), Color(0xFF4E342E)],
-        );
-      case VocationalCategory.persuasivo:
-        return _GameVisual(
-          label: 'LIDERAZGO',
-          icon: Icons.campaign_outlined,
-          mainColor: const Color(0xFFF57C00),
-          gradient: const [Color(0xFFFF9800), Color(0xFFE65100)],
-        );
-      case VocationalCategory.artistico:
-        return _GameVisual(
-          label: 'ARTE',
-          icon: Icons.palette_outlined,
-          mainColor: const Color(0xFF8E24AA),
-          gradient: const [Color(0xFFAB47BC), Color(0xFF5E35B1)],
-        );
       case VocationalCategory.musical:
         return _GameVisual(
           label: 'MÚSICA',
-          icon: Icons.music_note_outlined,
-          mainColor: const Color(0xFF00897B),
-          gradient: const [Color(0xFF26A69A), Color(0xFF00695C)],
+          icon: Icons.music_note,
+          mainColor: const Color(0xFF7C3AED),
+          neonColor: const Color(0xFFE9D5FF),
+          buttonTextColor: const Color(0xFF581C87),
+          gradient: const [Color(0xFF160A3A), Color(0xFF7C3AED)],
+          imagePath: 'assets/images/musical.jpg',
+        );
+
+      case VocationalCategory.biologico:
+        return _GameVisual(
+          label: 'BIOLOGÍA',
+          icon: Icons.eco,
+          mainColor: const Color(0xFF16A34A),
+          neonColor: const Color(0xFF86EFAC),
+          buttonTextColor: const Color(0xFF14532D),
+          gradient: const [Color(0xFF052E16), Color(0xFF059669)],
+          imagePath: 'assets/images/biologico.jpg',
+        );
+
+      case VocationalCategory.mecanico:
+        return _GameVisual(
+          label: 'MECÁNICO',
+          icon: Icons.build,
+          mainColor: const Color(0xFF0284C7),
+          neonColor: const Color(0xFFBAE6FD),
+          buttonTextColor: const Color(0xFF0C4A6E),
+          gradient: const [Color(0xFF0F172A), Color(0xFF0369A1)],
+          imagePath: 'assets/images/mecanico.jpg',
+        );
+
+      case VocationalCategory.artistico:
+        return _GameVisual(
+          label: 'ARTE',
+          icon: Icons.palette,
+          mainColor: const Color(0xFFF97316),
+          neonColor: const Color(0xFFFED7AA),
+          buttonTextColor: const Color(0xFF7C2D12),
+          gradient: const [Color(0xFF7C2D12), Color(0xFFF97316)],
+          imagePath: 'assets/images/artistico.jpg',
+        );
+
+      case VocationalCategory.calculo:
+        return _GameVisual(
+          label: 'LÓGICA',
+          icon: Icons.calculate,
+          mainColor: const Color(0xFF4F46E5),
+          neonColor: const Color(0xFFC7D2FE),
+          buttonTextColor: const Color(0xFF312E81),
+          gradient: const [Color(0xFF111827), Color(0xFF4338CA)],
+          imagePath: 'assets/images/logica.jpg',
+        );
+
+      case VocationalCategory.fisico:
+        return _GameVisual(
+          label: 'CIENCIA FÍSICA',
+          icon: Icons.auto_awesome,
+          mainColor: const Color(0xFF6D28D9),
+          neonColor: const Color(0xFFC4B5FD),
+          buttonTextColor: const Color(0xFF4C1D95),
+          gradient: const [Color(0xFF10103A), Color(0xFF6D28D9)],
+          imagePath: 'assets/images/cientifico.jpg',
+        );
+
+      case VocationalCategory.social:
+        return _GameVisual(
+          label: 'SERVICIO',
+          icon: Icons.volunteer_activism,
+          mainColor: const Color(0xFFDB2777),
+          neonColor: const Color(0xFFFBCFE8),
+          buttonTextColor: const Color(0xFF831843),
+          gradient: const [Color(0xFF831843), Color(0xFFDB2777)],
+          imagePath: 'assets/images/serviciosocial.jpg',
+        );
+
+      case VocationalCategory.literario:
+        return _GameVisual(
+          label: 'LECTURA',
+          icon: Icons.menu_book,
+          mainColor: const Color(0xFFA16207),
+          neonColor: const Color(0xFFFDE68A),
+          buttonTextColor: const Color(0xFF713F12),
+          gradient: const [Color(0xFF422006), Color(0xFF92400E)],
+          imagePath: 'assets/images/literario.jpg',
+        );
+
+      case VocationalCategory.persuasivo:
+        return _GameVisual(
+          label: 'LIDERAZGO',
+          icon: Icons.campaign,
+          mainColor: const Color(0xFFF97316),
+          neonColor: const Color(0xFFFED7AA),
+          buttonTextColor: const Color(0xFF7C2D12),
+          gradient: const [Color(0xFF7C2D12), Color(0xFFEA580C)],
+          imagePath: 'assets/images/persuasivo.jpg',
         );
     }
   }
@@ -433,12 +568,18 @@ class _GameVisual {
   final String label;
   final IconData icon;
   final Color mainColor;
+  final Color neonColor;
+  final Color buttonTextColor;
   final List<Color> gradient;
+  final String imagePath;
 
   _GameVisual({
     required this.label,
     required this.icon,
     required this.mainColor,
+    required this.neonColor,
+    required this.buttonTextColor,
     required this.gradient,
+    required this.imagePath,
   });
 }
