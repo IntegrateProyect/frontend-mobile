@@ -6,7 +6,9 @@ abstract class CounselorRepository {
   
   // Groups
   Future<List<dynamic>> getGroups();
+  Future<Map<String, dynamic>> getGroupDetails(String groupId);
   Future<Map<String, dynamic>> createGroup(String name, String? accessCode);
+  Future<Map<String, dynamic>> updateGroup(String groupId, {String? name, String? accessCode});
   Future<List<dynamic>> getGroupStudents(String groupId);
   
   // Students

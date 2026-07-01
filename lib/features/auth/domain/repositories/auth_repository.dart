@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import '../entities/user_entity.dart';
 
 abstract class AuthRepository {
@@ -8,8 +9,10 @@ abstract class AuthRepository {
     required String name,
     required String role,
     required bool privacyAccepted,
+    Uint8List? profileImage,
     Map<String, dynamic>? additionalData,
   });
   Future<void> logout();
+  Future<UserEntity> updateAvatar(Uint8List imageBytes);
   Stream<UserEntity?> get authStateChanges;
 }

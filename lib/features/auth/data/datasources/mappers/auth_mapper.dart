@@ -1,4 +1,3 @@
-
 import '../../../domain/entities/user_entity.dart';
 import '../models/user_model.dart';
 
@@ -9,6 +8,7 @@ class AuthMapper {
       email: model.email,
       name: model.name,
       photoUrl: model.photoUrl,
+      avatarUrl: model.avatarUrl,
       role: model.role,
     );
   }
@@ -19,6 +19,7 @@ class AuthMapper {
       email: entity.email,
       name: entity.name,
       photoUrl: entity.photoUrl,
+      avatarUrl: entity.avatarUrl,
       role: entity.role,
     );
   }

@@ -91,25 +91,22 @@ class StudentHomeProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // 1. Cargar usuario local primero para UI rápida
       await _loadLocalUser();
 
-      final remoteProfile = await _safeLoadProfile();
-      if (remoteProfile != null) {
-        _profile = remoteProfile;
-      }
+      // 2. Cargar datos remotos en paralelo
+      final results = await Future.wait([
+        _safeLoadProfile(),
+        _safeLoadStudentGroups(),
+        _safeLoadResults(),
+        _safeLoadGames(),
+      ]);
 
-      final groups = await _safeLoadStudentGroups();
-      _studentGroups = groups ?? [];
+      if (results[0] != null) _profile = results[0] as StudentProfileEntity;
+      _studentGroups = results[1] as List<dynamic>? ?? [];
+      if (results[2] != null) _results = results[2] as List<VocationalResultEntity>;
+      if (results[3] != null) _availableGames = results[3] as List<dynamic>;
 
-      final results = await _safeLoadResults();
-      if (results != null) {
-        _results = results;
-      }
-
-      final games = await _safeLoadGames();
-      if (games != null) {
-        _availableGames = games;
-      }
     } catch (e) {
       debugPrint('XXX Error StudentHomeProvider: $e');
       _errorMessage = 'No se pudo cargar la información del alumno.';
@@ -170,12 +167,21 @@ class StudentHomeProvider extends ChangeNotifier {
     try {
       final localUser = await _userService.getUser();
 
-      if (localUser != null && _profile == null) {
-        _profile = StudentProfileEntity(
-          id: localUser.id,
-          name: localUser.name ?? 'Estudiante',
-          email: localUser.email,
-        );
+      if (localUser != null) {
+        // Actualizamos o creamos el perfil con los datos locales (incluyendo imagen)
+        if (_profile == null) {
+          _profile = StudentProfileEntity(
+            id: localUser.id,
+            name: localUser.name ?? 'Estudiante',
+            email: localUser.email,
+            profileImageUrl: localUser.avatarUrl ?? localUser.photoUrl,
+          );
+        } else {
+          _profile = _profile!.copyWith(
+            name: localUser.name,
+            profileImageUrl: localUser.avatarUrl ?? localUser.photoUrl,
+          );
+        }
       }
     } catch (e) {
       debugPrint('XXX Usuario local no cargado: $e');

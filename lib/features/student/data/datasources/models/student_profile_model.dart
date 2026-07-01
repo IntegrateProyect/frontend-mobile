@@ -21,34 +21,53 @@ class StudentProfileModel extends StudentProfileEntity {
     final user = _asMap(json['user']);
     final student = _asMap(json['student']);
     final authUser = _asMap(json['authUser']);
+    final profile = _asMap(json['profile']);
     final group = _asMap(json['group']);
     final schoolGroup = _asMap(json['schoolGroup']);
     final classroom = _asMap(json['classroom']);
 
+    // Intentar construir el nombre completo desde diversas fuentes y formatos
+    String? foundName;
+
+    // Lista de posibles fuentes de datos de usuario/nombre
+    final sources = [json, user, student, authUser, profile];
+
+    for (var source in sources) {
+      if (source.isEmpty) continue;
+
+      // 1. Prioridad a nombres completos
+      foundName = source['name'] ?? source['fullName'] ?? source['display_name'] ?? source['nombre_completo'];
+      if (foundName != null) break;
+
+      // 2. Intentar combinar primer nombre y apellido
+      final first = source['firstName'] ?? source['first_name'] ?? source['nombre'];
+      final last = source['lastName'] ?? source['last_name'] ?? source['apellido'];
+
+      if (first != null || last != null) {
+        foundName = '${first ?? ''} ${last ?? ''}'.trim();
+        if (foundName!.isNotEmpty) break;
+      }
+    }
+
     return StudentProfileModel(
-      id: _str(json['id'] ?? user['id'] ?? student['id'] ?? authUser['id']),
-      name: _str(
-        json['name'] ??
-            json['fullName'] ??
-            user['name'] ??
-            user['fullName'] ??
-            student['name'] ??
-            student['fullName'] ??
-            authUser['name'] ??
-            authUser['fullName'],
-        fallback: 'Estudiante',
-      ),
+      id: _str(json['id'] ?? user['id'] ?? student['id'] ?? authUser['id'] ?? profile['id']),
+      name: _str(foundName, fallback: 'Estudiante'),
       email: _str(
         json['email'] ??
             user['email'] ??
             student['email'] ??
-            authUser['email'],
+            authUser['email'] ??
+            profile['email'],
+        fallback: 'Sin correo',
       ),
       profileImageUrl: _nullableStr(
         json['profileImageUrl'] ??
             json['avatarUrl'] ??
             user['profileImageUrl'] ??
-            user['avatarUrl'],
+            user['avatarUrl'] ??
+            json['photoUrl'] ??
+            profile['photoUrl'] ??
+            user['photoUrl'],
       ),
       groupName: _nullableStr(
         json['groupName'] ??
@@ -73,12 +92,12 @@ class StudentProfileModel extends StudentProfileEntity {
       subjectsDisliked: _toStringList(
         json['subjectsDisliked'] ?? json['dislikedSubjects'] ?? json['dislikes'],
       ),
-      interests: _toStringList(json['interests']),
-      skills: _toStringList(json['skills']),
+      interests: _toStringList(json['interests'] ?? json['intereses']),
+      skills: _toStringList(json['skills'] ?? json['habilidades']),
       needsScholarship: json['needsScholarship'] == true,
       studyAbroad: json['studyAbroad'] == true,
       vocationalClarity: _toInt(
-        json['vocationalClarity'] ?? json['careerCertainty'],
+        json['vocationalClarity'] ?? json['careerCertainty'] ?? json['clarity'],
         fallback: 1,
       ).clamp(1, 10),
     );

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/mappers/auth_mapper.dart';
@@ -21,6 +23,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String name,
     required String role,
     required bool privacyAccepted,
+    Uint8List? profileImage,
     Map<String, dynamic>? additionalData,
   }) async {
     final userModel = await remoteDataSource.register(
@@ -29,8 +32,15 @@ class AuthRepositoryImpl implements AuthRepository {
       name,
       role,
       privacyAccepted: privacyAccepted,
+      profileImage: profileImage,
       additionalData: additionalData,
     );
+    return AuthMapper.toEntity(userModel);
+  }
+
+  @override
+  Future<UserEntity> updateAvatar(Uint8List imageBytes) async {
+    final userModel = await remoteDataSource.updateAvatar(imageBytes);
     return AuthMapper.toEntity(userModel);
   }
 
