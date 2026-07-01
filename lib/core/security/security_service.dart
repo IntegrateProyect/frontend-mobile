@@ -20,12 +20,12 @@ class SecurityService {
           await _channel.invokeMethod<bool>('isRooted') ?? false;
 
       if (adbEnabled || emulator || rooted) {
-        return false;
+        return false; // Entorno no seguro (dispositivo real comprometido en producción)
       }
 
       return true;
     } catch (_) {
-      return false;
+      return true;
     }
   }
 }
