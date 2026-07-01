@@ -355,7 +355,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<StudentHomeProvider>();
+    final authProvider = context.watch<AuthProvider>();
     final profile = provider.profile;
+    
+    // Obtener la URL de la imagen del AuthProvider (que tiene el avatarUrl de S3) o del perfil local
+    final String? avatarUrl = authProvider.user?.effectivePhotoUrl ?? profile?.profileImageUrl;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -392,17 +396,18 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           ),
           Padding(
             padding: EdgeInsets.only(right: 16.w),
-            child: CircleAvatar(
-              radius: 19.r,
-              backgroundColor: Colors.grey[200],
-              backgroundImage: profile?.profileImageUrl != null &&
-                  profile!.profileImageUrl!.isNotEmpty
-                  ? NetworkImage(profile.profileImageUrl!)
-                  : null,
-              child: profile?.profileImageUrl == null ||
-                  profile!.profileImageUrl!.isEmpty
-                  ? Icon(Icons.person, color: Colors.grey[500])
-                  : null,
+            child: GestureDetector(
+              onTap: () => context.push(AppRoutes.studentProfile.path),
+              child: CircleAvatar(
+                radius: 19.r,
+                backgroundColor: Colors.grey[200],
+                backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                    ? NetworkImage(avatarUrl)
+                    : null,
+                child: avatarUrl == null || avatarUrl.isEmpty
+                    ? Icon(Icons.person, color: Colors.grey[500], size: 20.sp)
+                    : null,
+              ),
             ),
           ),
         ],

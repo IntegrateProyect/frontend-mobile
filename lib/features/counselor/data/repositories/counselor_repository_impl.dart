@@ -37,12 +37,28 @@ class CounselorRepositoryImpl implements CounselorRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> getGroupDetails(String groupId) async {
+    final token = await userService.getToken();
+    return await api.getGroupDetail(token ?? '', groupId);
+  }
+
+  @override
   Future<Map<String, dynamic>> createGroup(String name, String? accessCode) async {
     final token = await userService.getToken();
     return await api.createGroup(token ?? '', {
       'name': name,
       'accessCode': accessCode ?? '',
     });
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateGroup(String groupId, {String? name, String? accessCode}) async {
+    final token = await userService.getToken();
+    final Map<String, dynamic> data = {};
+    if (name != null) data['name'] = name;
+    if (accessCode != null) data['accessCode'] = accessCode;
+
+    return await api.updateGroup(token ?? '', groupId, data);
   }
 
   @override

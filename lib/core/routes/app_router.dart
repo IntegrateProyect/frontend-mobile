@@ -12,6 +12,7 @@ import '../../features/student/presentation/screens/vocational_results_screen.da
 import '../../features/vocational_games/presentation/screens/games_list_screen.dart';
 import '../../features/counselor/presentation/screens/counselor_home_screen.dart';
 import '../../features/counselor/presentation/screens/vocational_map_screen.dart';
+import '../../features/counselor/presentation/screens/student_file_screen.dart';
 import '../../features/admin/presentation/screens/admin_home_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_home_screen.dart';
 import '../../features/university/presentation/screens/university_home_screen.dart';
@@ -68,6 +69,16 @@ final GoRouter appRouter = GoRouter(
     // Rutas de Counselor
     GoRoute(path: '/counselor-home', builder: (context, state) => const CounselorHomeScreen()),
     GoRoute(path: AppRoutes.vocationalMap.path, builder: (context, state) => const VocationalMapScreen()),
+    GoRoute(
+      path: '/student-file',
+      builder: (context, state) {
+        final args = state.extra as Map<String, dynamic>;
+        return StudentFileScreen(
+          studentId: args['studentId'],
+          studentName: args['studentName'],
+        );
+      },
+    ),
 
     // Rutas de otros roles
     GoRoute(path: '/admin-home', builder: (context, state) => const AdminHomeScreen()),

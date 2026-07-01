@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import '../../features/auth/data/datasources/models/user_model.dart';
+
 abstract class IApi {
   // --- 🔐 SERVICIO DE AUTENTICACIÓN ---
 
@@ -11,26 +13,34 @@ abstract class IApi {
   Future<Map<String, dynamic>> getMe(String token);
 
   Future<Map<String, dynamic>> updateProfile(
-      String token,
-      Map<String, dynamic> data,
-      );
+    String token,
+    Map<String, dynamic> data,
+  );
 
   Future<void> logout(String token);
 
   Future<Map<String, dynamic>> recoverPassword(String email);
 
   Future<Map<String, dynamic>> resetPassword(
-      String token,
-      String newPassword,
-      );
+    String token,
+    String newPassword,
+  );
 
   Future<Map<String, dynamic>> getRoles(String token);
 
   Future<Map<String, dynamic>> updateUserRole(
-      String token,
-      String userId,
-      String roleName,
-      );
+    String token,
+    String userId,
+    String roleName,
+  );
+
+  // --- 🖼️ SERVICIO DE AVATAR (AWS S3) ---
+
+  Future<Map<String, dynamic>> getAvatarUploadUrl(String token);
+
+  Future<void> uploadImageToS3(String uploadUrl, Uint8List imageBytes);
+
+  Future<Map<String, dynamic>> updateAvatarInBackend(String token, String avatarUrl);
 
   // --- 👑 SERVICIO DE ADMINISTRADOR ---
 
@@ -39,10 +49,10 @@ abstract class IApi {
   Future<List<dynamic>> getAllUsers(String token);
 
   Future<Map<String, dynamic>> toggleUserStatus(
-      String token,
-      String userId,
-      bool isActive,
-      );
+    String token,
+    String userId,
+    bool isActive,
+  );
 
   Future<void> deleteUser(String token, String userId);
 
@@ -51,53 +61,64 @@ abstract class IApi {
   Future<Map<String, dynamic>> checkStudentsHealth();
 
   Future<Map<String, dynamic>> createStudentProfile(
-      String token,
-      Map<String, dynamic> data,
-      );
+    String token,
+    Map<String, dynamic> data,
+  );
 
   Future<Map<String, dynamic>> getStudentProfile(String token);
 
   Future<Map<String, dynamic>> updateStudentProfile(
-      String token,
-      Map<String, dynamic> data,
-      );
+    String token,
+    Map<String, dynamic> data,
+  );
 
   Future<Map<String, dynamic>> joinGroup(
-      String token,
-      String accessCode,
-      );
+    String token,
+    String accessCode,
+  );
 
   Future<List<dynamic>> getStudentGroups(String token);
 
   // --- 🎓 SERVICIO DE ORIENTADORES ---
 
   Future<Map<String, dynamic>> createGroup(
-      String token,
-      Map<String, dynamic> data,
-      );
+    String token,
+    Map<String, dynamic> data,
+  );
 
   Future<List<dynamic>> getGroups(String token);
 
+  Future<Map<String, dynamic>> getGroupDetail(
+    String token,
+    String groupId,
+  );
+
+  Future<Map<String, dynamic>> updateGroup(
+    String token,
+    String groupId,
+    Map<String, dynamic> data,
+  );
+
   Future<List<dynamic>> getGroupStudents(
-      String token,
-      String groupId,
-      );
+    String token,
+    String groupId,
+  );
 
   Future<Map<String, dynamic>> getStudentFile(
-      String token,
-      String studentId,
-      );
+    String token,
+    String studentId,
+  );
 
   Future<Map<String, dynamic>> registerSession(
-      String token,
-      String studentId,
-      Map<String, dynamic> data,
-      );
+    String token,
+    String studentId,
+    Map<String, dynamic> data,
+  );
 
   Future<Map<String, dynamic>> createTask(
-      String token,
-      Map<String, dynamic> data,
-      );
+    String token,
+    Map<String, dynamic> data,
+  );
 
   Future<List<dynamic>> getCounselorStudents(String token);
 
@@ -108,11 +129,11 @@ abstract class IApi {
   // --- 💬 SERVICIO DE CHAT ---
 
   Future<Map<String, dynamic>> getChatHistory(
-      String token,
-      String partnerId, {
-        int limit = 50,
-        int offset = 0,
-      });
+    String token,
+    String partnerId, {
+    int limit = 50,
+    int offset = 0,
+  });
 
   Future<Map<String, dynamic>> getChatContacts(String token);
 
@@ -123,31 +144,31 @@ abstract class IApi {
   Future<List<dynamic>> getGames();
 
   Future<Map<String, dynamic>> getGameDetail(
-      String token,
-      String gameId,
-      );
+    String token,
+    String gameId,
+  );
 
   Future<List<dynamic>> getGameQuestions(
-      String token,
-      String gameId,
-      );
+    String token,
+    String gameId,
+  );
 
   Future<Map<String, dynamic>> startGame(
-      String token,
-      String gameId,
-      );
+    String token,
+    String gameId,
+  );
 
   Future<void> sendAnswer(
-      String token,
-      String gameId,
-      Map<String, dynamic> data,
-      );
+    String token,
+    String gameId,
+    Map<String, dynamic> data,
+  );
 
   Future<Map<String, dynamic>> finishGame(
-      String token,
-      String gameId,
-      String sessionId,
-      );
+    String token,
+    String gameId,
+    String sessionId,
+  );
 
   Future<List<dynamic>> getGameResults(String token);
 }

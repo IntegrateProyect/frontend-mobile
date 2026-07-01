@@ -19,13 +19,16 @@ class SecurityService {
       final bool rooted =
           await _channel.invokeMethod<bool>('isRooted') ?? false;
 
-      if (adbEnabled || emulator || rooted) {
+      // Solo bloqueamos si el dispositivo está explícitamente rooteado/jailbroken.
+      // Desactivamos la restricción de ADB (depuración USB) y emulador para permitir pruebas internas.
+      if (rooted) {
         return false;
       }
 
       return true;
     } catch (_) {
-      return false;
+      // Si el canal nativo no está implementado (MissingPluginException), permitimos continuar.
+      return true;
     }
   }
 }

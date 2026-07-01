@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:orientate/features/counselor/presentation/providers/counselor_provider.dart';
@@ -29,6 +30,10 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CounselorProvider>();
+    final authProvider = context.watch<AuthProvider>();
+    
+    // Obtenemos la imagen del usuario autenticado (S3 avatarUrl o photoUrl antiguo)
+    final String? avatarUrl = authProvider.user?.effectivePhotoUrl ?? provider.profile?.profileImageUrl;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
@@ -56,7 +61,6 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.redAccent),
             onPressed: () async {
-              final authProvider = context.read<AuthProvider>();
               await authProvider.logout();
               if (mounted) {
                 context.go('/login');
@@ -65,12 +69,20 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
           ),
           Padding(
             padding: EdgeInsets.only(right: 16.w, left: 8.w),
-            child: CircleAvatar(
-              radius: 18.r,
-              backgroundColor: Colors.grey[200],
-              backgroundImage: provider.profile?.profileImageUrl != null 
-                ? NetworkImage(provider.profile!.profileImageUrl!) 
-                : const NetworkImage('https://i.pravatar.cc/150?u=counselor'),
+            child: GestureDetector(
+              onTap: () {
+                // Aquí podrías navegar al perfil del orientador si existe la ruta
+              },
+              child: CircleAvatar(
+                radius: 18.r,
+                backgroundColor: Colors.grey[200],
+                backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                    ? NetworkImage(avatarUrl)
+                    : null,
+                child: avatarUrl == null || avatarUrl.isEmpty
+                    ? Icon(Icons.person, color: Colors.grey[500], size: 20.sp)
+                    : null,
+              ),
             ),
           ),
         ],
@@ -99,6 +111,8 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
     switch (_selectedIndex) {
       case 0:
         return _buildDashboardTab(provider);
+      case 1:
+        return _buildGroupsTab(provider);
       case 2:
         return _buildStudentsTab(provider);
       default:
@@ -161,6 +175,210 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
     );
   }
 
+  Widget _buildGroupsTab(CounselorProvider provider) {
+    if (provider.groups.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.groups_outlined, size: 80.sp, color: Colors.grey[300]),
+            SizedBox(height: 16.h),
+            Text('No tienes grupos creados', style: TextStyle(fontSize: 16.sp, color: Colors.grey[600], fontWeight: FontWeight.w600)),
+            SizedBox(height: 16.h),
+            ElevatedButton.icon(
+              onPressed: () => _showCreateGroupDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Crear mi primer grupo'),
+              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
+            )
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => provider.loadDashboardData(),
+      child: ListView.builder(
+        padding: EdgeInsets.all(20.w),
+        itemCount: provider.groups.length,
+        itemBuilder: (context, index) {
+          final group = provider.groups[index] as Map<String, dynamic>;
+          return _buildGroupCard(group);
+        },
+      ),
+    );
+  }
+
+  Widget _buildGroupCard(Map<String, dynamic> group) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12.r)),
+                child: Icon(Icons.groups_rounded, color: primaryColor, size: 24.sp),
+              ),
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(group['name'] ?? 'Sin nombre', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp, color: const Color(0xFF1D1B4B))),
+                    Text('Código: ${group['accessCode'] ?? '---'}', style: TextStyle(fontSize: 12.sp, color: Colors.grey[500], fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, color: primaryColor),
+                onPressed: () => _showEditGroupDialog(context, group),
+              ),
+            ],
+          ),
+          Divider(height: 24.h, color: Colors.grey[50]),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Creado: ${group['createdAt']?.toString().split('T')[0] ?? '---'}', style: TextStyle(fontSize: 11.sp, color: Colors.grey[500])),
+              TextButton(
+                onPressed: () => _showGroupDetails(group['id']),
+                child: Text('Ver Detalle', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp, color: primaryColor)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatMexicoDate(String? isoString) {
+    if (isoString == null) return 'N/A';
+    try {
+      final date = DateTime.parse(isoString).toUtc().subtract(const Duration(hours: 6));
+      return DateFormat('dd/MM/yyyy hh:mm a').format(date);
+    } catch (e) {
+      return isoString;
+    }
+  }
+
+  void _showGroupDetails(String groupId) async {
+    final provider = context.read<CounselorProvider>();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final details = await provider.getGroupDetails(groupId);
+    if (mounted) Navigator.pop(context);
+
+    if (details != null && mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Container(
+          padding: EdgeInsets.all(24.w),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32.r))),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Detalles del Grupo', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900)),
+              SizedBox(height: 16.h),
+              _buildDetailItem('Nombre', details['name']),
+              _buildDetailItem('Código de Acceso', details['accessCode']),
+              _buildDetailItem('Fecha de Creación', _formatMexicoDate(details['createdAt'])),
+              _buildDetailItem('Última Actualización', _formatMexicoDate(details['updatedAt'])),
+              SizedBox(height: 24.h),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
+                  child: const Text('Cerrar'),
+                ),
+              )
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildDetailItem(String label, dynamic value) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 12.sp, color: Colors.grey, fontWeight: FontWeight.bold)),
+          Text(value?.toString() ?? 'N/A', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  void _showEditGroupDialog(BuildContext context, Map<String, dynamic> group) {
+    final nameController = TextEditingController(text: group['name']);
+    final codeController = TextEditingController(text: group['accessCode']);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 24.h, left: 24.w, right: 24.w),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32.r))),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Editar Grupo', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900)),
+              SizedBox(height: 24.h),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: 'Nombre del grupo', prefixIcon: const Icon(Icons.edit_outlined), filled: true, fillColor: const Color(0xFFF8F9FE), border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.r), borderSide: BorderSide.none)),
+              ),
+              SizedBox(height: 16.h),
+              TextField(
+                controller: codeController,
+                decoration: InputDecoration(labelText: 'Código de acceso', prefixIcon: const Icon(Icons.vpn_key_outlined), filled: true, fillColor: const Color(0xFFF8F9FE), border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.r), borderSide: BorderSide.none)),
+                textCapitalization: TextCapitalization.characters,
+              ),
+              SizedBox(height: 32.h),
+              SizedBox(
+                width: double.infinity,
+                height: 56.h,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r))),
+                  onPressed: () async {
+                    final success = await context.read<CounselorProvider>().updateGroup(group['id'], name: nameController.text, accessCode: codeController.text);
+                    if (success && mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Grupo actualizado correctamente'), backgroundColor: Colors.green));
+                    }
+                  },
+                  child: const Text('Guardar Cambios'),
+                ),
+              ),
+              SizedBox(height: 32.h),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStudentsTab(CounselorProvider provider) {
     if (provider.students.isEmpty) {
       return Center(
@@ -217,6 +435,8 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(student.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp, color: const Color(0xFF1D1B4B))),
+                    if (student.groupName != null)
+                      Text('Grupo: ${student.groupName}', style: TextStyle(fontSize: 11.sp, color: primaryColor, fontWeight: FontWeight.w600)),
                     Text(student.email, style: TextStyle(fontSize: 12.sp, color: Colors.grey[500])),
                   ],
                 ),
@@ -259,7 +479,15 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
                 tooltip: 'Enviar mensaje',
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  context.push(
+                    AppRoutes.studentFile.path,
+                    extra: {
+                      'studentId': student.id,
+                      'studentName': student.name,
+                    },
+                  );
+                },
                 style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                 child: Text('Ver Perfil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp, color: primaryColor)),
               ),
@@ -298,7 +526,6 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
       children: [
         _buildQuickAction('Mapa Vocacional', Icons.map_outlined, () => context.push(AppRoutes.vocationalMap.path), highlight: true),
         _buildQuickAction('Crear Grupo', Icons.group_add_outlined, () => _showCreateGroupDialog(context)),
-        _buildQuickAction('Nueva Sesión', Icons.assignment_ind_outlined, () {}),
         _buildQuickAction('Ver Reportes', Icons.description_outlined, () {}),
       ],
     );

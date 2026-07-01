@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -63,7 +64,7 @@ class API implements IApi {
 
       final dynamic decoded = processResponse(response);
       final Map<String, dynamic> result =
-      decoded is Map ? Map<String, dynamic>.from(decoded) : {};
+          decoded is Map ? Map<String, dynamic>.from(decoded) : {};
 
       String? token;
       final authHeader =
@@ -131,9 +132,9 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> updateProfile(
-      String token,
-      Map<String, dynamic> data,
-      ) async {
+    String token,
+    Map<String, dynamic> data,
+  ) async {
     final url = '$_baseUrl/auth/me';
 
     try {
@@ -185,9 +186,9 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> resetPassword(
-      String token,
-      String newPassword,
-      ) async {
+    String token,
+    String newPassword,
+  ) async {
     final url = '$_baseUrl/auth/reset-password';
 
     try {
@@ -226,10 +227,10 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> updateUserRole(
-      String token,
-      String userId,
-      String roleName,
-      ) async {
+    String token,
+    String userId,
+    String roleName,
+  ) async {
     final url = '$_baseUrl/auth/users/$userId/role';
 
     try {
@@ -242,6 +243,59 @@ class API implements IApi {
       return processResponse(response);
     } catch (e) {
       ApiLogger.error('PATCH', url, e);
+      rethrow;
+    }
+  }
+
+  // --- 🖼️ SERVICIO DE AVATAR (AWS S3) ---
+
+  @override
+  Future<Map<String, dynamic>> getAvatarUploadUrl(String token) async {
+    final url = '$_baseUrl/auth/users/avatar-upload-url';
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: getHeaders(token),
+      );
+      return processResponse(response);
+    } catch (e) {
+      ApiLogger.error('GET', url, e);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> uploadImageToS3(String uploadUrl, Uint8List imageBytes) async {
+    try {
+      final response = await http.put(
+        Uri.parse(uploadUrl),
+        headers: {
+          'Content-Type': 'image/jpeg',
+        },
+        body: imageBytes,
+      );
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Error uploading image to S3: ${response.statusCode}');
+      }
+    } catch (e) {
+      ApiLogger.error('PUT (S3)', uploadUrl, e);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateAvatarInBackend(String token, String avatarUrl) async {
+    final url = '$_baseUrl/auth/users/avatar';
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: getHeaders(token),
+        body: jsonEncode({'avatarUrl': avatarUrl}),
+      );
+      return processResponse(response);
+    } catch (e) {
+      ApiLogger.error('PUT', url, e);
       rethrow;
     }
   }
@@ -289,10 +343,10 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> toggleUserStatus(
-      String token,
-      String userId,
-      bool isActive,
-      ) async {
+    String token,
+    String userId,
+    bool isActive,
+  ) async {
     final url = '$_baseUrl/admin/users/$userId/status';
 
     try {
@@ -345,9 +399,9 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> createStudentProfile(
-      String token,
-      Map<String, dynamic> data,
-      ) async {
+    String token,
+    Map<String, dynamic> data,
+  ) async {
     final url = '$_baseUrl/students/profile';
 
     try {
@@ -383,9 +437,9 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> updateStudentProfile(
-      String token,
-      Map<String, dynamic> data,
-      ) async {
+    String token,
+    Map<String, dynamic> data,
+  ) async {
     final url = '$_baseUrl/students/profile';
 
     try {
@@ -404,9 +458,9 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> joinGroup(
-      String token,
-      String accessCode,
-      ) async {
+    String token,
+    String accessCode,
+  ) async {
     final url = '$_baseUrl/students/join-group';
 
     try {
@@ -453,9 +507,9 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> createGroup(
-      String token,
-      Map<String, dynamic> data,
-      ) async {
+    String token,
+    Map<String, dynamic> data,
+  ) async {
     final url = '$_baseUrl/counselors/groups';
 
     try {
@@ -499,10 +553,52 @@ class API implements IApi {
   }
 
   @override
+  Future<Map<String, dynamic>> getGroupDetail(
+    String token,
+    String groupId,
+  ) async {
+    final url = '$_baseUrl/counselors/groups/$groupId';
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: getHeaders(token),
+      );
+
+      return processResponse(response);
+    } catch (e) {
+      ApiLogger.error('GET', url, e);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateGroup(
+    String token,
+    String groupId,
+    Map<String, dynamic> data,
+  ) async {
+    final url = '$_baseUrl/counselors/groups/$groupId';
+
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: getHeaders(token),
+        body: jsonEncode(data),
+      );
+
+      return processResponse(response);
+    } catch (e) {
+      ApiLogger.error('PUT', url, e);
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<dynamic>> getGroupStudents(
-      String token,
-      String groupId,
-      ) async {
+    String token,
+    String groupId,
+  ) async {
     final url = '$_baseUrl/counselors/groups/$groupId/students';
 
     try {
@@ -529,9 +625,9 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> getStudentFile(
-      String token,
-      String studentId,
-      ) async {
+    String token,
+    String studentId,
+  ) async {
     final url = '$_baseUrl/counselors/students/$studentId/file';
 
     try {
@@ -549,10 +645,10 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> registerSession(
-      String token,
-      String studentId,
-      Map<String, dynamic> data,
-      ) async {
+    String token,
+    String studentId,
+    Map<String, dynamic> data,
+  ) async {
     final url = '$_baseUrl/counselors/students/$studentId/sessions';
 
     try {
@@ -571,9 +667,9 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> createTask(
-      String token,
-      Map<String, dynamic> data,
-      ) async {
+    String token,
+    Map<String, dynamic> data,
+  ) async {
     final url = '$_baseUrl/counselors/tasks';
 
     try {
@@ -669,11 +765,11 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> getChatHistory(
-      String token,
-      String partnerId, {
-        int limit = 50,
-        int offset = 0,
-      }) async {
+    String token,
+    String partnerId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
     final url = '$_baseUrl/chat/history/$partnerId?limit=$limit&offset=$offset';
 
     try {
@@ -749,9 +845,9 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> getGameDetail(
-      String token,
-      String gameId,
-      ) async {
+    String token,
+    String gameId,
+  ) async {
     final url = '$_baseUrl/games/$gameId';
 
     try {
@@ -769,9 +865,9 @@ class API implements IApi {
 
   @override
   Future<List<dynamic>> getGameQuestions(
-      String token,
-      String gameId,
-      ) async {
+    String token,
+    String gameId,
+  ) async {
     final url = '$_baseUrl/games/$gameId';
 
     try {
@@ -782,7 +878,8 @@ class API implements IApi {
 
       final dynamic result = processResponse(response);
 
-      final data = result is Map && result['data'] != null ? result['data'] : result;
+      final data =
+          result is Map && result['data'] != null ? result['data'] : result;
 
       if (data is Map && data['questions'] is List) {
         return data['questions'];
@@ -797,9 +894,9 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> startGame(
-      String token,
-      String gameId,
-      ) async {
+    String token,
+    String gameId,
+  ) async {
     final url = '$_baseUrl/games/$gameId/start';
 
     try {
@@ -817,10 +914,10 @@ class API implements IApi {
 
   @override
   Future<void> sendAnswer(
-      String token,
-      String gameId,
-      Map<String, dynamic> data,
-      ) async {
+    String token,
+    String gameId,
+    Map<String, dynamic> data,
+  ) async {
     final url = '$_baseUrl/games/$gameId/answers';
 
     try {
@@ -837,10 +934,10 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> finishGame(
-      String token,
-      String gameId,
-      String sessionId,
-      ) async {
+    String token,
+    String gameId,
+    String sessionId,
+  ) async {
     final url = '$_baseUrl/games/$gameId/finish';
 
     try {

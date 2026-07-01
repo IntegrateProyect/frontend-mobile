@@ -6,18 +6,30 @@ class UserModel extends UserEntity {
     required super.email,
     super.name,
     super.photoUrl,
+    super.avatarUrl,
     super.role,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    // Forzamos la conversión a String y evitamos nulos en campos requeridos
+    // Búsqueda profunda: el usuario puede venir en la raíz, en 'data', en 'user' o en 'data.user'
+    Map<String, dynamic> data = json;
+    
+    if (json['data'] is Map) {
+      data = Map<String, dynamic>.from(json['data']);
+    }
+    
+    // Si después de extraer 'data', existe una clave 'user', entramos un nivel más
+    if (data['user'] is Map) {
+      data = Map<String, dynamic>.from(data['user']);
+    }
+
     return UserModel(
-      id: (json['id'] ?? json['_id'] ?? '').toString(),
-      email: (json['email'] ?? '').toString(),
-      name: json['name']?.toString(),
-      photoUrl: json['photoUrl']?.toString(),
-      // Buscamos el rol en diferentes posibles nombres de campo del backend
-      role: (json['roleName'] ?? json['role'] ?? json['type'])?.toString(),
+      id: (data['id'] ?? data['_id'] ?? '').toString(),
+      email: (data['email'] ?? '').toString(),
+      name: (data['name'] ?? data['fullName'] ?? '').toString(),
+      photoUrl: data['photoUrl']?.toString(),
+      avatarUrl: (data['avatarUrl'] ?? data['avatar_url'])?.toString(),
+      role: (data['roleName'] ?? data['role'] ?? data['type'])?.toString(),
     );
   }
 
@@ -27,6 +39,7 @@ class UserModel extends UserEntity {
       'email': email,
       'name': name,
       'photoUrl': photoUrl,
+      'avatarUrl': avatarUrl,
       'roleName': role,
     };
   }
