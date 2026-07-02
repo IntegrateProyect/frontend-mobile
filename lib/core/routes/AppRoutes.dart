@@ -34,6 +34,7 @@ enum AppRoutes {
   counselorHome('/counselor-home'),
   counselorProfile('/counselor-profile'),
   vocationalMap('/vocational-map'),
+  studentFile('/student-file'),
 
   // University Institution
   universityHome('/university-home'),

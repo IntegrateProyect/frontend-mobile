@@ -1,19 +1,24 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
+import '../../domain/usecases/update_avatar_usecase.dart';
 
 import '../../../../core/api/IApi.dart';
 import '../../../../core/utils/UserService.dart';
+import '../../../../core/utils/media_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUseCase;
   final RegisterUseCase _registerUseCase;
   final LogoutUseCase _logoutUseCase;
+  final UpdateAvatarUseCase _updateAvatarUseCase;
   final IApi _api;
   final UserService _userService;
+  final MediaService _mediaService;
 
   UserEntity? _user;
   bool _isLoading = false;
@@ -23,13 +28,17 @@ class AuthProvider extends ChangeNotifier {
     required LoginUseCase loginUseCase,
     required RegisterUseCase registerUseCase,
     required LogoutUseCase logoutUseCase,
+    required UpdateAvatarUseCase updateAvatarUseCase,
     required IApi api,
     required UserService userService,
+    required MediaService mediaService,
   })  : _loginUseCase = loginUseCase,
         _registerUseCase = registerUseCase,
         _logoutUseCase = logoutUseCase,
+        _updateAvatarUseCase = updateAvatarUseCase,
         _api = api,
-        _userService = userService;
+        _userService = userService,
+        _mediaService = mediaService;
 
   UserEntity? get user => _user;
   bool get isLoading => _isLoading;
@@ -44,8 +53,9 @@ class AuthProvider extends ChangeNotifier {
       return 'El nombre debe tener mínimo 3 letras';
     }
 
-    if (!RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$").hasMatch(value)) {
-      return 'El nombre no debe contener números ni caracteres especiales';
+    final nameRegex = RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-\']+$");
+    if (!nameRegex.hasMatch(value)) {
+      return 'El nombre contiene caracteres no permitidos';
     }
 
     return null;
@@ -188,6 +198,7 @@ class AuthProvider extends ChangeNotifier {
     required String name,
     required String role,
     required bool privacyAccepted,
+    Uint8List? profileImage,
     Map<String, dynamic>? studentProfile,
     String? accessCode,
     Map<String, dynamic>? additionalData,
@@ -232,6 +243,7 @@ class AuthProvider extends ChangeNotifier {
         name: normalizedName,
         role: normalizedRole,
         privacyAccepted: privacyAccepted,
+        profileImage: profileImage,
         additionalData: additionalData,
       );
 
@@ -243,11 +255,8 @@ class AuthProvider extends ChangeNotifier {
 
       if (normalizedRole == 'estudiante') {
         await _api.createStudentProfile(token, studentProfile!);
-
         final code = accessCode!.trim();
-
         await _api.joinGroup(token, code);
-
         await _api.getStudentProfile(token);
       }
 
@@ -270,6 +279,35 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<bool> updateAvatar(Uint8List imageBytes) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _user = await _updateAvatarUseCase(imageBytes);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateAvatarFromGallery() async {
+    final bytes = await _mediaService.pickImageFromGallery();
+    if (bytes == null) return false;
+    return await updateAvatar(bytes);
+  }
+
+  Future<bool> updateAvatarFromCamera() async {
+    final bytes = await _mediaService.takePhoto();
+    if (bytes == null) return false;
+    return await updateAvatar(bytes);
   }
 
   Future<void> logout() async {
