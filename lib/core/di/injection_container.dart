@@ -1,5 +1,10 @@
 import 'package:get_it/get_it.dart';
 
+import '../../features/chatbot/data/datasources/remote/chatbot_remote_datasource.dart';
+import '../../features/chatbot/data/repositories/chatbot_repository_impl.dart';
+import '../../features/chatbot/domain/repositories/chatbot_repository.dart';
+import '../../features/chatbot/domain/usecases/send_message_usecase.dart';
+import '../../features/chatbot/presentation/providers/chat_provider.dart';
 import '../api/IApi.dart';
 import '../api/API.dart';
 import '../utils/StorageService.dart';
@@ -327,5 +332,27 @@ Future<void> init() async {
 
   sl.registerFactory<ChatProvider>(
     () => ChatProvider(repository: sl<ChatRepository>()),
+  );
+  // --- CHATBOT (orientación vocacional con LLM) ---
+  // Nota: ChatProvider de features/chat (socket en tiempo real) ya está registrado
+  // arriba. El chatbot usa ChatbotProvider para no colisionar.
+  sl.registerLazySingleton<ChatbotRemoteDataSource>(
+        () => ChatbotRemoteDataSourceImpl(),
+  );
+
+  sl.registerLazySingleton<ChatbotRepository>(
+        () => ChatbotRepositoryImpl(
+      remoteDataSource: sl<ChatbotRemoteDataSource>(),
+      userService:      sl<UserService>(),
+    ),
+  );
+
+  sl.registerLazySingleton<SendMessageUseCase>(
+        () => SendMessageUseCase(sl<ChatbotRepository>()),
+  );
+
+  // ChatbotProvider — nombre diferente a ChatProvider (chat en tiempo real)
+  sl.registerFactory<ChatbotProvider>(
+        () => ChatbotProvider(sendMessageUseCase: sl<SendMessageUseCase>()),
   );
 }

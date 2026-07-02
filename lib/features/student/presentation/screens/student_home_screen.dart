@@ -502,16 +502,16 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       selectedFontSize: 10.sp,
       unselectedFontSize: 10.sp,
       onTap: (index) {
-        if (index == 1) context.push(AppRoutes.studentProfile.path);
+        if (index == 1) context.push(AppRoutes.chat.path);
         if (index == 2) context.push(AppRoutes.games.path);
         if (index == 3) context.push(AppRoutes.vocationalResults.path);
-        if (index == 4) _showAccountOptions();
+        if (index == 4) context.push(AppRoutes.studentProfile.path);
       },
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
         BottomNavigationBarItem(
-          icon: Icon(Icons.psychology_outlined),
-          label: 'Perfil',
+          icon: Icon(Icons.smart_toy_outlined),
+          label: 'Asistente IA',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.sports_esports_outlined),
@@ -522,8 +522,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           label: 'Resultados',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.account_circle_outlined),
-          label: 'Cuenta',
+          icon: Icon(Icons.person_outline),
+          label: 'Perfil',
         ),
       ],
     );

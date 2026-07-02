@@ -18,6 +18,7 @@ import '../../features/alumni/presentation/screens/alumni_home_screen.dart';
 import '../../features/university/presentation/screens/university_home_screen.dart';
 import '../../features/chat/presentation/screens/chat_contacts_screen.dart';
 import '../../features/chat/presentation/screens/real_chat_screen.dart';
+import '../../features/chatbot/presentation/screens/chat_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
@@ -84,5 +85,6 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/admin-home', builder: (context, state) => const AdminHomeScreen()),
     GoRoute(path: '/alumni-home', builder: (context, state) => const AlumniHomeScreen()),
     GoRoute(path: '/university-home', builder: (context, state) => const UniversityHomeScreen()),
+    GoRoute(path: AppRoutes.chat.path, builder: (context, state) => const ChatScreen()),
   ],
 );
