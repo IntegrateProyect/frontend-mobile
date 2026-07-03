@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -57,7 +56,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       child: ScaleTransition(
                         scale: _scale,
                         child: Container(
-                          decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF311B92).withOpacity(0.05)),
+                          decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF311B92).withValues(alpha: 0.05)),
                           child: Icon(Icons.explore_rounded, size: 90.sp, color: const Color(0xFF311B92)),
                         ),
                       ),

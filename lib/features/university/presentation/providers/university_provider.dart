@@ -14,8 +14,8 @@ class UniversityProvider extends ChangeNotifier {
 
   UniversityProvider({
     required this._getProfileUseCase,
-    required ManageCareersUseCase manageCareersUseCase,
-  })  : _manageCareersUseCase = manageCareersUseCase;
+    required this._manageCareersUseCase,
+  });
 
   UniversityProfileEntity? get profile => _profile;
   List<UniversityCareerEntity> get careers => _careers;

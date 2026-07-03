@@ -238,7 +238,7 @@ class _CareersScreenState extends State<CareersScreen> {
         borderRadius: BorderRadius.circular(18.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -367,7 +367,7 @@ class _CareersScreenState extends State<CareersScreen> {
                   height: 44.w,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.withOpacity(0.25)),
+                    border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
                   ),
                   child: Icon(
                     isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -406,7 +406,7 @@ class _CareersScreenState extends State<CareersScreen> {
           Text(
             'Habla con nuestro ChatBot vocacional para resolver dudas específicas sobre estas carreras.',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 11.sp,
               height: 1.3,
               fontWeight: FontWeight.w600,

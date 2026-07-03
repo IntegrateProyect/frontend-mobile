@@ -16,16 +16,12 @@ class StudentHomeProvider extends ChangeNotifier {
   final IApi _api;
 
   StudentHomeProvider({
-    required GetStudentProfileUseCase getProfileUseCase,
-    required GetVocationalResultsUseCase getResultsUseCase,
-    required GetAvailableGamesUseCase getGamesUseCase,
-    required UserService userService,
-    required IApi api,
-  })  : _getProfileUseCase = getProfileUseCase,
-        _getResultsUseCase = getResultsUseCase,
-        _getGamesUseCase = getGamesUseCase,
-        _userService = userService,
-        _api = api;
+    required this._getProfileUseCase,
+    required this._getResultsUseCase,
+    required this._getGamesUseCase,
+    required this._userService,
+    required this._api,
+  });
 
   StudentProfileEntity? _profile;
   List<VocationalResultEntity> _results = [];

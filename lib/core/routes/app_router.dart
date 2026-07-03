@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/counselor/presentation/screens/counselor_profile_screen.dart';
 import '../../features/student/presentation/screens/CareersScreen.dart';
 import 'AppRoutes.dart';
 
@@ -122,6 +122,10 @@ final GoRouter appRouter = GoRouter(
     ),
 
     // Otros roles
+    GoRoute(
+      path: AppRoutes.counselorProfile.path,
+      builder: (context, state) => const CounselorProfileScreen(),
+    ),
     GoRoute(
       path: AppRoutes.adminHome.path,
       builder: (context, state) => const AdminHomeScreen(),

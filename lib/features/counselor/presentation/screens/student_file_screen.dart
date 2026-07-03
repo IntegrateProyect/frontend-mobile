@@ -110,7 +110,7 @@ class _StudentFileScreenState extends State<StudentFileScreen> {
       children: [
         CircleAvatar(
           radius: 30.r,
-          backgroundColor: primaryColor.withOpacity(0.1),
+          backgroundColor: primaryColor.withValues(alpha: 0.1),
           child: Text(
             widget.studentName.isNotEmpty ? widget.studentName[0].toUpperCase() : '?',
             style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 24.sp),
@@ -142,7 +142,7 @@ class _StudentFileScreenState extends State<StudentFileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,7 +237,7 @@ class AlertCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: textColor.withOpacity(0.1)),
+        border: Border.all(color: textColor.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,14 +253,14 @@ class AlertCard extends StatelessWidget {
               const Spacer(),
               Text(
                 DateFormat('dd/MM/yyyy').format(alert.createdAt),
-                style: TextStyle(fontSize: 11.sp, color: textColor.withOpacity(0.7)),
+                style: TextStyle(fontSize: 11.sp, color: textColor.withValues(alpha: 0.7)),
               ),
             ],
           ),
           SizedBox(height: 8.h),
           Text(
             alert.details,
-            style: TextStyle(fontSize: 13.sp, color: textColor.withOpacity(0.8)),
+            style: TextStyle(fontSize: 13.sp, color: textColor.withValues(alpha: 0.8)),
           ),
           SizedBox(height: 16.h),
           SizedBox(

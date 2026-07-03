@@ -151,7 +151,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: data.mainColor.withOpacity(0.38),
+              color: data.mainColor.withValues(alpha: 0.38),
               blurRadius: 24,
               offset: const Offset(0, 12),
             ),
@@ -165,7 +165,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
                 child: Image.asset(
                   data.imagePath,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _fallbackGradient(data),
+                  errorBuilder: (_, _, _) => _fallbackGradient(data),
                 ),
               ),
 
@@ -174,9 +174,9 @@ class _GamesListScreenState extends State<GamesListScreen> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.black.withOpacity(0.62),
-                        Colors.black.withOpacity(0.28),
-                        Colors.black.withOpacity(0.42),
+                        Colors.black.withValues(alpha: 0.62),
+                        Colors.black.withValues(alpha: 0.28),
+                        Colors.black.withValues(alpha: 0.42),
                       ],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
@@ -192,7 +192,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
                       center: Alignment.bottomRight,
                       radius: 1.0,
                       colors: [
-                        data.mainColor.withOpacity(0.18),
+                        data.mainColor.withValues(alpha: 0.18),
                         Colors.transparent,
                       ],
                     ),
@@ -207,15 +207,15 @@ class _GamesListScreenState extends State<GamesListScreen> {
                   width: 88,
                   height: 88,
                   decoration: BoxDecoration(
-                    color: data.mainColor.withOpacity(0.88),
+                    color: data.mainColor.withValues(alpha: 0.88),
                     borderRadius: BorderRadius.circular(26),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.45),
+                      color: Colors.white.withValues(alpha: 0.45),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: data.neonColor.withOpacity(0.45),
+                        color: data.neonColor.withValues(alpha: 0.45),
                         blurRadius: 18,
                       ),
                     ],
@@ -235,7 +235,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.18),
+                    color: Colors.black.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Column(
@@ -258,7 +258,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         maxLines: 2,
-                        color: Colors.white.withOpacity(0.94),
+                        color: Colors.white.withValues(alpha: 0.94),
                       ),
                     ],
                   ),
@@ -271,7 +271,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.22),
+                    color: Colors.black.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -281,7 +281,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
                         lineWidth: 8,
                         percent: progress.toDouble(),
                         progressColor: data.neonColor,
-                        backgroundColor: Colors.white.withOpacity(0.28),
+                        backgroundColor: Colors.white.withValues(alpha: 0.28),
                         center: Text(
                           '${miniGame.questions.length}',
                           style: const TextStyle(
@@ -393,10 +393,10 @@ class _GamesListScreenState extends State<GamesListScreen> {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.28),
+        color: Colors.black.withValues(alpha: 0.28),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withOpacity(0.65),
+          color: Colors.white.withValues(alpha: 0.65),
           width: 1.5,
         ),
       ),
@@ -433,7 +433,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: data.neonColor.withOpacity(0.75),
+            color: data.neonColor.withValues(alpha: 0.75),
             blurRadius: 18,
             spreadRadius: 1,
           ),

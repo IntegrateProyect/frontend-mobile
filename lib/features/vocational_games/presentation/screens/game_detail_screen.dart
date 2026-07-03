@@ -312,7 +312,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
             Expanded(
               child: AnimatedBuilder(
                 animation: _sceneController,
-                builder: (_, __) {
+                builder: (_, _) {
                   return Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -445,7 +445,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
           color: primaryColor,
           boxShadow: [
             BoxShadow(
-              color: primaryColor.withOpacity(0.35),
+              color: primaryColor.withValues(alpha: 0.35),
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),
@@ -468,8 +468,8 @@ class _GameDetailScreenState extends State<GameDetailScreen>
 
         return Expanded(
           child: DragTarget<int>(
-            onWillAccept: (_) => !_isSending,
-            onAccept: (_) => _selectAnswer(option),
+            onWillAcceptWithDetails: (_) => !_isSending,
+            onAcceptWithDetails: (_) => _selectAnswer(option),
             builder: (context, candidateData, rejectedData) {
               final hover = candidateData.isNotEmpty;
 
@@ -480,7 +480,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
                 decoration: BoxDecoration(
                   color: hover
                       ? (positive ? Colors.green : Colors.red)
-                      .withOpacity(0.20)
+                      .withValues(alpha: 0.20)
                       : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
@@ -540,7 +540,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 7),
           ),
@@ -554,8 +554,8 @@ class _GameDetailScreenState extends State<GameDetailScreen>
 
           return Expanded(
             child: DragTarget<int>(
-              onWillAccept: (_) => !_isSending,
-              onAccept: (_) => _selectAnswer(option),
+              onWillAcceptWithDetails: (_) => !_isSending,
+              onAcceptWithDetails: (_) => _selectAnswer(option),
               builder: (context, candidateData, rejectedData) {
                 final hover = candidateData.isNotEmpty;
 
@@ -564,7 +564,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
                   margin: const EdgeInsets.symmetric(horizontal: 2),
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: hover ? color.withOpacity(0.18) : Colors.transparent,
+                    color: hover ? color.withValues(alpha: 0.18) : Colors.transparent,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: hover ? color : Colors.transparent,
@@ -585,7 +585,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
                       const SizedBox(height: 6),
                       CircleAvatar(
                         radius: hover ? 29 : 25,
-                        backgroundColor: color.withOpacity(0.18),
+                        backgroundColor: color.withValues(alpha: 0.18),
                         child: Icon(
                           icon,
                           color: color,
@@ -648,7 +648,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
             Expanded(
               child: AnimatedBuilder(
                 animation: _successController,
-                builder: (_, __) {
+                builder: (_, _) {
                   return Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -817,7 +817,7 @@ class _InteractiveScenePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final t = sin(progress * pi * 2);
 
-    final paint = Paint()..color = Colors.white.withOpacity(0.32);
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.32);
 
     canvas.drawCircle(
       Offset(size.width * .22, size.height * .18),
@@ -911,7 +911,7 @@ class _SuccessScenePainter extends CustomPainter {
     final radius = 40 + (progress * 80);
 
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.35)
+      ..color = Colors.white.withValues(alpha: 0.35)
       ..style = PaintingStyle.fill;
 
     canvas.drawCircle(center, radius, paint);

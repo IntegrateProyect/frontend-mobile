@@ -13,8 +13,8 @@ class OnboardingProvider extends ChangeNotifier {
 
   OnboardingProvider({
     required this._getOnboardingData,
-    required CompleteOnboardingUseCase completeOnboardingUseCase,
-  })  : _completeOnboardingUseCase = completeOnboardingUseCase;
+    required this._completeOnboardingUseCase,
+  });
 
   List<OnboardingEntity> get items {
     if (_items.isEmpty) {

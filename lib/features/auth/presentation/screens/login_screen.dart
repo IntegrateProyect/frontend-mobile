@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return PlatformScaffold(
       backgroundColor: Colors.white,
-      material: (_, __) => MaterialScaffoldData(
+      material: (_, _) => MaterialScaffoldData(
         resizeToAvoidBottomInset: true, // Ahora permitimos el ajuste para que el scroll funcione con teclado
       ),
       body: SafeArea(
@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: 90.w,
                             height: 90.w,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF311B92).withOpacity(0.05),
+                              color: const Color(0xFF311B92).withValues(alpha: 0.05),
                               shape: BoxShape.circle,
                               border: Border.all(color: const Color(0xFF311B92), width: 1.5.w),
                             ),

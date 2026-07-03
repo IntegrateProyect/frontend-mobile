@@ -139,7 +139,7 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7C4DFF).withOpacity(0.35),
+            color: const Color(0xFF7C4DFF).withValues(alpha: 0.35),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -151,10 +151,10 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
             width: 82.w,
             height: 82.w,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.white.withValues(alpha: 0.18),
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withOpacity(0.25),
+                color: Colors.white.withValues(alpha: 0.25),
               ),
             ),
             child: Icon(
@@ -167,7 +167,7 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 5.h),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
+              color: Colors.white.withValues(alpha: 0.25),
               borderRadius: BorderRadius.circular(20.r),
             ),
             child: Text(
@@ -194,7 +194,7 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
             'Tu perfil destaca por habilidades analíticas y pensamiento sistemático.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 13.sp,
               height: 1.25,
               fontWeight: FontWeight.w600,
@@ -204,9 +204,9 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
           Container(
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.16),
+              color: Colors.white.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(18.r),
-              border: Border.all(color: Colors.white.withOpacity(0.18)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             ),
             child: Row(
               children: [
@@ -217,7 +217,7 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
                       Text(
                         'COMPATIBILIDAD',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.75),
+                          color: Colors.white.withValues(alpha: 0.75),
                           fontSize: 10.sp,
                           fontWeight: FontWeight.w900,
                         ),
@@ -238,7 +238,7 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
                   width: 48.w,
                   height: 48.w,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
@@ -297,7 +297,7 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -309,7 +309,7 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
             width: 42.w,
             height: 42.w,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14.r),
             ),
             child: Icon(icon, color: color, size: 23.sp),
@@ -410,7 +410,7 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
         borderRadius: BorderRadius.circular(22.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.035),
+            color: Colors.black.withValues(alpha: 0.035),
             blurRadius: 14,
             offset: const Offset(0, 7),
           ),

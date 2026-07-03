@@ -12,25 +12,25 @@ abstract class ChatbotRemoteDataSource {
 }
 
 class ChatbotRemoteDataSourceImpl implements ChatbotRemoteDataSource {
-  static final String _baseUrl = dotenv.env['CHATBOT_API_URL'] ?? '...';
+  static final String? _baseUrl = dotenv.env['API_URL'];
 
   @override
   Future<Map<String, dynamic>> sendMessage(Map<String, dynamic> body, {String? studentId}) async {
     final headers = {
       'Content-Type': 'application/json',
-      if (studentId != null) 'X-Student-Id': studentId,
+      'X-Student-Id': ?studentId,
     };
     final response = await http.post(
-      Uri.parse('$_baseUrl/chat/'),
+      Uri.parse('$_baseUrl/chatbot/chat/'),
       headers: headers,
       body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 20)); // el LLM puede tardar
+    ).timeout(const Duration(seconds: 500)); // el LLM puede tardar
     return processResponse(response); // reutiliza core/utils/handlers.dart
   }
 
   @override
   Future<bool> checkHealth() async {
-    final response = await http.get(Uri.parse('$_baseUrl/chat/health'));
+    final response = await http.get(Uri.parse('$_baseUrl/chatbot/health'));
     final json = processResponse(response);
     return json['status'] == 'ok';
   }

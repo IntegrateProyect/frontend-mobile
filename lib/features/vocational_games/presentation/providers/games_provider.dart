@@ -53,16 +53,12 @@ class GamesProvider extends ChangeNotifier {
   final FinishGameUseCase _finishGameUseCase;
 
   GamesProvider({
-    required GetAvailableGamesUseCase getGamesUseCase,
-    required GetGameQuestionsUseCase getQuestionsUseCase,
-    required StartGameUseCase startGameUseCase,
-    required SendGameAnswerUseCase sendAnswerUseCase,
-    required FinishGameUseCase finishGameUseCase,
-  })  : _getGamesUseCase = getGamesUseCase,
-        _getQuestionsUseCase = getQuestionsUseCase,
-        _startGameUseCase = startGameUseCase,
-        _sendAnswerUseCase = sendAnswerUseCase,
-        _finishGameUseCase = finishGameUseCase;
+    required this._getGamesUseCase,
+    required this._getQuestionsUseCase,
+    required this._startGameUseCase,
+    required this._sendAnswerUseCase,
+    required this._finishGameUseCase,
+  });
 
   List<GameEntity> _games = [];
   List<GameQuestionEntity> _questions = [];

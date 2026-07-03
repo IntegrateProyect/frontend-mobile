@@ -18,64 +18,78 @@ class StudentProfileModel extends StudentProfileEntity {
   });
 
   factory StudentProfileModel.fromJson(Map<String, dynamic> json) {
-    final user = _asMap(json['user']);
     final student = _asMap(json['student']);
-    final authUser = _asMap(json['authUser']);
+    final user = _asMap(json['user']);
     final profile = _asMap(json['profile']);
     final group = _asMap(json['group']);
     final schoolGroup = _asMap(json['schoolGroup']);
-    final classroom = _asMap(json['classroom']);
 
-    // Intentar construir el nombre completo desde diversas fuentes y formatos
-    String? foundName;
+    final firstName = _str(
+      json['firstName'] ??
+          user['firstName'] ??
+          student['firstName'] ??
+          profile['firstName'],
+    );
 
-    // Lista de posibles fuentes de datos de usuario/nombre
-    final sources = [json, user, student, authUser, profile];
+    final lastName = _str(
+      json['lastName'] ??
+          user['lastName'] ??
+          student['lastName'] ??
+          profile['lastName'],
+    );
 
-    for (var source in sources) {
-      if (source.isEmpty) continue;
+    final fullName = _str(
+      json['name'] ??
+          json['fullName'] ??
+          json['studentName'] ??
+          user['name'] ??
+          user['fullName'] ??
+          student['name'] ??
+          student['fullName'] ??
+          profile['name'] ??
+          profile['fullName'],
+    );
 
-      // 1. Prioridad a nombres completos
-      foundName = source['name'] ?? source['fullName'] ?? source['display_name'] ?? source['nombre_completo'];
-      if (foundName != null) break;
-
-      // 2. Intentar combinar primer nombre y apellido
-      final first = source['firstName'] ?? source['first_name'] ?? source['nombre'];
-      final last = source['lastName'] ?? source['last_name'] ?? source['apellido'];
-
-      if (first != null || last != null) {
-        foundName = '${first ?? ''} ${last ?? ''}'.trim();
-        if (foundName!.isNotEmpty) break;
-      }
-    }
+    final name = fullName.isNotEmpty
+        ? fullName
+        : '$firstName $lastName'.trim().isNotEmpty
+        ? '$firstName $lastName'.trim()
+        : 'Estudiante';
 
     return StudentProfileModel(
-      id: _str(json['id'] ?? user['id'] ?? student['id'] ?? authUser['id'] ?? profile['id']),
-      name: _str(foundName, fallback: 'Estudiante'),
+      id: _str(
+        json['id'] ??
+            json['studentId'] ??
+            json['userId'] ??
+            student['id'] ??
+            user['id'] ??
+            profile['id'],
+      ),
+      name: name,
       email: _str(
         json['email'] ??
+            json['studentEmail'] ??
             user['email'] ??
             student['email'] ??
-            authUser['email'] ??
             profile['email'],
         fallback: 'Sin correo',
       ),
       profileImageUrl: _nullableStr(
         json['profileImageUrl'] ??
             json['avatarUrl'] ??
+            json['photoUrl'] ??
             user['profileImageUrl'] ??
             user['avatarUrl'] ??
-            json['photoUrl'] ??
-            profile['photoUrl'] ??
-            user['photoUrl'],
+            user['photoUrl'] ??
+            student['profileImageUrl'] ??
+            profile['profileImageUrl'],
       ),
       groupName: _nullableStr(
         json['groupName'] ??
             json['group_name'] ??
             group['name'] ??
             group['groupName'] ??
-            schoolGroup['name'] ??
-            classroom['name'],
+            schoolGroup['name'],
       ),
       groupCode: _nullableStr(
         json['groupCode'] ??
@@ -83,21 +97,34 @@ class StudentProfileModel extends StudentProfileEntity {
             json['group_code'] ??
             group['accessCode'] ??
             group['code'] ??
-            schoolGroup['accessCode'] ??
-            classroom['accessCode'],
+            schoolGroup['accessCode'],
       ),
       subjectsLiked: _toStringList(
-        json['subjectsLiked'] ?? json['favoriteSubjects'] ?? json['likes'],
+        json['subjectsLiked'] ??
+            profile['subjectsLiked'] ??
+            json['favoriteSubjects'],
       ),
       subjectsDisliked: _toStringList(
-        json['subjectsDisliked'] ?? json['dislikedSubjects'] ?? json['dislikes'],
+        json['subjectsDisliked'] ?? profile['subjectsDisliked'],
       ),
-      interests: _toStringList(json['interests'] ?? json['intereses']),
-      skills: _toStringList(json['skills'] ?? json['habilidades']),
-      needsScholarship: json['needsScholarship'] == true,
-      studyAbroad: json['studyAbroad'] == true,
+      interests: _toStringList(
+        json['interests'] ??
+            profile['interests'] ??
+            student['interests'],
+      ),
+      skills: _toStringList(
+        json['skills'] ??
+            profile['skills'] ??
+            student['skills'],
+      ),
+      needsScholarship: json['needsScholarship'] == true ||
+          profile['needsScholarship'] == true,
+      studyAbroad: json['studyAbroad'] == true || profile['studyAbroad'] == true,
       vocationalClarity: _toInt(
-        json['vocationalClarity'] ?? json['careerCertainty'] ?? json['clarity'],
+        json['vocationalClarity'] ??
+            profile['vocationalClarity'] ??
+            student['vocationalClarity'] ??
+            json['clarity'],
         fallback: 1,
       ).clamp(1, 10),
     );
