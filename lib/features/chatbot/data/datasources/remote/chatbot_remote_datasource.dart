@@ -24,7 +24,7 @@ class ChatbotRemoteDataSourceImpl implements ChatbotRemoteDataSource {
       Uri.parse('$_baseUrl/chat/'),
       headers: headers,
       body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 20)); // el LLM puede tardar
+    ).timeout(const Duration(seconds: 250)); // el LLM puede tardar
     return processResponse(response); // reutiliza core/utils/handlers.dart
   }
 
