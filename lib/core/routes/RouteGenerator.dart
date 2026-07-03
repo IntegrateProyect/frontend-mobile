@@ -12,7 +12,7 @@ import 'package:orientate/features/auth/presentation/screens/role_selection_scre
 import 'package:orientate/features/student/presentation/screens/student_home_screen.dart';
 import 'package:orientate/features/student/presentation/screens/student_profile_screen.dart';
 import 'package:orientate/features/student/presentation/screens/vocational_results_screen.dart';
-import 'package:orientate/features/student/presentation/screens/careers_screen.dart';
+
 import 'package:orientate/features/student/presentation/screens/career_detail_screen.dart';
 import 'package:orientate/features/student/presentation/screens/career_compare_screen.dart';
 import 'package:orientate/features/student/presentation/screens/universities_screen.dart';
@@ -48,6 +48,8 @@ import 'package:orientate/features/alumni/presentation/screens/alumni_profile_sc
 // Admin
 import 'package:orientate/features/admin/presentation/screens/admin_home_screen.dart';
 import 'package:orientate/features/admin/presentation/screens/user_management_screen.dart';
+
+import '../../features/student/presentation/screens/CareersScreen.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {

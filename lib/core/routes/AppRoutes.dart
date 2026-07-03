@@ -4,7 +4,7 @@ enum AppRoutes {
   login('/login'),
   register('/register'),
   roleSelection('/role-selection'),
-  
+
   // Student
   home('/home'),
   studentProfile('/student-profile'),
@@ -22,7 +22,7 @@ enum AppRoutes {
   vocationalRoute('/vocational-route'),
 
   // Chat
-  chat('/chat'), // Chatbot
+  chat('/chat'),
   chatContacts('/chat-contacts'),
   realChat('/real-chat'),
 
@@ -36,11 +36,11 @@ enum AppRoutes {
   vocationalMap('/vocational-map'),
   studentFile('/student-file'),
 
-  // University Institution
+  // University
   universityHome('/university-home'),
   manageCareers('/manage-careers'),
 
-  // Alumni (Egresado)
+  // Alumni
   alumniHome('/alumni-home'),
   alumniProfile('/alumni-profile'),
 

@@ -79,7 +79,7 @@ Future<void> init() async {
   sl.registerLazySingleton<StorageService>(() => StorageService());
 
   sl.registerLazySingleton<UserService>(
-    () => UserService(sl<StorageService>()),
+        () => UserService(sl<StorageService>()),
   );
 
   sl.registerLazySingleton<IApi>(() => API());
@@ -88,36 +88,36 @@ Future<void> init() async {
 
   // --- AUTH ---
   sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSourceImpl(
+        () => AuthRemoteDataSourceImpl(
       api: sl<IApi>(),
       userService: sl<UserService>(),
     ),
   );
 
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(
+        () => AuthRepositoryImpl(
       remoteDataSource: sl<AuthRemoteDataSource>(),
     ),
   );
 
   sl.registerLazySingleton<LoginUseCase>(
-    () => LoginUseCase(sl<AuthRepository>()),
+        () => LoginUseCase(sl<AuthRepository>()),
   );
 
   sl.registerLazySingleton<RegisterUseCase>(
-    () => RegisterUseCase(sl<AuthRepository>()),
+        () => RegisterUseCase(sl<AuthRepository>()),
   );
 
   sl.registerLazySingleton<LogoutUseCase>(
-    () => LogoutUseCase(sl<AuthRepository>()),
+        () => LogoutUseCase(sl<AuthRepository>()),
   );
 
   sl.registerLazySingleton<UpdateAvatarUseCase>(
-    () => UpdateAvatarUseCase(sl<AuthRepository>()),
+        () => UpdateAvatarUseCase(sl<AuthRepository>()),
   );
 
   sl.registerFactory<AuthProvider>(
-    () => AuthProvider(
+        () => AuthProvider(
       loginUseCase: sl<LoginUseCase>(),
       registerUseCase: sl<RegisterUseCase>(),
       logoutUseCase: sl<LogoutUseCase>(),
@@ -130,58 +130,58 @@ Future<void> init() async {
 
   // --- COUNSELOR ---
   sl.registerLazySingleton<CounselorRepository>(
-    () => CounselorRepositoryImpl(
+        () => CounselorRepositoryImpl(
       api: sl<IApi>(),
       userService: sl<UserService>(),
     ),
   );
 
   sl.registerLazySingleton<GetGroupsUseCase>(
-    () => GetGroupsUseCase(sl<CounselorRepository>()),
+        () => GetGroupsUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerLazySingleton<CreateGroupUseCase>(
-    () => CreateGroupUseCase(sl<CounselorRepository>()),
+        () => CreateGroupUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerLazySingleton<UpdateGroupUseCase>(
-    () => UpdateGroupUseCase(sl<CounselorRepository>()),
+        () => UpdateGroupUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerLazySingleton<GetGroupDetailsUseCase>(
-    () => GetGroupDetailsUseCase(sl<CounselorRepository>()),
+        () => GetGroupDetailsUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerLazySingleton<AssignTaskUseCase>(
-    () => AssignTaskUseCase(sl<CounselorRepository>()),
+        () => AssignTaskUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerLazySingleton<RegisterSessionUseCase>(
-    () => RegisterSessionUseCase(sl<CounselorRepository>()),
+        () => RegisterSessionUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerLazySingleton<GetConsultationsUseCase>(
-    () => GetConsultationsUseCase(sl<CounselorRepository>()),
+        () => GetConsultationsUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerLazySingleton<GetCounselorProfileUseCase>(
-    () => GetCounselorProfileUseCase(sl<CounselorRepository>()),
+        () => GetCounselorProfileUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerLazySingleton<GetCounselorStatsUseCase>(
-    () => GetCounselorStatsUseCase(sl<CounselorRepository>()),
+        () => GetCounselorStatsUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerLazySingleton<GetCounselorStudentsUseCase>(
-    () => GetCounselorStudentsUseCase(sl<CounselorRepository>()),
+        () => GetCounselorStudentsUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerLazySingleton<GetStudentFileUseCase>(
-    () => GetStudentFileUseCase(sl<CounselorRepository>()),
+        () => GetStudentFileUseCase(sl<CounselorRepository>()),
   );
 
   sl.registerFactory<CounselorProvider>(
-    () => CounselorProvider(
+        () => CounselorProvider(
       getGroupsUseCase: sl<GetGroupsUseCase>(),
       createGroupUseCase: sl<CreateGroupUseCase>(),
       updateGroupUseCase: sl<UpdateGroupUseCase>(),
@@ -198,22 +198,22 @@ Future<void> init() async {
 
   // --- ADMIN ---
   sl.registerLazySingleton<AdminRepository>(
-    () => AdminRepositoryImpl(
+        () => AdminRepositoryImpl(
       api: sl<IApi>(),
       userService: sl<UserService>(),
     ),
   );
 
   sl.registerLazySingleton<GetAdminStatsUseCase>(
-    () => GetAdminStatsUseCase(sl<AdminRepository>()),
+        () => GetAdminStatsUseCase(sl<AdminRepository>()),
   );
 
   sl.registerLazySingleton<ManageUsersUseCase>(
-    () => ManageUsersUseCase(sl<AdminRepository>()),
+        () => ManageUsersUseCase(sl<AdminRepository>()),
   );
 
   sl.registerFactory<AdminProvider>(
-    () => AdminProvider(
+        () => AdminProvider(
       getStatsUseCase: sl<GetAdminStatsUseCase>(),
       manageUsersUseCase: sl<ManageUsersUseCase>(),
     ),
@@ -221,54 +221,58 @@ Future<void> init() async {
 
   // --- VOCATIONAL GAMES ---
   sl.registerLazySingleton<VocationalGamesRepository>(
-    () => VocationalGamesRepositoryImpl(
+        () => VocationalGamesRepositoryImpl(
       api: sl<IApi>(),
       userService: sl<UserService>(),
     ),
   );
 
   sl.registerLazySingleton<GetAvailableGamesUseCase>(
-    () => GetAvailableGamesUseCase(sl<VocationalGamesRepository>()),
+        () => GetAvailableGamesUseCase(sl<VocationalGamesRepository>()),
   );
 
   sl.registerLazySingleton<StartGameUseCase>(
-    () => StartGameUseCase(sl<VocationalGamesRepository>()),
+        () => StartGameUseCase(sl<VocationalGamesRepository>()),
   );
 
   sl.registerLazySingleton<SendGameAnswerUseCase>(
-    () => SendGameAnswerUseCase(sl<VocationalGamesRepository>()),
+        () => SendGameAnswerUseCase(sl<VocationalGamesRepository>()),
   );
 
   sl.registerLazySingleton<FinishGameUseCase>(
-    () => FinishGameUseCase(sl<VocationalGamesRepository>()),
+        () => FinishGameUseCase(sl<VocationalGamesRepository>()),
   );
 
   sl.registerLazySingleton<SubmitGameResultUseCase>(
-    () => SubmitGameResultUseCase(sl<VocationalGamesRepository>()),
+        () => SubmitGameResultUseCase(sl<VocationalGamesRepository>()),
+  );
+
+  sl.registerLazySingleton<GetGameQuestionsUseCase>(
+        () => GetGameQuestionsUseCase(sl<VocationalGamesRepository>()),
   );
 
   // --- STUDENT ---
   sl.registerLazySingleton<StudentRepository>(
-    () => StudentRepositoryImpl(
+        () => StudentRepositoryImpl(
       api: sl<IApi>(),
       userService: sl<UserService>(),
     ),
   );
 
   sl.registerLazySingleton<GetStudentProfileUseCase>(
-    () => GetStudentProfileUseCase(sl<StudentRepository>()),
+        () => GetStudentProfileUseCase(sl<StudentRepository>()),
   );
 
   sl.registerLazySingleton<UpdateStudentProfileUseCase>(
-    () => UpdateStudentProfileUseCase(sl<StudentRepository>()),
+        () => UpdateStudentProfileUseCase(sl<StudentRepository>()),
   );
 
   sl.registerLazySingleton<GetVocationalResultsUseCase>(
-    () => GetVocationalResultsUseCase(sl<StudentRepository>()),
+        () => GetVocationalResultsUseCase(sl<StudentRepository>()),
   );
 
   sl.registerFactory<StudentHomeProvider>(
-    () => StudentHomeProvider(
+        () => StudentHomeProvider(
       getProfileUseCase: sl<GetStudentProfileUseCase>(),
       getResultsUseCase: sl<GetVocationalResultsUseCase>(),
       getGamesUseCase: sl<GetAvailableGamesUseCase>(),
@@ -278,18 +282,20 @@ Future<void> init() async {
   );
 
   sl.registerFactory<StudentProfileProvider>(
-    () => StudentProfileProvider(
+        () => StudentProfileProvider(
       getProfileUseCase: sl<GetStudentProfileUseCase>(),
       updateProfileUseCase: sl<UpdateStudentProfileUseCase>(),
     ),
   );
 
-  sl.registerLazySingleton<GetGameQuestionsUseCase>(
-    () => GetGameQuestionsUseCase(sl<VocationalGamesRepository>()),
+  sl.registerFactory<StudentResultsProvider>(
+        () => StudentResultsProvider(
+      getResultsUseCase: sl<GetVocationalResultsUseCase>(),
+    ),
   );
 
   sl.registerFactory<GamesProvider>(
-    () => GamesProvider(
+        () => GamesProvider(
       getGamesUseCase: sl<GetAvailableGamesUseCase>(),
       getQuestionsUseCase: sl<GetGameQuestionsUseCase>(),
       startGameUseCase: sl<StartGameUseCase>(),
@@ -300,42 +306,41 @@ Future<void> init() async {
 
   // --- CHAT ---
   sl.registerLazySingleton<ChatRepository>(
-    () => ChatRepositoryImpl(
+        () => ChatRepositoryImpl(
       api: sl<IApi>(),
       userService: sl<UserService>(),
     ),
   );
 
   sl.registerLazySingleton<GetChatContactsUseCase>(
-    () => GetChatContactsUseCase(sl<ChatRepository>()),
+        () => GetChatContactsUseCase(sl<ChatRepository>()),
   );
 
   sl.registerLazySingleton<GetChatHistoryUseCase>(
-    () => GetChatHistoryUseCase(sl<ChatRepository>()),
+        () => GetChatHistoryUseCase(sl<ChatRepository>()),
   );
 
   sl.registerLazySingleton<SendChatMessageUseCase>(
-    () => SendChatMessageUseCase(sl<ChatRepository>()),
+        () => SendChatMessageUseCase(sl<ChatRepository>()),
   );
 
   sl.registerLazySingleton<ConnectChatSocketUseCase>(
-    () => ConnectChatSocketUseCase(sl<ChatRepository>()),
+        () => ConnectChatSocketUseCase(sl<ChatRepository>()),
   );
 
   sl.registerLazySingleton<DisconnectChatSocketUseCase>(
-    () => DisconnectChatSocketUseCase(sl<ChatRepository>()),
+        () => DisconnectChatSocketUseCase(sl<ChatRepository>()),
   );
 
   sl.registerLazySingleton<MarkMessagesAsReadUseCase>(
-    () => MarkMessagesAsReadUseCase(sl<ChatRepository>()),
+        () => MarkMessagesAsReadUseCase(sl<ChatRepository>()),
   );
 
   sl.registerFactory<ChatProvider>(
-    () => ChatProvider(repository: sl<ChatRepository>()),
+        () => ChatProvider(repository: sl<ChatRepository>()),
   );
-  // --- CHATBOT (orientación vocacional con LLM) ---
-  // Nota: ChatProvider de features/chat (socket en tiempo real) ya está registrado
-  // arriba. El chatbot usa ChatbotProvider para no colisionar.
+
+  // --- CHATBOT ---
   sl.registerLazySingleton<ChatbotRemoteDataSource>(
         () => ChatbotRemoteDataSourceImpl(),
   );
@@ -343,7 +348,7 @@ Future<void> init() async {
   sl.registerLazySingleton<ChatbotRepository>(
         () => ChatbotRepositoryImpl(
       remoteDataSource: sl<ChatbotRemoteDataSource>(),
-      userService:      sl<UserService>(),
+      userService: sl<UserService>(),
     ),
   );
 
@@ -351,7 +356,6 @@ Future<void> init() async {
         () => SendMessageUseCase(sl<ChatbotRepository>()),
   );
 
-  // ChatbotProvider — nombre diferente a ChatProvider (chat en tiempo real)
   sl.registerFactory<ChatbotProvider>(
         () => ChatbotProvider(sendMessageUseCase: sl<SendMessageUseCase>()),
   );
