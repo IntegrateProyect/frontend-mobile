@@ -298,7 +298,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -311,7 +311,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
               Container(
                 padding: EdgeInsets.all(12.w),
                 decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
+                  color: primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Icon(
@@ -428,7 +428,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -440,7 +440,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
             children: [
               CircleAvatar(
                 radius: 26.r,
-                backgroundColor: primaryColor.withOpacity(0.1),
+                backgroundColor: primaryColor.withValues(alpha: 0.1),
                 child: Text(
                   student.name.isNotEmpty ? student.name[0].toUpperCase() : '?',
                   style: TextStyle(
@@ -691,7 +691,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10),
         ],
       ),
       child: Column(

@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -468,7 +467,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             label: Text(opt, style: TextStyle(fontSize: 11.sp)),
             selected: selection.contains(opt),
             onSelected: (v) => setState(() => v ? selection.add(opt) : selection.remove(opt)),
-            selectedColor: const Color(0xFF311B92).withOpacity(0.2),
+            selectedColor: const Color(0xFF311B92).withValues(alpha: 0.2),
             checkmarkColor: const Color(0xFF311B92),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
             side: BorderSide(color: selection.contains(opt) ? const Color(0xFF311B92) : Colors.grey[300]!),

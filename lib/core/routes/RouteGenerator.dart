@@ -31,7 +31,6 @@ import 'package:orientate/features/chat/presentation/screens/real_chat_screen.da
 
 // Games
 import 'package:orientate/features/vocational_games/presentation/screens/games_list_screen.dart';
-import 'package:orientate/features/vocational_games/presentation/screens/game_detail_screen.dart';
 
 // Counselor
 import 'package:orientate/features/counselor/presentation/screens/counselor_home_screen.dart';

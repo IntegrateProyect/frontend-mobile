@@ -14,8 +14,8 @@ class AdminProvider extends ChangeNotifier {
 
   AdminProvider({
     required this._getStatsUseCase,
-    required ManageUsersUseCase manageUsersUseCase,
-  })  : _manageUsersUseCase = manageUsersUseCase;
+    required this._manageUsersUseCase,
+  });
 
   AdminStatsEntity? get stats => _stats;
   List<AppUserEntity> get users => _users;

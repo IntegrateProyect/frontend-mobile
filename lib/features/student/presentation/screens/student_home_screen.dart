@@ -367,7 +367,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.22),
+            color: primaryColor.withValues(alpha: 0.22),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -392,7 +392,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 Text(
                   'Conoce carreras, becas y universidades compatibles con tu perfil.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 12.sp,
                     height: 1.3,
                     fontWeight: FontWeight.w600,
@@ -440,7 +440,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             width: 88.w,
             height: 88.w,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -462,7 +462,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         borderRadius: BorderRadius.circular(24.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.035),
+            color: Colors.black.withValues(alpha: 0.035),
             blurRadius: 16,
             offset: const Offset(0, 7),
           ),
@@ -540,9 +540,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: color.withOpacity(0.16)),
+        border: Border.all(color: color.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: [
@@ -550,7 +550,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             width: 48.w,
             height: 48.w,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.13),
+              color: color.withValues(alpha: 0.13),
               borderRadius: BorderRadius.circular(16.r),
             ),
             child: Icon(icon, color: color, size: 25.sp),
@@ -585,7 +585,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             width: 35.w,
             height: 35.w,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.13),
+              color: color.withValues(alpha: 0.13),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -664,7 +664,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         borderRadius: BorderRadius.circular(18.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 14,
             offset: const Offset(0, 8),
           ),
@@ -677,7 +677,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             child: Image.asset(
               item.image,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (_, _, _) => Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFF311B92), Color(0xFF4285F4)],
@@ -691,8 +691,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.black.withOpacity(0.15),
-                    Colors.black.withOpacity(0.75),
+                    Colors.black.withValues(alpha: 0.15),
+                    Colors.black.withValues(alpha: 0.75),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -706,7 +706,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.85),
+                color: primaryColor.withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(14.r),
               ),
               child: Text(
@@ -726,7 +726,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               width: 35.w,
               height: 35.w,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.22),
+                color: Colors.white.withValues(alpha: 0.22),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -758,7 +758,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 Text(
                   item.tags,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.92),
+                    color: Colors.white.withValues(alpha: 0.92),
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w800,
                   ),
@@ -788,7 +788,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           borderRadius: BorderRadius.circular(20.r),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.025),
+              color: Colors.black.withValues(alpha: 0.025),
               blurRadius: 14,
               offset: const Offset(0, 7),
             ),
@@ -800,7 +800,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               width: 46.w,
               height: 46.w,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.13),
+                color: color.withValues(alpha: 0.13),
                 borderRadius: BorderRadius.circular(15.r),
               ),
               child: Icon(icon, color: color, size: 25.sp),

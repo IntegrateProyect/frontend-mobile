@@ -17,8 +17,7 @@ class ChatbotProvider extends ChangeNotifier {
   bool _usedSearch = false;
   String? _error;
 
-  ChatbotProvider({required SendMessageUseCase sendMessageUseCase})
-      : _sendMessageUseCase = sendMessageUseCase;
+  ChatbotProvider({required this._sendMessageUseCase});
 
   List<ChatMessageEntity> get messages    => List.unmodifiable(_messages);
   List<ChatSourceEntity>  get lastSources => List.unmodifiable(_lastSources);
@@ -67,6 +66,7 @@ class ChatbotProvider extends ChangeNotifier {
       _lastSources = result.sources;
       _usedSearch  = result.usedSearch;
     } catch (e) {
+      debugPrint('❌ Chatbot error real: $e');   // 👈 AGREGAR ESTA LÍNEA
       _error = e.toString().replaceAll('Exception: ', '');
       _messages.add(ChatMessageEntity(
         id:        '${DateTime.now().millisecondsSinceEpoch}_err',

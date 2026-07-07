@@ -25,20 +25,14 @@ class AuthProvider extends ChangeNotifier {
   String? _errorMessage;
 
   AuthProvider({
-    required LoginUseCase loginUseCase,
-    required RegisterUseCase registerUseCase,
-    required LogoutUseCase logoutUseCase,
-    required UpdateAvatarUseCase updateAvatarUseCase,
-    required IApi api,
-    required UserService userService,
-    required MediaService mediaService,
-  })  : _loginUseCase = loginUseCase,
-        _registerUseCase = registerUseCase,
-        _logoutUseCase = logoutUseCase,
-        _updateAvatarUseCase = updateAvatarUseCase,
-        _api = api,
-        _userService = userService,
-        _mediaService = mediaService;
+    required this._loginUseCase,
+    required this._registerUseCase,
+    required this._logoutUseCase,
+    required this._updateAvatarUseCase,
+    required this._api,
+    required this._userService,
+    required this._mediaService,
+  });
 
   UserEntity? get user => _user;
   bool get isLoading => _isLoading;

@@ -54,7 +54,7 @@ class _ChatContactsScreenState extends State<ChatContactsScreen> {
                 final contact = provider.contacts[index];
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: const Color(0xFF311B92).withOpacity(0.1),
+                    backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
                     child: Text(contact.contactName.isNotEmpty ? contact.contactName[0] : '?',
                       style: const TextStyle(color: Color(0xFF311B92), fontWeight: FontWeight.bold)),
                   ),

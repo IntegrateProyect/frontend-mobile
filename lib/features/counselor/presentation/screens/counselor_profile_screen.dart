@@ -55,7 +55,7 @@ class CounselorProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24.r),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
@@ -65,7 +65,7 @@ class CounselorProfileScreen extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 44.r,
-                    backgroundColor: primaryColor.withOpacity(0.1),
+                    backgroundColor: primaryColor.withValues(alpha: 0.1),
                     backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
                         ? NetworkImage(avatarUrl)
                         : null,
@@ -175,7 +175,7 @@ class CounselorProfileScreen extends StatelessWidget {
             width: 42.w,
             height: 42.w,
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.09),
+              color: primaryColor.withValues(alpha: 0.09),
               borderRadius: BorderRadius.circular(14.r),
             ),
             child: Icon(icon, color: primaryColor, size: 22.sp),

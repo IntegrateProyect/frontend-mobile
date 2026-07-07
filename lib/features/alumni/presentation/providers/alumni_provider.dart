@@ -14,8 +14,8 @@ class AlumniProvider extends ChangeNotifier {
 
   AlumniProvider({
     required this._getProfileUseCase,
-    required ManageStoriesUseCase manageStoriesUseCase,
-  })  : _manageStoriesUseCase = manageStoriesUseCase;
+    required this._manageStoriesUseCase,
+  });
 
   AlumniProfileEntity? get profile => _profile;
   List<SuccessStoryEntity> get stories => _stories;

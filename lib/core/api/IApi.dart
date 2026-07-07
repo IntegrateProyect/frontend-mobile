@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import '../../features/auth/data/datasources/models/user_model.dart';
 
 abstract class IApi {
   // --- 🔐 SERVICIO DE AUTENTICACIÓN ---

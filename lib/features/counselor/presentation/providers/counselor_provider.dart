@@ -45,28 +45,18 @@ class CounselorProvider extends ChangeNotifier {
   String? _errorMessage;
 
   CounselorProvider({
-    required GetGroupsUseCase getGroupsUseCase,
-    required CreateGroupUseCase createGroupUseCase,
-    required UpdateGroupUseCase updateGroupUseCase,
-    required GetGroupDetailsUseCase getGroupDetailsUseCase,
-    required RegisterSessionUseCase registerSessionUseCase,
-    required AssignTaskUseCase assignTaskUseCase,
-    required GetConsultationsUseCase getConsultationsUseCase,
-    required GetCounselorProfileUseCase getCounselorProfileUseCase,
+    required this._getGroupsUseCase,
+    required this._createGroupUseCase,
+    required this._updateGroupUseCase,
+    required this._getGroupDetailsUseCase,
+    required this._registerSessionUseCase,
+    required this._assignTaskUseCase,
+    required this._getConsultationsUseCase,
+    required this._getCounselorProfileUseCase,
     required GetCounselorStatsUseCase getCounselorStatsUseCase,
-    required GetCounselorStudentsUseCase getStudentsUseCase,
-    required GetStudentFileUseCase getStudentFileUseCase,
-  })  : _getGroupsUseCase = getGroupsUseCase,
-        _createGroupUseCase = createGroupUseCase,
-        _updateGroupUseCase = updateGroupUseCase,
-        _getGroupDetailsUseCase = getGroupDetailsUseCase,
-        _registerSessionUseCase = registerSessionUseCase,
-        _assignTaskUseCase = assignTaskUseCase,
-        _getConsultationsUseCase = getConsultationsUseCase,
-        _getCounselorProfileUseCase = getCounselorProfileUseCase,
-        _getCounselStatsUseCase = getCounselorStatsUseCase,
-        _getStudentsUseCase = getStudentsUseCase,
-        _getStudentFileUseCase = getStudentFileUseCase;
+    required this._getStudentsUseCase,
+    required this._getStudentFileUseCase,
+  })  : _getCounselStatsUseCase = getCounselorStatsUseCase;
 
   CounselorProfileEntity? get profile => _profile;
   List<dynamic> get groups => _groups;

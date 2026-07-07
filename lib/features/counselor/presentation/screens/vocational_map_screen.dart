@@ -1,8 +1,6 @@
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 // --- MODELOS DE DATOS ---
 
@@ -320,7 +318,7 @@ class _VocationalMapScreenState extends State<VocationalMapScreen> with SingleTi
         border: Border(top: BorderSide(color: Colors.grey.shade100)),
         boxShadow: [
           if (hasSelection)
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2))
         ],
       ),
       child: SingleChildScrollView(
@@ -427,20 +425,20 @@ class VocationalMapPainter extends CustomPainter {
       
       // Dibujar Blob (Fill)
       final fillPaint = Paint()
-        ..color = cluster.color.withOpacity(0.07)
+        ..color = cluster.color.withValues(alpha: 0.07)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(offset, radius, fillPaint);
 
       // Dibujar Borde Punteado
       final strokePaint = Paint()
-        ..color = cluster.color.withOpacity(0.25)
+        ..color = cluster.color.withValues(alpha: 0.25)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2;
       
       _drawDashedCircle(canvas, offset, radius, strokePaint);
 
       // CAPA 2: ETIQUETA DEL CLUSTER
-      _drawClusterLabel(canvas, cluster, offset, cluster.color.withOpacity(0.6));
+      _drawClusterLabel(canvas, cluster, offset, cluster.color.withValues(alpha: 0.6));
     }
 
     // CAPA 3: PUNTOS DE ALUMNO
@@ -455,14 +453,14 @@ class VocationalMapPainter extends CustomPainter {
 
         // Sombra
         final shadowPaint = Paint()
-          ..color = Colors.black.withOpacity(0.2)
+          ..color = Colors.black.withValues(alpha: 0.2)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
         canvas.drawCircle(pos.translate(0, 2), dotRadius, shadowPaint);
 
         // Selección highlight
         if (isSelected) {
           final ringPaint = Paint()
-            ..color = cluster.color.withOpacity(0.2)
+            ..color = cluster.color.withValues(alpha: 0.2)
             ..style = PaintingStyle.fill;
           canvas.drawCircle(pos, dotRadius + 6, ringPaint);
         }
@@ -475,7 +473,7 @@ class VocationalMapPainter extends CustomPainter {
 
         // Borde blanco
         final borderPaint = Paint()
-          ..color = Colors.white.withOpacity(0.3)
+          ..color = Colors.white.withValues(alpha: 0.3)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5;
         canvas.drawCircle(pos, dotRadius, borderPaint);

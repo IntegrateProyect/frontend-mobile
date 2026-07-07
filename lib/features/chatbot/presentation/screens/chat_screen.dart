@@ -73,7 +73,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 Switch(
                   value: _searchMode,
-                  activeColor: const Color(0xFF311B92),
+                  activeThumbColor: const Color(0xFF311B92),
                   onChanged: (v) => setState(() => _searchMode = v),
                 ),
               ],
@@ -198,7 +198,7 @@ class _ChatScreenState extends State<ChatScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             offset: const Offset(0, -2),
             blurRadius: 5,
           ),
