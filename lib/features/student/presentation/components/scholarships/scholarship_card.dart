@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/scholarship_entity.dart';
+import '../../../domain/entities/scholarship_entity.dart';
 
 class ScholarshipCard extends StatelessWidget {
   final ScholarshipEntity scholarship;

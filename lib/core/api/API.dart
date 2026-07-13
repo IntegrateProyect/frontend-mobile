@@ -8,53 +8,261 @@ import 'IApi.dart';
 import '../utils/handlers.dart';
 
 class API implements IApi {
-  static final String _baseUrl =
-      dotenv.env['API_URL'] ?? 'https://orientate-backend.shop/api/v1';
+  static final String _baseUrl = (
+      dotenv.env['API_URL'] ??
+          'https://orientate-backend.shop/api/v1'
+  ).replaceFirst(
+    RegExp(r'/$'),
+    '',
+  );
 
-  Map<String, String> getHeaders([String? token]) {
-    final headers = {
+  Map<String, String> getHeaders([
+    String? token,
+  ]) {
+    final headers = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
 
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
+    if (token != null &&
+        token.trim().isNotEmpty) {
+      headers['Authorization'] =
+      'Bearer ${token.trim()}';
     }
 
     return headers;
   }
 
-  // --- 🔐 SERVICIO DE AUTENTICACIÓN ---
+  Uri _buildUri(
+      String path, {
+        Map<String, String>? queryParameters,
+      }) {
+    final normalizedPath = path.startsWith('/')
+        ? path
+        : '/$path';
 
-  @override
-  Future<Map<String, dynamic>> checkAuthHealth() async {
-    final url = '$_baseUrl/auth/health';
+    final uri = Uri.parse(
+      '$_baseUrl$normalizedPath',
+    );
+
+    if (queryParameters == null ||
+        queryParameters.isEmpty) {
+      return uri;
+    }
+
+    return uri.replace(
+      queryParameters: queryParameters,
+    );
+  }
+
+  Future<dynamic> _request({
+    required String method,
+    required String path,
+    String? token,
+    Map<String, dynamic>? body,
+    Map<String, String>? queryParameters,
+    Object? logData,
+  }) async {
+    final uri = _buildUri(
+      path,
+      queryParameters: queryParameters,
+    );
+
+    final url = uri.toString();
 
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(),
+      ApiLogger.request(
+        method,
+        url,
+        logData ??
+            body ??
+            queryParameters ??
+            <String, dynamic>{},
       );
 
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
+      final encodedBody =
+      body == null ? null : jsonEncode(body);
+
+      late final http.Response response;
+
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response = await http.get(
+            uri,
+            headers: getHeaders(token),
+          );
+          break;
+
+        case 'POST':
+          response = await http.post(
+            uri,
+            headers: getHeaders(token),
+            body: encodedBody,
+          );
+          break;
+
+        case 'PUT':
+          response = await http.put(
+            uri,
+            headers: getHeaders(token),
+            body: encodedBody,
+          );
+          break;
+
+        case 'PATCH':
+          response = await http.patch(
+            uri,
+            headers: getHeaders(token),
+            body: encodedBody,
+          );
+          break;
+
+        case 'DELETE':
+          response = await http.delete(
+            uri,
+            headers: getHeaders(token),
+            body: encodedBody,
+          );
+          break;
+
+        default:
+          throw UnsupportedError(
+            'Método HTTP no soportado: $method',
+          );
+      }
+
+      final dynamic result =
+      processResponse(response);
+
+      ApiLogger.response(
+        method,
+        url,
+        result,
+      );
+
+      return result;
+    } catch (error) {
+      ApiLogger.error(
+        method,
+        url,
+        error,
+      );
+
       rethrow;
     }
   }
 
+  Map<String, dynamic> _asMap(
+      dynamic value,
+      ) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(
+        value,
+      );
+    }
+
+    return <String, dynamic>{};
+  }
+
+  List<dynamic> _asList(
+      dynamic value, {
+        List<String> keys =
+        const <String>['data'],
+      }) {
+    if (value is List) {
+      return List<dynamic>.from(value);
+    }
+
+    if (value is Map) {
+      final map = Map<String, dynamic>.from(
+        value,
+      );
+
+      for (final key in keys) {
+        final possibleList = map[key];
+
+        if (possibleList is List) {
+          return List<dynamic>.from(
+            possibleList,
+          );
+        }
+      }
+
+      final data = map['data'];
+
+      if (data is Map) {
+        final dataMap =
+        Map<String, dynamic>.from(data);
+
+        for (final key in keys) {
+          final possibleList = dataMap[key];
+
+          if (possibleList is List) {
+            return List<dynamic>.from(
+              possibleList,
+            );
+          }
+        }
+      }
+    }
+
+    return <dynamic>[];
+  }
+
+  Map<String, dynamic> _mapFromData(
+      dynamic value,
+      ) {
+    final root = _asMap(value);
+    final data = root['data'];
+
+    if (data is Map) {
+      return Map<String, dynamic>.from(
+        data,
+      );
+    }
+
+    return root;
+  }
+
+  // ==========================================================
+  // AUTENTICACIÓN
+  // ==========================================================
+
   @override
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    final url = '$_baseUrl/auth/login';
+  Future<Map<String, dynamic>>
+  checkAuthHealth() async {
+    final result = await _request(
+      method: 'GET',
+      path: '/auth/health',
+    );
+
+    return _asMap(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> login(
+      String email,
+      String password,
+      ) async {
+    final uri = _buildUri('/auth/login');
+    final url = uri.toString();
 
     try {
-      ApiLogger.request('POST', url, {
-        'email': email,
-        'password': '[HIDDEN]',
-      });
+      ApiLogger.request(
+        'POST',
+        url,
+        {
+          'email': email,
+          'password': '[HIDDEN]',
+        },
+      );
 
       final response = await http.post(
-        Uri.parse(url),
+        uri,
         headers: getHeaders(),
         body: jsonEncode({
           'email': email,
@@ -62,917 +270,889 @@ class API implements IApi {
         }),
       );
 
-      final dynamic decoded = processResponse(response);
-      final Map<String, dynamic> result =
-          decoded is Map ? Map<String, dynamic>.from(decoded) : {};
+      final dynamic decoded =
+      processResponse(response);
 
-      String? token;
-      final authHeader =
-          response.headers['authorization'] ?? response.headers['Authorization'];
+      final result = _asMap(decoded);
 
-      if (authHeader != null && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
-      } else if (authHeader != null) {
-        token = authHeader;
+      final authorizationHeader =
+      response.headers['authorization'];
+
+      final alternativeToken =
+      response.headers['x-auth-token'];
+
+      String? headerToken;
+
+      if (authorizationHeader != null &&
+          authorizationHeader.isNotEmpty) {
+        if (authorizationHeader
+            .startsWith('Bearer ')) {
+          headerToken =
+              authorizationHeader.substring(7);
+        } else {
+          headerToken = authorizationHeader;
+        }
       }
 
-      token ??=
-          response.headers['x-auth-token'] ?? response.headers['X-Auth-Token'];
+      headerToken ??= alternativeToken;
 
-      if (token != null && token.isNotEmpty) {
-        result['token'] = token;
+      if (headerToken != null &&
+          headerToken.trim().isNotEmpty) {
+        result['token'] = headerToken.trim();
       }
 
-      ApiLogger.response('POST', url, result);
+      ApiLogger.response(
+        'POST',
+        url,
+        result,
+      );
+
       return result;
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
+    } catch (error) {
+      ApiLogger.error(
+        'POST',
+        url,
+        error,
+      );
+
       rethrow;
     }
   }
 
   @override
-  Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
-    final url = '$_baseUrl/auth/register';
+  Future<Map<String, dynamic>> register(
+      Map<String, dynamic> data,
+      ) async {
+    final safeLogData =
+    Map<String, dynamic>.from(data);
 
-    try {
-      ApiLogger.request('POST', url, data);
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: getHeaders(),
-        body: jsonEncode(data),
-      );
-
-      final result = processResponse(response);
-      ApiLogger.response('POST', url, result);
-      return result;
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
+    if (safeLogData.containsKey('password')) {
+      safeLogData['password'] = '[HIDDEN]';
     }
+
+    if (safeLogData.containsKey(
+      'confirmPassword',
+    )) {
+      safeLogData['confirmPassword'] =
+      '[HIDDEN]';
+    }
+
+    final result = await _request(
+      method: 'POST',
+      path: '/auth/register',
+      body: data,
+      logData: safeLogData,
+    );
+
+    return _asMap(result);
   }
 
   @override
-  Future<Map<String, dynamic>> getMe(String token) async {
-    final url = '$_baseUrl/auth/me';
+  Future<Map<String, dynamic>> getMe(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/auth/me',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
   Future<Map<String, dynamic>> updateProfile(
-    String token,
-    Map<String, dynamic> data,
-  ) async {
-    final url = '$_baseUrl/auth/me';
+      String token,
+      Map<String, dynamic> data,
+      ) async {
+    final result = await _request(
+      method: 'PATCH',
+      path: '/auth/me',
+      token: token,
+      body: data,
+    );
 
-    try {
-      final response = await http.patch(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode(data),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('PATCH', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<void> logout(String token) async {
-    final url = '$_baseUrl/auth/logout';
-
-    try {
-      await http.post(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+  Future<void> logout(
+      String token,
+      ) async {
+    await _request(
+      method: 'POST',
+      path: '/auth/logout',
+      token: token,
+    );
   }
 
   @override
-  Future<Map<String, dynamic>> recoverPassword(String email) async {
-    final url = '$_baseUrl/auth/recover-password';
+  Future<Map<String, dynamic>>
+  recoverPassword(
+      String email,
+      ) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/auth/recover-password',
+      body: {
+        'email': email,
+      },
+    );
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: getHeaders(),
-        body: jsonEncode({'email': email}),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<Map<String, dynamic>> resetPassword(
-    String token,
-    String newPassword,
-  ) async {
-    final url = '$_baseUrl/auth/reset-password';
+  Future<Map<String, dynamic>>
+  resetPassword(
+      String token,
+      String newPassword,
+      ) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/auth/reset-password',
+      body: {
+        'token': token,
+        'newPassword': newPassword,
+      },
+      logData: {
+        'token': '[HIDDEN]',
+        'newPassword': '[HIDDEN]',
+      },
+    );
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: getHeaders(),
-        body: jsonEncode({
-          'token': token,
-          'newPassword': newPassword,
-        }),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<Map<String, dynamic>> getRoles(String token) async {
-    final url = '$_baseUrl/auth/roles';
+  Future<Map<String, dynamic>> getRoles(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/auth/roles',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<Map<String, dynamic>> updateUserRole(
-    String token,
-    String userId,
-    String roleName,
-  ) async {
-    final url = '$_baseUrl/auth/users/$userId/role';
+  Future<Map<String, dynamic>>
+  updateUserRole(
+      String token,
+      String userId,
+      String roleName,
+      ) async {
+    final result = await _request(
+      method: 'PATCH',
+      path: '/auth/users/$userId/role',
+      token: token,
+      body: {
+        'roleName': roleName,
+      },
+    );
 
-    try {
-      final response = await http.patch(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode({'roleName': roleName}),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('PATCH', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
-  // --- 🖼️ SERVICIO DE AVATAR (AWS S3) ---
+  // ==========================================================
+  // AVATAR Y AWS S3
+  // ==========================================================
 
   @override
-  Future<Map<String, dynamic>> getAvatarUploadUrl(String token) async {
-    final url = '$_baseUrl/auth/users/avatar-upload-url';
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+  Future<Map<String, dynamic>>
+  getAvatarUploadUrl(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path:
+      '/auth/users/avatar-upload-url',
+      token: token,
+    );
+
+    return _asMap(result);
   }
 
   @override
-  Future<void> uploadImageToS3(String uploadUrl, Uint8List imageBytes) async {
+  Future<void> uploadImageToS3(
+      String uploadUrl,
+      Uint8List imageBytes,
+      ) async {
     try {
       final response = await http.put(
         Uri.parse(uploadUrl),
-        headers: {
+        headers: const {
           'Content-Type': 'image/jpeg',
         },
         body: imageBytes,
       );
 
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception('Error uploading image to S3: ${response.statusCode}');
+      if (response.statusCode < 200 ||
+          response.statusCode >= 300) {
+        throw Exception(
+          'Error subiendo imagen a S3. '
+              'Código: ${response.statusCode}. '
+              'Respuesta: ${response.body}',
+        );
       }
-    } catch (e) {
-      ApiLogger.error('PUT (S3)', uploadUrl, e);
+    } catch (error) {
+      ApiLogger.error(
+        'PUT',
+        uploadUrl,
+        error,
+      );
+
       rethrow;
     }
   }
 
   @override
-  Future<Map<String, dynamic>> updateAvatarInBackend(String token, String avatarUrl) async {
-    final url = '$_baseUrl/auth/users/avatar';
-    try {
-      final response = await http.put(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode({'avatarUrl': avatarUrl}),
-      );
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('PUT', url, e);
-      rethrow;
-    }
+  Future<Map<String, dynamic>>
+  updateAvatarInBackend(
+      String token,
+      String avatarUrl,
+      ) async {
+    final result = await _request(
+      method: 'PUT',
+      path: '/auth/users/avatar',
+      token: token,
+      body: {
+        'avatarUrl': avatarUrl,
+      },
+    );
+
+    return _asMap(result);
   }
 
-  // --- 👑 SERVICIO DE ADMINISTRADOR ---
+  // ==========================================================
+  // ADMINISTRADOR
+  // ==========================================================
 
   @override
-  Future<Map<String, dynamic>> getAdminStats(String token) async {
-    final url = '$_baseUrl/admin/stats';
+  Future<Map<String, dynamic>>
+  getAdminStats(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/admin/stats',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return {};
-    }
-  }
-
-  @override
-  Future<List<dynamic>> getAllUsers(String token) async {
-    final url = '$_baseUrl/admin/users';
-
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      final dynamic result = processResponse(response);
-
-      if (result is List) return result;
-      if (result is Map && result['data'] is List) return result['data'];
-
-      return [];
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return [];
-    }
+    return _mapFromData(result);
   }
 
   @override
-  Future<Map<String, dynamic>> toggleUserStatus(
-    String token,
-    String userId,
-    bool isActive,
-  ) async {
-    final url = '$_baseUrl/admin/users/$userId/status';
+  Future<List<dynamic>> getAllUsers(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/admin/users',
+      token: token,
+    );
 
-    try {
-      final response = await http.patch(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode({'isActive': isActive}),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('PATCH', url, e);
-      rethrow;
-    }
+    return _asList(
+      result,
+      keys: const [
+        'data',
+        'users',
+      ],
+    );
   }
 
   @override
-  Future<void> deleteUser(String token, String userId) async {
-    final url = '$_baseUrl/admin/users/$userId';
+  Future<Map<String, dynamic>>
+  toggleUserStatus(
+      String token,
+      String userId,
+      bool isActive,
+      ) async {
+    final result = await _request(
+      method: 'PATCH',
+      path: '/admin/users/$userId/status',
+      token: token,
+      body: {
+        'isActive': isActive,
+      },
+    );
 
-    try {
-      await http.delete(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-    } catch (e) {
-      ApiLogger.error('DELETE', url, e);
-      rethrow;
-    }
-  }
-
-  // --- 🎓 SERVICIO DE ESTUDIANTES ---
-
-  @override
-  Future<Map<String, dynamic>> checkStudentsHealth() async {
-    final url = '$_baseUrl/students/health';
-
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<Map<String, dynamic>> createStudentProfile(
-    String token,
-    Map<String, dynamic> data,
-  ) async {
-    final url = '$_baseUrl/students/profile';
+  Future<void> deleteUser(
+      String token,
+      String userId,
+      ) async {
+    await _request(
+      method: 'DELETE',
+      path: '/admin/users/$userId',
+      token: token,
+    );
+  }
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode(data),
-      );
+  // ==========================================================
+  // ESTUDIANTES
+  // ==========================================================
 
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+  @override
+  Future<Map<String, dynamic>>
+  checkStudentsHealth() async {
+    final result = await _request(
+      method: 'GET',
+      path: '/students/health',
+    );
+
+    return _asMap(result);
   }
 
   @override
-  Future<Map<String, dynamic>> getStudentProfile(String token) async {
-    final url = '$_baseUrl/students/profile';
+  Future<Map<String, dynamic>>
+  createStudentProfile(
+      String token,
+      Map<String, dynamic> data,
+      ) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/students/profile',
+      token: token,
+      body: data,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<Map<String, dynamic>> updateStudentProfile(
-    String token,
-    Map<String, dynamic> data,
-  ) async {
-    final url = '$_baseUrl/students/profile';
+  Future<Map<String, dynamic>>
+  getStudentProfile(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/students/profile',
+      token: token,
+    );
 
-    try {
-      final response = await http.patch(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode(data),
-      );
+    return _asMap(result);
+  }
 
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('PATCH', url, e);
-      rethrow;
-    }
+  @override
+  Future<Map<String, dynamic>>
+  updateStudentProfile(
+      String token,
+      Map<String, dynamic> data,
+      ) async {
+    final result = await _request(
+      method: 'PATCH',
+      path: '/students/profile',
+      token: token,
+      body: data,
+    );
+
+    return _asMap(result);
   }
 
   @override
   Future<Map<String, dynamic>> joinGroup(
-    String token,
-    String accessCode,
-  ) async {
-    final url = '$_baseUrl/students/join-group';
+      String token,
+      String accessCode,
+      ) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/students/join-group',
+      token: token,
+      body: {
+        'accessCode': accessCode,
+      },
+    );
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode({'accessCode': accessCode}),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<List<dynamic>> getStudentGroups(String token) async {
-    final url = '$_baseUrl/students/groups';
+  Future<List<dynamic>> getStudentGroups(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/students/groups',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      final dynamic result = processResponse(response);
-
-      if (result is List) return result;
-
-      if (result is Map) {
-        if (result['data'] is List) return result['data'];
-        if (result['groups'] is List) return result['groups'];
-      }
-
-      return [];
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return [];
-    }
+    return _asList(
+      result,
+      keys: const [
+        'data',
+        'groups',
+      ],
+    );
   }
 
-  // --- 🎓 SERVICIO DE ORIENTADORES ---
+  @override
+  Future<Map<String, dynamic>> scheduleAppointment(String token, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/students/appointments',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<List<dynamic>> getStudentAppointments(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/students/appointments',
+      token: token,
+    );
+    return _asList(result);
+  }
+
+  // ==========================================================
+  // ORIENTADORES
+  // ==========================================================
 
   @override
   Future<Map<String, dynamic>> createGroup(
-    String token,
-    Map<String, dynamic> data,
-  ) async {
-    final url = '$_baseUrl/counselors/groups';
+      String token,
+      Map<String, dynamic> data,
+      ) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/counselors/groups',
+      token: token,
+      body: data,
+    );
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode(data),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<List<dynamic>> getGroups(String token) async {
-    final url = '$_baseUrl/counselors/groups';
+  Future<List<dynamic>> getGroups(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/counselors/groups',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      final dynamic result = processResponse(response);
-
-      if (result is List) return result;
-
-      if (result is Map) {
-        if (result['data'] is List) return result['data'];
-        if (result['groups'] is List) return result['groups'];
-      }
-
-      return [];
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return [];
-    }
+    return _asList(
+      result,
+      keys: const [
+        'data',
+        'groups',
+      ],
+    );
   }
 
   @override
-  Future<Map<String, dynamic>> getGroupDetail(
-    String token,
-    String groupId,
-  ) async {
-    final url = '$_baseUrl/counselors/groups/$groupId';
+  Future<Map<String, dynamic>>
+  getGroupDetail(
+      String token,
+      String groupId,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/counselors/groups/$groupId',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<Map<String, dynamic>> updateGroup(
-    String token,
-    String groupId,
-    Map<String, dynamic> data,
-  ) async {
-    final url = '$_baseUrl/counselors/groups/$groupId';
+  Future<Map<String, dynamic>>
+  updateGroup(
+      String token,
+      String groupId,
+      Map<String, dynamic> data,
+      ) async {
+    final result = await _request(
+      method: 'PUT',
+      path: '/counselors/groups/$groupId',
+      token: token,
+      body: data,
+    );
 
-    try {
-      final response = await http.put(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode(data),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('PUT', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
   Future<List<dynamic>> getGroupStudents(
-    String token,
-    String groupId,
-  ) async {
-    final url = '$_baseUrl/counselors/groups/$groupId/students';
+      String token,
+      String groupId,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path:
+      '/counselors/groups/$groupId/students',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      final dynamic result = processResponse(response);
-
-      if (result is List) return result;
-
-      if (result is Map) {
-        if (result['data'] is List) return result['data'];
-        if (result['students'] is List) return result['students'];
-      }
-
-      return [];
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return [];
-    }
+    return _asList(
+      result,
+      keys: const [
+        'data',
+        'students',
+      ],
+    );
   }
 
   @override
-  Future<Map<String, dynamic>> getStudentFile(
-    String token,
-    String studentId,
-  ) async {
-    final url = '$_baseUrl/counselors/students/$studentId/file';
+  Future<Map<String, dynamic>>
+  getStudentFile(
+      String token,
+      String studentId,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path:
+      '/counselors/students/$studentId/file',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<Map<String, dynamic>> registerSession(
-    String token,
-    String studentId,
-    Map<String, dynamic> data,
-  ) async {
-    final url = '$_baseUrl/counselors/students/$studentId/sessions';
+  Future<Map<String, dynamic>>
+  registerSession(
+      String token,
+      String studentId,
+      Map<String, dynamic> data,
+      ) async {
+    final result = await _request(
+      method: 'POST',
+      path:
+      '/counselors/students/$studentId/sessions',
+      token: token,
+      body: data,
+    );
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode(data),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
   Future<Map<String, dynamic>> createTask(
-    String token,
-    Map<String, dynamic> data,
-  ) async {
-    final url = '$_baseUrl/counselors/tasks';
+      String token,
+      Map<String, dynamic> data,
+      ) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/counselors/tasks',
+      token: token,
+      body: data,
+    );
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode(data),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<List<dynamic>> getCounselorStudents(String token) async {
-    final url = '$_baseUrl/counselors/students';
+  Future<List<dynamic>>
+  getCounselorStudents(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/counselors/students',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      final dynamic result = processResponse(response);
-
-      if (result is List) return result;
-
-      if (result is Map) {
-        if (result['data'] is List) return result['data'];
-        if (result['students'] is List) return result['students'];
-      }
-
-      return [];
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return [];
-    }
+    return _asList(
+      result,
+      keys: const [
+        'data',
+        'students',
+      ],
+    );
   }
 
   @override
-  Future<List<dynamic>> getConsultations(String token) async {
-    final url = '$_baseUrl/counselors/consultations';
+  Future<List<dynamic>> getConsultations(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/counselors/consultations',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      final dynamic result = processResponse(response);
-
-      if (result is List) return result;
-      if (result is Map && result['data'] is List) return result['data'];
-
-      return [];
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return [];
-    }
+    return _asList(
+      result,
+      keys: const [
+        'data',
+        'consultations',
+      ],
+    );
   }
 
   @override
-  Future<Map<String, dynamic>> getCounselorStats(String token) async {
-    final url = '$_baseUrl/counselors/stats';
+  Future<Map<String, dynamic>>
+  getCounselorStats(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/counselors/stats',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      final dynamic result = processResponse(response);
-
-      if (result is Map) {
-        if (result['data'] is Map) {
-          return Map<String, dynamic>.from(result['data']);
-        }
-
-        return Map<String, dynamic>.from(result);
-      }
-
-      return {};
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return {};
-    }
-  }
-
-  // --- 💬 SERVICIO DE CHAT ---
-
-  @override
-  Future<Map<String, dynamic>> getChatHistory(
-    String token,
-    String partnerId, {
-    int limit = 50,
-    int offset = 0,
-  }) async {
-    final url = '$_baseUrl/chat/history/$partnerId?limit=$limit&offset=$offset';
-
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+    return _mapFromData(result);
   }
 
   @override
-  Future<Map<String, dynamic>> getChatContacts(String token) async {
-    final url = '$_baseUrl/chat/contacts';
-
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+  Future<List<dynamic>> getCounselorAppointments(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/counselors/appointments',
+      token: token,
+    );
+    return _asList(result);
   }
 
-  // --- 🎮 SERVICIO DE MINIJUEGOS ---
+  // ==========================================================
+  // CHAT
+  // ==========================================================
 
   @override
-  Future<Map<String, dynamic>> checkGamesHealth() async {
-    final url = '$_baseUrl/games/health';
+  Future<Map<String, dynamic>>
+  getChatHistory(
+      String token,
+      String partnerId, {
+        int limit = 50,
+        int offset = 0,
+      }) async {
+    final safeLimit =
+    limit.clamp(1, 100).toInt();
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(),
-      );
+    final safeOffset =
+    offset < 0 ? 0 : offset;
 
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+    final result = await _request(
+      method: 'GET',
+      path: '/chat/history/$partnerId',
+      token: token,
+      queryParameters: {
+        'limit': safeLimit.toString(),
+        'offset': safeOffset.toString(),
+      },
+    );
+
+    return _asMap(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>>
+  getChatContacts(
+      String token,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/chat/contacts',
+      token: token,
+    );
+
+    return _asMap(result);
+  }
+
+  // ==========================================================
+  // MINIJUEGOS VOCACIONALES
+  // ==========================================================
+
+  @override
+  Future<Map<String, dynamic>>
+  checkGamesHealth() async {
+    final result = await _request(
+      method: 'GET',
+      path: '/games/health',
+    );
+
+    return _asMap(result);
   }
 
   @override
   Future<List<dynamic>> getGames() async {
-    final url = '$_baseUrl/games';
+    final result = await _request(
+      method: 'GET',
+      path: '/games',
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(),
-      );
-
-      final dynamic result = processResponse(response);
-
-      if (result is List) return result;
-      if (result is Map && result['data'] is List) return result['data'];
-
-      return [];
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return [];
-    }
+    return _asList(
+      result,
+      keys: const [
+        'data',
+        'games',
+      ],
+    );
   }
 
   @override
-  Future<Map<String, dynamic>> getGameDetail(
-    String token,
-    String gameId,
-  ) async {
-    final url = '$_baseUrl/games/$gameId';
+  Future<Map<String, dynamic>>
+  getGameDetail(
+      String token,
+      String gameId,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/games/$gameId',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
-  Future<List<dynamic>> getGameQuestions(
-    String token,
-    String gameId,
-  ) async {
-    final url = '$_baseUrl/games/$gameId';
+  Future<List<dynamic>>
+  getGameQuestions(
+      String token,
+      String gameId,
+      ) async {
+    final detail = await getGameDetail(
+      token,
+      gameId,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
+    final dynamic detailData =
+        detail['data'] ?? detail;
+
+    if (detailData is Map) {
+      final map =
+      Map<String, dynamic>.from(
+        detailData,
       );
 
-      final dynamic result = processResponse(response);
+      final questions = map['questions'];
 
-      final data =
-          result is Map && result['data'] != null ? result['data'] : result;
-
-      if (data is Map && data['questions'] is List) {
-        return data['questions'];
+      if (questions is List) {
+        return List<dynamic>.from(
+          questions,
+        );
       }
-
-      return [];
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return [];
     }
+
+    return <dynamic>[];
   }
 
   @override
   Future<Map<String, dynamic>> startGame(
-    String token,
-    String gameId,
-  ) async {
-    final url = '$_baseUrl/games/$gameId/start';
+      String token,
+      String gameId,
+      ) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/games/$gameId/start',
+      token: token,
+    );
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
   Future<void> sendAnswer(
-    String token,
-    String gameId,
-    Map<String, dynamic> data,
-  ) async {
-    final url = '$_baseUrl/games/$gameId/answers';
-
-    try {
-      await http.post(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode(data),
-      );
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+      String token,
+      String gameId,
+      Map<String, dynamic> data,
+      ) async {
+    /*
+     * Es importante procesar la respuesta.
+     * Antes solamente se ejecutaba el POST y un error
+     * 400/401/500 podía pasar sin ser detectado.
+     */
+    await _request(
+      method: 'POST',
+      path: '/games/$gameId/answers',
+      token: token,
+      body: data,
+    );
   }
 
   @override
   Future<Map<String, dynamic>> finishGame(
-    String token,
-    String gameId,
-    String sessionId,
-  ) async {
-    final url = '$_baseUrl/games/$gameId/finish';
+      String gameId,
+      String token,
+      String sessionId,
+    ) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/games/$gameId/finish',
+      token: token,
+      body: {
+        'sessionId': sessionId,
+      },
+    );
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: getHeaders(token),
-        body: jsonEncode({'sessionId': sessionId}),
-      );
-
-      return processResponse(response);
-    } catch (e) {
-      ApiLogger.error('POST', url, e);
-      rethrow;
-    }
+    return _asMap(result);
   }
 
   @override
   Future<List<dynamic>> getGameResults(String token) async {
-    final url = '$_baseUrl/games/students/results';
+    final result = await _request(
+      method: 'GET',
+      path: '/games/students/results',
+      token: token,
+    );
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: getHeaders(token),
-      );
+    return _asList(
+      result,
+      keys: const [
+        'data',
+        'results',
+      ],
+    );
+  }
 
-      final dynamic result = processResponse(response);
+  // ==========================================================
+  // CATÁLOGO DE UNIVERSIDADES
+  // ==========================================================
 
-      if (result is List) return result;
-      if (result is Map && result['data'] is List) return result['data'];
+  @override
+  Future<Map<String, dynamic>>
+  getCatalogUniversities(
+      String token, {
+        int page = 1,
+        int limit = 20,
+        String search = '',
+      }) async {
+    final safePage = page < 1 ? 1 : page;
 
-      return [];
-    } catch (e) {
-      ApiLogger.error('GET', url, e);
-      return [];
+    final safeLimit =
+    limit.clamp(1, 100).toInt();
+
+    final cleanSearch = search.trim();
+
+    final queryParameters =
+    <String, String>{
+      'page': safePage.toString(),
+      'limit': safeLimit.toString(),
+    };
+
+    if (cleanSearch.isNotEmpty) {
+      queryParameters['search'] =
+          cleanSearch;
     }
+
+    final result = await _request(
+      method: 'GET',
+      path: '/catalog/universities',
+      token: token,
+      queryParameters: queryParameters,
+    );
+
+    final mappedResult = _asMap(result);
+
+    if (mappedResult.isEmpty &&
+        result is! Map) {
+      throw FormatException(
+        'El catálogo de universidades '
+            'devolvió un formato inválido.',
+      );
+    }
+
+    return mappedResult;
   }
 }

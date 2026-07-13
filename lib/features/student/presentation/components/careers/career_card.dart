@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/career_entity.dart';
+import '../../../domain/entities/career_entity.dart';
 
 class CareerCard extends StatelessWidget {
   final CareerEntity career;

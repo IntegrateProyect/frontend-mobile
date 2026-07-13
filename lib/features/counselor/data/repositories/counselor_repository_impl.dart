@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:orientate/features/student/data/datasources/models/student_profile_model.dart';
 import 'package:orientate/features/student/domain/entities/student_profile_entity.dart';
+import 'package:orientate/features/student/domain/entities/appointment_entity.dart';
+import 'package:orientate/features/student/data/datasources/models/appointment_model.dart';
 
 import '../../../../core/api/IApi.dart';
 import '../../../../core/utils/UserService.dart';
@@ -108,12 +110,9 @@ class CounselorRepositoryImpl implements CounselorRepository {
 
     final directStudents = await api.getCounselorStudents(token);
 
-    debugPrint('XXX COUNSELOR STUDENTS RAW: $directStudents');
-
     if (directStudents.isNotEmpty) {
       final students = directStudents.map((item) {
         final normalized = _normalizeStudentJson(item);
-        debugPrint('XXX COUNSELOR STUDENT NORMALIZED: $normalized');
         return StudentProfileModel.fromJson(normalized);
       }).toList();
 
@@ -121,8 +120,6 @@ class CounselorRepositoryImpl implements CounselorRepository {
     }
 
     final groups = await api.getGroups(token);
-
-    debugPrint('XXX COUNSELOR GROUPS RAW: $groups');
 
     final List<StudentProfileEntity> allStudents = [];
 
@@ -149,19 +146,12 @@ class CounselorRepositoryImpl implements CounselorRepository {
 
       final studentsByGroup = await api.getGroupStudents(token, groupId);
 
-      debugPrint(
-        'XXX GROUP STUDENTS RAW group=$groupName id=$groupId: $studentsByGroup',
-      );
-
       for (final item in studentsByGroup) {
         final normalized = _normalizeStudentJson(
           item,
           groupName: groupName,
           groupCode: groupCode,
         );
-
-        debugPrint('XXX GROUP STUDENT NORMALIZED: $normalized');
-
         allStudents.add(StudentProfileModel.fromJson(normalized));
       }
     }
@@ -461,5 +451,12 @@ class CounselorRepositoryImpl implements CounselorRepository {
   Future<Map<String, dynamic>> getStats() async {
     final token = await _getToken();
     return api.getCounselorStats(token);
+  }
+
+  @override
+  Future<List<AppointmentEntity>> getAppointments() async {
+    final token = await _getToken();
+    final response = await api.getCounselorAppointments(token);
+    return response.map((item) => AppointmentModel.fromJson(Map<String, dynamic>.from(item))).toList();
   }
 }

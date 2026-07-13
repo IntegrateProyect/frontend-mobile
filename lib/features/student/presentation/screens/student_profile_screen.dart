@@ -1,376 +1,295 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import 'package:orientate/features/student/presentation/providers/student_profile_provider.dart';
-import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
 import 'package:orientate/core/routes/AppRoutes.dart';
+import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
+
+import '../components/common/student_bottom_navigation_bar.dart';
+import '../components/common/student_ui_colors.dart';
+import '../components/profile/avatar_picker_sheet.dart';
+import '../components/profile/profile_avatar_header.dart';
+import '../components/profile/profile_chip_section.dart';
+import '../components/profile/profile_preferences_row.dart';
+import '../components/profile/student_profile_empty_state.dart';
+import '../components/profile/vocational_clarity_card.dart';
+import '../providers/student_profile_provider.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
 
   @override
-  State<StudentProfileScreen> createState() => _StudentProfileScreenState();
+  State<StudentProfileScreen> createState() {
+    return _StudentProfileScreenState();
+  }
 }
 
-class _StudentProfileScreenState extends State<StudentProfileScreen> {
-  static const Color primaryColor = Color(0xFF311B92);
-  static const Color darkText = Color(0xFF1D1B4B);
-
+class _StudentProfileScreenState
+    extends State<StudentProfileScreen> {
   @override
   void initState() {
     super.initState();
+
     Future.microtask(() {
-      context.read<StudentProfileProvider>().fetchProfile();
+      if (!mounted) return;
+
+      context
+          .read<StudentProfileProvider>()
+          .fetchProfile();
     });
   }
 
-  void _showPickImageOptions(BuildContext context) {
-    final authProvider = context.read<AuthProvider>();
-    final profileProvider = context.read<StudentProfileProvider>();
+  void _goToStudentHome() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
 
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 20.h),
-          child: Wrap(
-            children: [
-              Center(
-                child: Container(
-                  width: 40.w,
-                  height: 4.h,
-                  margin: EdgeInsets.only(bottom: 20.h),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2.r),
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: Container(
-                  padding: EdgeInsets.all(8.w),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.photo_library, color: Colors.blue),
-                ),
-                title: const Text('Elegir de la galería', 
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final success = await authProvider.updateAvatarFromGallery();
-                  if (success) profileProvider.fetchProfile();
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: EdgeInsets.all(8.w),
-                  decoration: BoxDecoration(
-                    color: Colors.purple[50],
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.camera_alt, color: Colors.purple),
-                ),
-                title: const Text('Tomar una foto', 
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final success = await authProvider.updateAvatarFromCamera();
-                  if (success) profileProvider.fetchProfile();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+      context.go(AppRoutes.home.path);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<StudentProfileProvider>();
-    final authProvider = context.watch<AuthProvider>();
-    final profile = provider.profile;
-    
-    final String? avatarUrl = authProvider.user?.avatarUrl ?? profile?.profileImageUrl;
+    final profileProvider =
+    context.watch<StudentProfileProvider>();
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    final authProvider = context.watch<AuthProvider>();
+    final profile = profileProvider.profile;
+
+    final String? avatarUrl =
+        authProvider.user?.avatarUrl ??
+            profile?.profileImageUrl;
+
+    return PopScope(
+      /*
+       * Perfil es una ruta principal abierta con context.go().
+       * Por eso no debemos ejecutar context.pop(), porque puede no
+       * existir una página anterior en la pila.
+       */
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        _goToStudentHome();
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text(
-          'Perfil Vocacional',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            tooltip: 'Regresar al inicio',
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.black,
+              size: 20,
+            ),
+            onPressed: _goToStudentHome,
+          ),
+          title: const Text(
+            'Perfil Vocacional',
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
         ),
+        body: _buildBody(
+          profileProvider: profileProvider,
+          authProvider: authProvider,
+          avatarUrl: avatarUrl,
+        ),
+        bottomNavigationBar:
+        const StudentBottomNavigationBar(
+          currentIndex: 3,
+        ),
       ),
-      body: provider.isLoading && profile == null
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : profile == null
-              ? _buildEmptyState(provider)
-              : Stack(
-                  children: [
-                    RefreshIndicator(
-                      color: primaryColor,
-                      onRefresh: provider.fetchProfile,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.symmetric(horizontal: 24.w),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 10.h),
-                            Center(
-                              child: Column(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () => _showPickImageOptions(context),
-                                    child: Stack(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 55.r,
-                                          backgroundColor: const Color(0xFFF3F4F6),
-                                          backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-                                              ? NetworkImage(avatarUrl)
-                                              : null,
-                                          child: avatarUrl == null || avatarUrl.isEmpty
-                                              ? Icon(Icons.person, size: 60.sp, color: Colors.grey[400])
-                                              : null,
-                                        ),
-                                        Positioned(
-                                          right: 0,
-                                          bottom: 0,
-                                          child: Container(
-                                            padding: EdgeInsets.all(8.w),
-                                            decoration: BoxDecoration(
-                                              color: primaryColor,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(color: Colors.white, width: 2),
-                                            ),
-                                            child: Icon(Icons.camera_alt, color: Colors.white, size: 16.sp),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(height: 16.h),
-                                  Text(
-                                    profile.name.isNotEmpty ? profile.name : 'Estudiante',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900, color: darkText),
-                                  ),
-                                  SizedBox(height: 6.h),
-                                  Text(
-                                    _subtitle(profile.groupName),
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 32.h),
-                            _buildSectionHeader(Icons.book_outlined, 'Materias favoritas'),
-                            SizedBox(height: 12.h),
-                            _buildChipList(profile.subjectsLiked, const Color(0xFFE3F2FD), Colors.blue, 'Sin materias registradas'),
-                            SizedBox(height: 24.h),
-                            _buildSectionHeader(Icons.block_outlined, 'Materias que no te gustan'),
-                            SizedBox(height: 12.h),
-                            _buildChipList(profile.subjectsDisliked, const Color(0xFFFFEBEE), Colors.redAccent, 'Sin materias registradas'),
-                            SizedBox(height: 24.h),
-                            _buildSectionHeader(Icons.favorite_border, 'Intereses'),
-                            SizedBox(height: 12.h),
-                            _buildChipList(profile.interests, const Color(0xFFF3E5F5), Colors.purple, 'Sin intereses registrados'),
-                            SizedBox(height: 24.h),
-                            _buildSectionHeader(Icons.lightbulb_outline, 'Habilidades'),
-                            SizedBox(height: 12.h),
-                            _buildChipList(profile.skills, const Color(0xFFE8F5E9), Colors.green, 'Sin habilidades registradas'),
-                            SizedBox(height: 32.h),
-                            Row(
-                              children: [
-                                Expanded(child: _buildInfoBox(Icons.school_outlined, 'BECA', profile.needsScholarship ? 'Sí necesita' : 'No necesita', Colors.purple)),
-                                SizedBox(width: 16.w),
-                                Expanded(child: _buildInfoBox(Icons.flight_takeoff, 'EXTRANJERO', profile.studyAbroad ? 'Le interesa' : 'No indicado', Colors.blue)),
-                              ],
-                            ),
-                            SizedBox(height: 32.h),
-                            _buildVocationalClarity(profile.vocationalClarity),
-                            SizedBox(height: 40.h),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (authProvider.isLoading)
-                      Container(
-                        color: Colors.black26,
-                        child: const Center(child: CircularProgressIndicator(color: Colors.white)),
-                      ),
-                  ],
-                ),
-      bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
-  String _subtitle(String? groupName) {
-    if (groupName != null && groupName.trim().isNotEmpty) {
-      return 'Estudiante • $groupName';
+  Widget _buildBody({
+    required StudentProfileProvider profileProvider,
+    required AuthProvider authProvider,
+    required String? avatarUrl,
+  }) {
+    final profile = profileProvider.profile;
+
+    if (profileProvider.isLoading && profile == null) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: StudentUiColors.primary,
+        ),
+      );
     }
+
+    if (profile == null) {
+      return StudentProfileEmptyState(
+        onRetry: profileProvider.fetchProfile,
+      );
+    }
+
+    return Stack(
+      children: [
+        RefreshIndicator(
+          color: StudentUiColors.primary,
+          onRefresh: profileProvider.fetchProfile,
+          child: ListView(
+            physics:
+            const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              24.w,
+              10.h,
+              24.w,
+              40.h,
+            ),
+            children: [
+              ProfileAvatarHeader(
+                avatarUrl: avatarUrl,
+                name: profile.name,
+                subtitle: _buildProfileSubtitle(
+                  profile.groupName,
+                ),
+                onAvatarTap: () {
+                  showAvatarPickerSheet(
+                    context: context,
+                    authProvider:
+                    context.read<AuthProvider>(),
+                    profileProvider: context
+                        .read<StudentProfileProvider>(),
+                  );
+                },
+              ),
+              SizedBox(height: 32.h),
+              ProfileChipSection(
+                icon: Icons.book_outlined,
+                title: 'Materias favoritas',
+                items: profile.subjectsLiked,
+                backgroundColor:
+                const Color(0xFFE3F2FD),
+                textColor: Colors.blue,
+                emptyText:
+                'Sin materias favoritas registradas',
+              ),
+              SizedBox(height: 24.h),
+              ProfileChipSection(
+                icon: Icons.block_outlined,
+                title: 'Materias que no te gustan',
+                items: profile.subjectsDisliked,
+                backgroundColor:
+                const Color(0xFFFFEBEE),
+                textColor: Colors.redAccent,
+                emptyText:
+                'Sin materias registradas',
+              ),
+              SizedBox(height: 24.h),
+              ProfileChipSection(
+                icon: Icons.favorite_border,
+                title: 'Intereses',
+                items: profile.interests,
+                backgroundColor:
+                const Color(0xFFF3E5F5),
+                textColor: Colors.purple,
+                emptyText:
+                'Sin intereses registrados',
+              ),
+              SizedBox(height: 24.h),
+              ProfileChipSection(
+                icon: Icons.lightbulb_outline,
+                title: 'Habilidades',
+                items: profile.skills,
+                backgroundColor:
+                const Color(0xFFE8F5E9),
+                textColor: Colors.green,
+                emptyText:
+                'Sin habilidades registradas',
+              ),
+              SizedBox(height: 32.h),
+              ProfilePreferencesRow(
+                needsScholarship:
+                profile.needsScholarship,
+                studyAbroad: profile.studyAbroad,
+              ),
+              SizedBox(height: 32.h),
+              VocationalClarityCard(
+                clarity: profile.vocationalClarity,
+              ),
+              if (profileProvider.errorMessage != null) ...[
+                SizedBox(height: 20.h),
+                _ProfileErrorMessage(
+                  message:
+                  profileProvider.errorMessage!,
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (authProvider.isLoading)
+          const Positioned.fill(
+            child: ColoredBox(
+              color: Colors.black26,
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _buildProfileSubtitle(String? groupName) {
+    final cleanGroupName = groupName?.trim();
+
+    if (cleanGroupName != null &&
+        cleanGroupName.isNotEmpty) {
+      return 'Estudiante • $cleanGroupName';
+    }
+
     return 'Estudiante • Sin grupo asignado';
   }
+}
 
-  Widget _buildEmptyState(StudentProfileProvider provider) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(24.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_off_outlined, size: 60.sp, color: Colors.grey),
-            SizedBox(height: 16.h),
-            Text('No se pudo cargar tu perfil', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: darkText)),
-            SizedBox(height: 16.h),
-            ElevatedButton(
-              onPressed: provider.fetchProfile,
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
-              child: const Text('Reintentar'),
-            ),
-          ],
+class _ProfileErrorMessage extends StatelessWidget {
+  final String message;
+
+  const _ProfileErrorMessage({
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(
+          color: Colors.red.shade100,
         ),
       ),
-    );
-  }
-
-  Widget _buildSectionHeader(IconData icon, String title) {
-    return Row(
-      children: [
-        Icon(icon, size: 20.sp, color: primaryColor),
-        SizedBox(width: 8.w),
-        Text(title, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold, color: darkText)),
-      ],
-    );
-  }
-
-  Widget _buildChipList(List<String> items, Color bgColor, Color textColor, String emptyText) {
-    if (items.isEmpty) {
-      return Text(emptyText, style: TextStyle(color: Colors.grey[500], fontSize: 13.sp));
-    }
-    return Wrap(
-      spacing: 8.w,
-      runSpacing: 8.h,
-      children: items.map((item) {
-        return Chip(
-          label: Text(item, style: TextStyle(color: textColor, fontSize: 12.sp, fontWeight: FontWeight.w600)),
-          backgroundColor: bgColor,
-          side: BorderSide.none,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildInfoBox(IconData icon, String label, String value, Color color) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: color.withOpacity(0.12)),
-      ),
-      child: Column(
+      child: Row(
         children: [
-          Icon(icon, color: color, size: 22.sp),
-          SizedBox(height: 8.h),
-          Text(label, style: TextStyle(fontSize: 9.sp, fontWeight: FontWeight.bold, color: Colors.grey[600])),
-          SizedBox(height: 4.h),
-          Text(value, textAlign: TextAlign.center, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold, color: darkText)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVocationalClarity(int clarity) {
-    final value = (clarity.clamp(1, 10)) / 10;
-    String label = 'Baja';
-    if (clarity >= 7) label = 'Alta';
-    if (clarity >= 4 && clarity < 7) label = 'Media';
-
-    return Container(
-      padding: EdgeInsets.all(20.w),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2E1A47),
-        borderRadius: BorderRadius.circular(24.r),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Claridad vocacional', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8.r)),
-                child: Text(label, style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.bold)),
+          const Icon(
+            Icons.error_outline,
+            color: Colors.redAccent,
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
               ),
-            ],
-          ),
-          SizedBox(height: 20.h),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10.r),
-            child: LinearProgressIndicator(value: value, minHeight: 12.h, backgroundColor: Colors.white24, color: Colors.white),
-          ),
-          SizedBox(height: 12.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('1', style: TextStyle(color: Colors.white70, fontSize: 11.sp)),
-              Text('$clarity / 10', style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.bold)),
-              Text('10', style: TextStyle(color: Colors.white70, fontSize: 11.sp)),
-            ],
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      selectedItemColor: primaryColor,
-      unselectedItemColor: Colors.grey[400],
-      currentIndex: 1,
-      selectedFontSize: 10.sp,
-      unselectedFontSize: 10.sp,
-      onTap: (index) {
-        switch (index) {
-          case 0: context.go(AppRoutes.home.path); break;
-          case 1: break;
-          case 2: context.push(AppRoutes.games.path); break;
-          case 3: context.push(AppRoutes.vocationalResults.path); break;
-          case 4: break;
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.psychology_outlined), label: 'Perfil'),
-        BottomNavigationBarItem(icon: Icon(Icons.sports_esports_outlined), label: 'Minijuegos'),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), label: 'Resultados'),
-        BottomNavigationBarItem(icon: Icon(Icons.account_circle_outlined), label: 'Cuenta'),
-      ],
     );
   }
 }

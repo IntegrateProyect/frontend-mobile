@@ -5,11 +5,16 @@ class UniversityEntity {
   final String? logoUrl;
   final List<String> availableCareers;
 
-  UniversityEntity({
+  final String? representativeUserId;
+  final bool isRegistered;
+
+  const UniversityEntity({
     required this.id,
     required this.name,
-    required this.location,
+    this.location = 'Catálogo nacional RENOES',
     this.logoUrl,
-    required this.availableCareers,
+    this.availableCareers = const [],
+    this.representativeUserId,
+    this.isRegistered = false,
   });
 }

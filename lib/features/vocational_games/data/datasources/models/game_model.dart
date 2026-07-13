@@ -1,7 +1,7 @@
 import '../../../domain/entities/game_entity.dart';
 
 class GameModel extends GameEntity {
-  GameModel({
+  const GameModel({
     required super.id,
     required super.title,
     required super.description,
@@ -9,13 +9,24 @@ class GameModel extends GameEntity {
     required super.type,
   });
 
-  factory GameModel.fromJson(Map<String, dynamic> json) {
+  factory GameModel.fromJson(
+      Map<String, dynamic> json,
+      ) {
     return GameModel(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      imageUrl: json['imageUrl'] ?? '',
-      type: json['type'] ?? '',
+      id: (json['id'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      description:
+      (json['description'] ?? '').toString(),
+      imageUrl: (
+          json['imageUrl'] ??
+              json['image_url'] ??
+              ''
+      ).toString(),
+      type: (
+          json['type'] ??
+              json['category'] ??
+              'RIASEC'
+      ).toString(),
     );
   }
 
@@ -25,7 +36,7 @@ class GameModel extends GameEntity {
       'title': title,
       'description': description,
       'imageUrl': imageUrl,
-      'type': type,
+      'category': type,
     };
   }
 }

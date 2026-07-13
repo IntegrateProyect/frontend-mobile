@@ -2,16 +2,23 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/api/IApi.dart';
 import '../../../../core/utils/UserService.dart';
+
+import '../../../vocational_games/domain/usecases/get_available_games_usecase.dart';
+
 import '../../domain/entities/student_profile_entity.dart';
 import '../../domain/entities/vocational_result_entity.dart';
+import '../../domain/entities/appointment_entity.dart';
 import '../../domain/usecases/get_student_profile_usecase.dart';
 import '../../domain/usecases/get_vocational_results_usecase.dart';
-import '../../../vocational_games/domain/usecases/get_available_games_usecase.dart';
+import '../../domain/usecases/get_student_appointments_usecase.dart';
+import '../../domain/usecases/schedule_appointment_usecase.dart';
 
 class StudentHomeProvider extends ChangeNotifier {
   final GetStudentProfileUseCase _getProfileUseCase;
   final GetVocationalResultsUseCase _getResultsUseCase;
   final GetAvailableGamesUseCase _getGamesUseCase;
+  final GetStudentAppointmentsUseCase _getAppointmentsUseCase;
+  final ScheduleAppointmentUseCase _scheduleAppointmentUseCase;
   final UserService _userService;
   final IApi _api;
 
@@ -19,11 +26,15 @@ class StudentHomeProvider extends ChangeNotifier {
     required GetStudentProfileUseCase getProfileUseCase,
     required GetVocationalResultsUseCase getResultsUseCase,
     required GetAvailableGamesUseCase getGamesUseCase,
+    required GetStudentAppointmentsUseCase getAppointmentsUseCase,
+    required ScheduleAppointmentUseCase scheduleAppointmentUseCase,
     required UserService userService,
     required IApi api,
   })  : _getProfileUseCase = getProfileUseCase,
         _getResultsUseCase = getResultsUseCase,
         _getGamesUseCase = getGamesUseCase,
+        _getAppointmentsUseCase = getAppointmentsUseCase,
+        _scheduleAppointmentUseCase = scheduleAppointmentUseCase,
         _userService = userService,
         _api = api;
 
@@ -31,14 +42,27 @@ class StudentHomeProvider extends ChangeNotifier {
   List<VocationalResultEntity> _results = [];
   List<dynamic> _availableGames = [];
   List<dynamic> _studentGroups = [];
+  List<AppointmentEntity> _appointments = [];
 
   bool _isLoading = false;
   String? _errorMessage;
 
   StudentProfileEntity? get profile => _profile;
-  List<VocationalResultEntity> get results => _results;
-  List<dynamic> get availableGames => _availableGames;
-  List<dynamic> get studentGroups => _studentGroups;
+
+  List<VocationalResultEntity> get results {
+    return List.unmodifiable(_results);
+  }
+
+  List<dynamic> get availableGames {
+    return List.unmodifiable(_availableGames);
+  }
+
+  List<dynamic> get studentGroups {
+    return List.unmodifiable(_studentGroups);
+  }
+
+  List<AppointmentEntity> get appointments => _appointments;
+
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -56,10 +80,7 @@ class StudentHomeProvider extends ChangeNotifier {
     final email = _profile?.email.trim();
 
     if (email != null && email.isNotEmpty) {
-      final beforeAt = email.split('@').first;
-      if (beforeAt.isNotEmpty) {
-        return beforeAt;
-      }
+      return email.split('@').first;
     }
 
     return 'Estudiante';
@@ -68,37 +89,30 @@ class StudentHomeProvider extends ChangeNotifier {
   Map<String, dynamic>? get currentGroup {
     if (_studentGroups.isEmpty) return null;
 
-    final raw = _studentGroups.first;
+    final group = _studentGroups.first;
 
-    if (raw is Map<String, dynamic>) return raw;
-    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (group is Map<String, dynamic>) {
+      return group;
+    }
+
+    if (group is Map) {
+      return Map<String, dynamic>.from(group);
+    }
 
     return null;
   }
 
   String get currentGroupName {
-    final group = currentGroup;
-
-    return group?['name']?.toString() ??
-        group?['groupName']?.toString() ??
+    return currentGroup?['name']?.toString() ??
+        currentGroup?['groupName']?.toString() ??
         'Grupo asignado';
   }
 
   String get currentGroupCode {
-    final group = currentGroup;
-
-    return group?['accessCode']?.toString() ??
-        group?['access_code']?.toString() ??
-        group?['code']?.toString() ??
+    return currentGroup?['accessCode']?.toString() ??
+        currentGroup?['access_code']?.toString() ??
+        currentGroup?['code']?.toString() ??
         'Sin código';
-  }
-
-  String get groupDescription {
-    if (!hasGroup) {
-      return 'Aún no perteneces a un grupo. Ingresa el código que te dio tu orientador.';
-    }
-
-    return 'Grupo: $currentGroupName\nCódigo: $currentGroupCode';
   }
 
   Future<void> loadHomeData() async {
@@ -109,26 +123,21 @@ class StudentHomeProvider extends ChangeNotifier {
     try {
       await _loadLocalUser();
 
-      final remoteProfile = await _safeLoadProfile();
-      if (remoteProfile != null) {
-        _profile = remoteProfile;
+      final profile = await _loadProfileSafely();
+
+      if (profile != null) {
+        _profile = profile;
       }
 
-      final groups = await _safeLoadStudentGroups();
-      _studentGroups = groups ?? [];
+      _studentGroups = await _loadGroupsSafely();
+      _results = await _loadResultsSafely();
+      _availableGames = await _loadGamesSafely();
+      _appointments = await _loadAppointmentsSafely();
+    } catch (error) {
+      debugPrint('Error en StudentHomeProvider: $error');
 
-      final results = await _safeLoadResults();
-      if (results != null) {
-        _results = results;
-      }
-
-      final games = await _safeLoadGames();
-      if (games != null) {
-        _availableGames = games;
-      }
-    } catch (e) {
-      debugPrint('XXX Error StudentHomeProvider: $e');
-      _errorMessage = 'No se pudo cargar la información del alumno.';
+      _errorMessage =
+      'No se pudo cargar la información del estudiante.';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -139,8 +148,9 @@ class StudentHomeProvider extends ChangeNotifier {
     final code = accessCode.trim();
 
     if (code.isEmpty) {
-      _errorMessage = 'Ingresa el código del grupo';
+      _errorMessage = 'Ingresa el código del grupo.';
       notifyListeners();
+
       return false;
     }
 
@@ -160,8 +170,8 @@ class StudentHomeProvider extends ChangeNotifier {
       _studentGroups = await _api.getStudentGroups(token);
 
       return true;
-    } catch (e) {
-      final message = e.toString();
+    } catch (error) {
+      final message = error.toString();
 
       if (message.contains('Ya eres miembro')) {
         final token = await _userService.getToken();
@@ -173,8 +183,8 @@ class StudentHomeProvider extends ChangeNotifier {
         return true;
       }
 
-      debugPrint('XXX ERROR JOIN GROUP: $e');
       _errorMessage = message.replaceAll('Exception: ', '');
+
       return false;
     } finally {
       _isLoading = false;
@@ -184,39 +194,39 @@ class StudentHomeProvider extends ChangeNotifier {
 
   Future<void> _loadLocalUser() async {
     try {
-      final localUser = await _userService.getUser();
+      final user = await _userService.getUser();
 
-      if (localUser != null && _profile == null) {
+      if (user != null && _profile == null) {
         _profile = StudentProfileEntity(
-          id: localUser.id,
-          name: _cleanName(localUser.name),
-          email: localUser.email,
+          id: user.id,
+          name: _cleanName(user.name),
+          email: user.email,
         );
       }
-    } catch (e) {
-      debugPrint('XXX Usuario local no cargado: $e');
+    } catch (error) {
+      debugPrint('Usuario local no cargado: $error');
     }
   }
 
-  Future<StudentProfileEntity?> _safeLoadProfile() async {
+  Future<StudentProfileEntity?> _loadProfileSafely() async {
     try {
-      final profile = await _getProfileUseCase.call();
+      final profile = await _getProfileUseCase();
 
       if (profile.name.trim().isEmpty ||
-          profile.name.trim().toLowerCase() == 'estudiante') {
+          profile.name.toLowerCase() == 'estudiante') {
         return profile.copyWith(
-          name: _nameFromEmail(profile.email),
+          name: profile.email.split('@').first,
         );
       }
 
       return profile;
-    } catch (e) {
-      debugPrint('XXX Perfil remoto no cargado: $e');
+    } catch (error) {
+      debugPrint('Perfil remoto no cargado: $error');
       return null;
     }
   }
 
-  Future<List<dynamic>?> _safeLoadStudentGroups() async {
+  Future<List<dynamic>> _loadGroupsSafely() async {
     try {
       final token = await _userService.getToken();
 
@@ -225,27 +235,52 @@ class StudentHomeProvider extends ChangeNotifier {
       }
 
       return await _api.getStudentGroups(token);
-    } catch (e) {
-      debugPrint('XXX Grupos del alumno no cargados: $e');
+    } catch (error) {
       return [];
     }
   }
 
-  Future<List<VocationalResultEntity>?> _safeLoadResults() async {
+  Future<List<VocationalResultEntity>>
+  _loadResultsSafely() async {
     try {
-      return await _getResultsUseCase.call();
-    } catch (e) {
-      debugPrint('XXX Resultados no cargados: $e');
-      return null;
+      return await _getResultsUseCase();
+    } catch (error) {
+      return [];
     }
   }
 
-  Future<List<dynamic>?> _safeLoadGames() async {
+  Future<List<dynamic>> _loadGamesSafely() async {
     try {
-      return await _getGamesUseCase.call();
-    } catch (e) {
-      debugPrint('XXX Juegos no cargados: $e');
-      return null;
+      return await _getGamesUseCase();
+    } catch (error) {
+      return [];
+    }
+  }
+
+  Future<List<AppointmentEntity>> _loadAppointmentsSafely() async {
+    try {
+      return await _getAppointmentsUseCase();
+    } catch (error) {
+      debugPrint('Error cargando citas: $error');
+      return [];
+    }
+  }
+
+  Future<bool> scheduleAppointment(DateTime date, String motive) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _scheduleAppointmentUseCase(date, motive);
+      _appointments = await _loadAppointmentsSafely();
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString().replaceAll('Exception: ', '');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -256,26 +291,6 @@ class StudentHomeProvider extends ChangeNotifier {
       return 'Estudiante';
     }
 
-    if (name.toLowerCase() == 'estudiante') {
-      return 'Estudiante';
-    }
-
     return name;
-  }
-
-  String _nameFromEmail(String email) {
-    final cleanEmail = email.trim();
-
-    if (cleanEmail.isEmpty) {
-      return 'Estudiante';
-    }
-
-    final beforeAt = cleanEmail.split('@').first;
-
-    if (beforeAt.isEmpty) {
-      return 'Estudiante';
-    }
-
-    return beforeAt;
   }
 }
