@@ -79,12 +79,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     icon: Icons.account_balance_outlined,
                     role: 'universidad',
                   ),
-                  _buildRoleCard(
-                    title: 'Alumni',
-                    description: 'Comparte tu experiencia profesional y ayuda a otros a elegir su camino.',
-                    icon: Icons.person_outline,
-                    role: 'alumni',
-                  ),
+
                 ],
               ),
             ),

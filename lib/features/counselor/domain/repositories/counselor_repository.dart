@@ -1,3 +1,5 @@
+
+import '../../../student/domain/entities/appointment_entity.dart';
 import '../entities/counselor_profile_entity.dart';
 import '../entities/student_consultation_entity.dart';
 
@@ -25,4 +27,7 @@ abstract class CounselorRepository {
 
   // Stats
   Future<Map<String, dynamic>> getStats();
+
+  // Appointments
+  Future<List<AppointmentEntity>> getAppointments();
 }

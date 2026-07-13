@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import '../../features/auth/data/datasources/models/user_model.dart';
 
 abstract class IApi {
   // --- 🔐 SERVICIO DE AUTENTICACIÓN ---
@@ -79,6 +78,10 @@ abstract class IApi {
 
   Future<List<dynamic>> getStudentGroups(String token);
 
+  // --- 📅 CITAS (STUDENT) ---
+  Future<Map<String, dynamic>> scheduleAppointment(String token, Map<String, dynamic> data);
+  Future<List<dynamic>> getStudentAppointments(String token);
+
   // --- 🎓 SERVICIO DE ORIENTADORES ---
 
   Future<Map<String, dynamic>> createGroup(
@@ -126,6 +129,9 @@ abstract class IApi {
 
   Future<Map<String, dynamic>> getCounselorStats(String token);
 
+  // --- 📅 CITAS (COUNSELOR) ---
+  Future<List<dynamic>> getCounselorAppointments(String token);
+
   // --- 💬 SERVICIO DE CHAT ---
 
   Future<Map<String, dynamic>> getChatHistory(
@@ -153,6 +159,13 @@ abstract class IApi {
     String gameId,
   );
 
+
+  Future<Map<String, dynamic>> getCatalogUniversities(
+      String token, {
+        int page = 1,
+        int limit = 20,
+        String search = '',
+      });
   Future<Map<String, dynamic>> startGame(
     String token,
     String gameId,

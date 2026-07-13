@@ -74,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return PlatformScaffold(
       backgroundColor: Colors.white,
       material: (_, __) => MaterialScaffoldData(
-        resizeToAvoidBottomInset: true, // Ahora permitimos el ajuste para que el scroll funcione con teclado
+        resizeToAvoidBottomInset: true,
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -87,16 +87,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 child: IntrinsicHeight(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center, // ESTO CENTRA TODO VERTICALMENTE
                     children: [
-                      SizedBox(height: 40.h),
+                      SizedBox(height: 80.h), // Aumentado el espacio superior
                       
                       // LOGO Y TÍTULO
                       Column(
                         children: [
                           Container(
-                            width: 90.w,
-                            height: 90.w,
+                            width: 100.w,
+                            height: 100.w,
                             decoration: BoxDecoration(
                               color: const Color(0xFF311B92).withOpacity(0.05),
                               shape: BoxShape.circle,
@@ -104,16 +103,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             child: Icon(
                               Icons.explore,
-                              size: 45.sp,
+                              size: 50.sp,
                               color: const Color(0xFF311B92),
                             ),
                           ),
-                          SizedBox(height: 24.h),
+                          SizedBox(height: 28.h),
                           Text(
                             'Oriéntate+',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 32.sp, 
+                              fontSize: 34.sp, 
                               fontWeight: FontWeight.w900, 
                               color: const Color(0xFF1D1B4B),
                               letterSpacing: -1.0,
@@ -123,38 +122,38 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             'Tu futuro profesional comienza aquí.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+                            style: TextStyle(fontSize: 15.sp, color: Colors.grey[600]),
                           ),
                         ],
                       ),
                       
-                      SizedBox(height: 45.h),
+                      SizedBox(height: 60.h), // Más espacio antes del formulario
 
                       // FORMULARIO
                       _buildLabel('Correo Electrónico'),
-                      SizedBox(height: 8.h),
+                      SizedBox(height: 10.h),
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(fontSize: 15.sp),
+                        style: TextStyle(fontSize: 16.sp),
                         decoration: _inputStyle(hint: 'ejemplo@correo.com', icon: Icons.email_outlined),
                       ),
                       
-                      SizedBox(height: 20.h),
+                      SizedBox(height: 24.h),
 
                       _buildLabel('Contraseña'),
-                      SizedBox(height: 8.h),
+                      SizedBox(height: 10.h),
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
-                        style: TextStyle(fontSize: 15.sp),
+                        style: TextStyle(fontSize: 16.sp),
                         decoration: _inputStyle(
                           hint: '••••••••', 
                           icon: Icons.lock_outline,
                           suffix: IconButton(
                             icon: Icon(
                               _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, 
-                              size: 20.sp,
+                              size: 22.sp,
                               color: Colors.grey,
                             ),
                             onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -162,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       
-                      SizedBox(height: 45.h),
+                      SizedBox(height: 50.h),
 
                       // BOTÓN DE ACCIÓN
                       SizedBox(
@@ -178,32 +177,31 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: authProvider.isLoading
                               ? SizedBox(
-                                  height: 22.h, 
-                                  width: 22.h, 
+                                  height: 24.h, 
+                                  width: 24.h, 
                                   child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                                 )
                               : Text('Iniciar Sesión', style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.bold)),
                         ),
                       ),
                       
-                      const Spacer(), // Empuja el enlace de registro hacia abajo
+                      SizedBox(height: 32.h),
                       
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24.h),
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          children: [
-                            Text('¿No tienes una cuenta? ', style: TextStyle(color: Colors.grey, fontSize: 14.sp)),
-                            GestureDetector(
-                              onTap: () => context.push('/role-selection'),
-                              child: Text(
-                                'Regístrate aquí', 
-                                style: TextStyle(color: const Color(0xFF311B92), fontWeight: FontWeight.bold, fontSize: 14.sp),
-                              ),
+                      // Enlace de registro
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        children: [
+                          Text('¿No tienes una cuenta? ', style: TextStyle(color: Colors.grey, fontSize: 14.sp)),
+                          GestureDetector(
+                            onTap: () => context.push('/role-selection'),
+                            child: Text(
+                              'Regístrate aquí', 
+                              style: TextStyle(color: const Color(0xFF311B92), fontWeight: FontWeight.bold, fontSize: 14.sp),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
+                      SizedBox(height: 40.h),
                     ],
                   ),
                 ),
@@ -220,7 +218,7 @@ class _LoginScreenState extends State<LoginScreen> {
       alignment: Alignment.centerLeft,
       child: Text(
         text,
-        style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700, color: const Color(0xFF1D1B4B)),
+        style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700, color: const Color(0xFF1D1B4B)),
       ),
     );
   }
@@ -228,11 +226,11 @@ class _LoginScreenState extends State<LoginScreen> {
   InputDecoration _inputStyle({required String hint, required IconData icon, Widget? suffix}) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: Icon(icon, color: const Color(0xFF311B92), size: 22.sp),
+      prefixIcon: Icon(icon, color: const Color(0xFF311B92), size: 24.sp),
       suffixIcon: suffix,
       filled: true,
       fillColor: const Color(0xFFF8F9FE),
-      contentPadding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 20.w),
+      contentPadding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 20.w),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16.r), 
         borderSide: BorderSide(color: Colors.grey[200]!),

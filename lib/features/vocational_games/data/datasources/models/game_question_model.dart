@@ -1,31 +1,60 @@
 import '../../../domain/entities/game_question_entity.dart';
 
 class GameQuestionModel extends GameQuestionEntity {
-  GameQuestionModel({
+  const GameQuestionModel({
     required super.id,
     required super.text,
+    required super.type,
     required super.options,
   });
 
-  factory GameQuestionModel.fromJson(Map<String, dynamic> json) {
+  factory GameQuestionModel.fromJson(
+      Map<String, dynamic> json,
+      ) {
     return GameQuestionModel(
       id: (json['id'] ?? '').toString(),
-      text: (json['text'] ?? json['question'] ?? '').toString(),
-      options: _options(json['options']),
+      text: (
+          json['text'] ??
+              json['question'] ??
+              ''
+      ).toString(),
+      type: (
+          json['type'] ??
+              'MULTIPLE_CHOICE'
+      ).toString(),
+      options: _parseOptions(json['options']),
     );
   }
 
-  static List<GameQuestionOptionEntity> _options(dynamic value) {
-    if (value is List) {
-      return value.map((e) {
-        final map = Map<String, dynamic>.from(e);
-        return GameQuestionOptionEntity(
-          id: (map['id'] ?? '').toString(),
-          text: (map['text'] ?? '').toString(),
-          weights: Map<String, dynamic>.from(map['weights'] ?? {}),
-        );
-      }).toList();
+  static List<GameQuestionOptionEntity> _parseOptions(
+      dynamic value,
+      ) {
+    if (value is! List) {
+      return [];
     }
-    return [];
+
+    return value.map((item) {
+      final map = Map<String, dynamic>.from(item);
+
+      return GameQuestionOptionEntity(
+        id: (map['id'] ?? '').toString(),
+        text: (map['text'] ?? '').toString(),
+        weights: _parseWeights(map['weights']),
+      );
+    }).toList();
+  }
+
+  static Map<String, dynamic> _parseWeights(
+      dynamic value,
+      ) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    return {};
   }
 }

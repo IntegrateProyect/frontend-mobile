@@ -1,11 +1,13 @@
 class GameQuestionEntity {
   final String id;
   final String text;
+  final String type;
   final List<GameQuestionOptionEntity> options;
 
-  GameQuestionEntity({
+  const GameQuestionEntity({
     required this.id,
     required this.text,
+    required this.type,
     required this.options,
   });
 }
@@ -15,7 +17,7 @@ class GameQuestionOptionEntity {
   final String text;
   final Map<String, dynamic> weights;
 
-  GameQuestionOptionEntity({
+  const GameQuestionOptionEntity({
     required this.id,
     required this.text,
     required this.weights,

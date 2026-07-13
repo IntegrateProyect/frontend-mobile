@@ -8,6 +8,9 @@ import 'package:orientate/features/counselor/presentation/providers/counselor_pr
 import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
 import 'package:orientate/core/routes/AppRoutes.dart';
 import 'package:orientate/features/student/domain/entities/student_profile_entity.dart';
+import 'package:orientate/features/student/domain/entities/appointment_entity.dart';
+
+import '../components/home/counselor_appointments_section.dart';
 
 class CounselorHomeScreen extends StatefulWidget {
   const CounselorHomeScreen({super.key});
@@ -103,12 +106,12 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
             label: 'Alumnos',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.warning_amber_rounded),
-            label: 'Alertas',
+            icon: Icon(Icons.calendar_month_outlined),
+            label: 'Agenda',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.description_outlined),
-            label: 'Reportes',
+            icon: Icon(Icons.warning_amber_rounded),
+            label: 'Alertas',
           ),
         ],
       ),
@@ -124,9 +127,9 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
       case 2:
         return _buildStudentsTab(provider);
       case 3:
-        return _buildAlertsTab(provider);
+        return _buildAppointmentsTab(provider);
       case 4:
-        return _buildReportsTab();
+        return _buildAlertsTab(provider);
       default:
         return const SizedBox.shrink();
     }
@@ -171,34 +174,13 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
               ],
             ),
 
-            SizedBox(height: 12.h),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMainStatCard(
-                    'SIN AVANCE',
-                    provider.lowProgressCount.toString(),
-                    Icons.person_off_outlined,
-                    Colors.grey,
-                    'Últimos 15 días',
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: _buildMainStatCard(
-                    'INDECISIÓN ALTA',
-                    provider.highIndecisionCount.toString(),
-                    Icons.error_outline,
-                    Colors.red,
-                    'Riesgo de abandono',
-                  ),
-                ),
-              ],
-            ),
-
             SizedBox(height: 20.h),
-            _buildMiniStatsRow(provider),
+
+            // SECCIÓN DE CITAS EN EL HOME
+            CounselorAppointmentsSection(
+              appointments: provider.appointments,
+              onSeeAll: () => setState(() => _selectedIndex = 3),
+            ),
 
             SizedBox(height: 32.h),
 
@@ -241,6 +223,105 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
             SizedBox(height: 40.h),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAppointmentsTab(CounselorProvider provider) {
+    if (provider.appointments.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.calendar_today_outlined, size: 80.sp, color: Colors.grey[300]),
+            SizedBox(height: 16.h),
+            Text(
+              'No tienes citas programadas',
+              style: TextStyle(fontSize: 16.sp, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: provider.loadDashboardData,
+      child: ListView.builder(
+        padding: EdgeInsets.all(20.w),
+        itemCount: provider.appointments.length,
+        itemBuilder: (context, index) {
+          final apt = provider.appointments[index];
+          return _buildFullAppointmentCard(apt);
+        },
+      ),
+    );
+  }
+
+  Widget _buildFullAppointmentCard(AppointmentEntity apt) {
+    final dateStr = DateFormat('EEEE d MMMM', 'es').format(apt.sessionDate);
+    final timeStr = DateFormat('hh:mm a').format(apt.sessionDate);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14.r),
+            ),
+            child: Icon(Icons.event_note, color: primaryColor, size: 24.sp),
+          ),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  apt.motive,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp, color: const Color(0xFF1D1B4B)),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  '$dateStr • $timeStr',
+                  style: TextStyle(fontSize: 13.sp, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                ),
+                SizedBox(height: 12.h),
+                Row(
+                  children: [
+                    Icon(Icons.person_outline, size: 14.sp, color: Colors.grey),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'Alumno ID: ${apt.studentId.substring(0, 8)}...',
+                      style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Text(
+              apt.status,
+              style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -575,15 +656,6 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
     );
   }
 
-  Widget _buildReportsTab() {
-    return Center(
-      child: Text(
-        'Reportes en desarrollo',
-        style: TextStyle(color: Colors.grey[500], fontSize: 16.sp),
-      ),
-    );
-  }
-
   Widget _buildMiniStatsRow(CounselorProvider provider) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -598,7 +670,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
           Container(height: 20.h, width: 1.w, color: Colors.grey[100]),
           _buildMiniStat(provider.groupsCount.toString(), 'GRUPOS'),
           Container(height: 20.h, width: 1.w, color: Colors.grey[100]),
-          _buildMiniStat(provider.reportesCount.toString(), 'REPORTES'),
+          _buildMiniStat(provider.appointments.length.toString(), 'CITAS'),
         ],
       ),
     );
@@ -625,14 +697,14 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
               () => _showCreateGroupDialog(context),
         ),
         _buildQuickAction(
+          'Ver Agenda',
+          Icons.calendar_today_outlined,
+              () => setState(() => _selectedIndex = 3),
+        ),
+        _buildQuickAction(
           'Mensajes',
           Icons.chat_bubble_outline_rounded,
               () => context.push(AppRoutes.chatContacts.path),
-        ),
-        _buildQuickAction(
-          'Ver Reportes',
-          Icons.description_outlined,
-              () => setState(() => _selectedIndex = 4),
         ),
       ],
     );

@@ -1,127 +1,240 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import 'package:orientate/features/student/presentation/providers/student_results_provider.dart';
 import 'package:orientate/core/routes/AppRoutes.dart';
+import 'package:orientate/features/student/presentation/providers/student_results_provider.dart';
+
+import '../components/common/student_bottom_navigation_bar.dart';
+import '../components/common/student_ui_colors.dart';
 
 class VocationalResultsScreen extends StatefulWidget {
   const VocationalResultsScreen({super.key});
 
   @override
-  State<VocationalResultsScreen> createState() =>
-      _VocationalResultsScreenState();
+  State<VocationalResultsScreen> createState() {
+    return _VocationalResultsScreenState();
+  }
 }
 
-class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
-  static const Color primaryColor = Color(0xFF311B92);
-  static const Color darkText = Color(0xFF1D1B4B);
-  static const Color bgColor = Color(0xFFF8F9FE);
-
+class _VocationalResultsScreenState
+    extends State<VocationalResultsScreen> {
   @override
   void initState() {
     super.initState();
+
     Future.microtask(() {
+      if (!mounted) return;
+
       context.read<StudentResultsProvider>().fetchResults();
     });
+  }
+
+  void _goToStudentHome() {
+    if (!mounted) return;
+
+    context.go(AppRoutes.home.path);
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<StudentResultsProvider>();
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'Tus Resultados',
-          style: TextStyle(
-            color: darkText,
-            fontWeight: FontWeight.w900,
-            fontSize: 18.sp,
+    return PopScope(
+      /*
+       * Esta pantalla se abre mediante context.go().
+       * Por eso no debe ejecutar context.pop(), ya que puede no existir
+       * una pantalla anterior dentro de la pila de GoRouter.
+       */
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        _goToStudentHome();
+      },
+      child: Scaffold(
+        backgroundColor: StudentUiColors.background,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            tooltip: 'Regresar al inicio',
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.black,
+            ),
+            onPressed: _goToStudentHome,
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.black),
-            onPressed: () {},
+          title: Text(
+            'Tus Resultados',
+            style: TextStyle(
+              color: StudentUiColors.darkText,
+              fontWeight: FontWeight.w900,
+              fontSize: 18.sp,
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : RefreshIndicator(
-        color: primaryColor,
-        onRefresh: provider.fetchResults,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 28.h),
-          children: [
-            _buildMainResultCard(provider),
-            SizedBox(height: 22.h),
-            _buildSectionHeader(
-              title: 'Fortalezas Detectadas',
-              action: 'Ver todas',
-            ),
-            SizedBox(height: 12.h),
-            _strengthItem(
-              icon: Icons.psychology_outlined,
-              title: 'Pensamiento Lógico',
-              text:
-              'Capacidad excepcional para resolver problemas complejos mediante el análisis.',
-              color: const Color(0xFF4285F4),
-            ),
-            SizedBox(height: 10.h),
-            _strengthItem(
-              icon: Icons.groups_2_outlined,
-              title: 'Colaboración',
-              text:
-              'Habilidad natural para trabajar en equipos multidisciplinarios con éxito.',
-              color: const Color(0xFF00A6A6),
-            ),
-            SizedBox(height: 10.h),
-            _strengthItem(
-              icon: Icons.workspace_premium_outlined,
-              title: 'Atención al Detalle',
-              text:
-              'Alta precisión en tareas técnicas y metodológicas.',
-              color: const Color(0xFF6A4CFF),
-            ),
-            SizedBox(height: 24.h),
-            Text(
-              'Intereses Principales',
-              style: TextStyle(
-                color: darkText,
-                fontSize: 17.sp,
-                fontWeight: FontWeight.w900,
+          actions: [
+            IconButton(
+              tooltip: 'Notificaciones',
+              icon: const Icon(
+                Icons.notifications_none,
+                color: Colors.black,
               ),
+              onPressed: () {
+                _showMessage(
+                  'Notificaciones próximamente',
+                );
+              },
             ),
-            SizedBox(height: 12.h),
-            _buildInterestChips(),
-            SizedBox(height: 26.h),
-            _buildClarityCard(),
-            SizedBox(height: 28.h),
-            _buildCareersButton(),
+            IconButton(
+              tooltip: 'Más opciones',
+              icon: const Icon(
+                Icons.more_vert,
+                color: Colors.black,
+              ),
+              onPressed: () {
+                _showMessage(
+                  'Más opciones próximamente',
+                );
+              },
+            ),
           ],
+        ),
+        body: _buildBody(provider),
+        bottomNavigationBar:
+        const StudentBottomNavigationBar(
+          currentIndex: 2,
         ),
       ),
     );
   }
 
-  Widget _buildMainResultCard(StudentResultsProvider provider) {
+  Widget _buildBody(
+      StudentResultsProvider provider,
+      ) {
+    if (provider.isLoading &&
+        provider.results.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: StudentUiColors.primary,
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: StudentUiColors.primary,
+      onRefresh: provider.fetchResults,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          18.w,
+          16.h,
+          18.w,
+          28.h,
+        ),
+        children: [
+          if (provider.errorMessage != null) ...[
+            _ResultsErrorCard(
+              message: provider.errorMessage!,
+              onRetry: provider.fetchResults,
+            ),
+            SizedBox(height: 18.h),
+          ],
+
+          _buildMainResultCard(provider),
+
+          SizedBox(height: 22.h),
+
+          _buildSectionHeader(
+            title: 'Fortalezas Detectadas',
+            action: 'Ver todas',
+            onActionPressed: () {
+              _showMessage(
+                'Listado completo próximamente',
+              );
+            },
+          ),
+
+          SizedBox(height: 12.h),
+
+          _strengthItem(
+            icon: Icons.psychology_outlined,
+            title: 'Pensamiento Lógico',
+            text:
+            'Capacidad excepcional para resolver problemas complejos mediante el análisis.',
+            color: const Color(0xFF4285F4),
+          ),
+
+          SizedBox(height: 10.h),
+
+          _strengthItem(
+            icon: Icons.groups_2_outlined,
+            title: 'Colaboración',
+            text:
+            'Habilidad natural para trabajar en equipos multidisciplinarios con éxito.',
+            color: StudentUiColors.teal,
+          ),
+
+          SizedBox(height: 10.h),
+
+          _strengthItem(
+            icon: Icons.workspace_premium_outlined,
+            title: 'Atención al Detalle',
+            text:
+            'Alta precisión en tareas técnicas y metodológicas.',
+            color: const Color(0xFF6A4CFF),
+          ),
+
+          SizedBox(height: 24.h),
+
+          Text(
+            'Intereses Principales',
+            style: TextStyle(
+              color: StudentUiColors.darkText,
+              fontSize: 17.sp,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+
+          SizedBox(height: 12.h),
+
+          _buildInterestChips(),
+
+          SizedBox(height: 26.h),
+
+          _buildClarityCard(provider),
+
+          SizedBox(height: 28.h),
+
+          _buildCareersButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainResultCard(
+      StudentResultsProvider provider,
+      ) {
     final hasResult = provider.results.isNotEmpty;
-    final topCareer = hasResult && provider.results.first.topCareer.isNotEmpty
-        ? provider.results.first.topCareer
+
+    final topCareer = hasResult &&
+        provider.results.first.topCareer.trim().isNotEmpty
+        ? provider.results.first.topCareer.trim()
         : 'Ingeniería y STEM';
 
     return Container(
@@ -139,7 +252,8 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7C4DFF).withOpacity(0.35),
+            color: const Color(0xFF7C4DFF)
+                .withOpacity(0.35),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -163,9 +277,14 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
               size: 42.sp,
             ),
           ),
+
           SizedBox(height: 14.h),
+
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 5.h),
+            padding: EdgeInsets.symmetric(
+              horizontal: 14.w,
+              vertical: 5.h,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.25),
               borderRadius: BorderRadius.circular(20.r),
@@ -179,7 +298,9 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
               ),
             ),
           ),
+
           SizedBox(height: 12.h),
+
           Text(
             topCareer,
             textAlign: TextAlign.center,
@@ -189,7 +310,9 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
               fontWeight: FontWeight.w900,
             ),
           ),
+
           SizedBox(height: 8.h),
+
           Text(
             'Tu perfil destaca por habilidades analíticas y pensamiento sistemático.',
             textAlign: TextAlign.center,
@@ -200,24 +323,30 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
+
           SizedBox(height: 22.h),
+
           Container(
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.16),
               borderRadius: BorderRadius.circular(18.r),
-              border: Border.all(color: Colors.white.withOpacity(0.18)),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.18),
+              ),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
                     children: [
                       Text(
                         'COMPATIBILIDAD',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.75),
+                          color:
+                          Colors.white.withOpacity(0.75),
                           fontSize: 10.sp,
                           fontWeight: FontWeight.w900,
                         ),
@@ -240,7 +369,10 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                    ),
                   ),
                   child: Icon(
                     Icons.check_circle_outline_rounded,
@@ -259,24 +391,29 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
   Widget _buildSectionHeader({
     required String title,
     required String action,
+    required VoidCallback onActionPressed,
   }) {
     return Row(
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            color: darkText,
-            fontSize: 17.sp,
-            fontWeight: FontWeight.w900,
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              color: StudentUiColors.darkText,
+              fontSize: 17.sp,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
-        const Spacer(),
-        Text(
-          '$action  ›',
-          style: TextStyle(
-            color: const Color(0xFF2563EB),
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w900,
+        TextButton(
+          onPressed: onActionPressed,
+          child: Text(
+            '$action  ›',
+            style: TextStyle(
+              color: const Color(0xFF2563EB),
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
       ],
@@ -294,7 +431,9 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(
+          color: const Color(0xFFE5E7EB),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.025),
@@ -312,17 +451,24 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
               color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(14.r),
             ),
-            child: Icon(icon, color: color, size: 23.sp),
+            child: Icon(
+              icon,
+              color: color,
+              size: 23.sp,
+            ),
           ),
+
           SizedBox(width: 13.w),
+
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
                   style: TextStyle(
-                    color: darkText,
+                    color: StudentUiColors.darkText,
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w900,
                   ),
@@ -346,42 +492,48 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
   }
 
   Widget _buildInterestChips() {
-    final interests = [
+    const interests = [
       _InterestChip(
         icon: Icons.bolt_rounded,
         label: 'Tecnología',
-        bg: const Color(0xFFEFF6FF),
-        color: const Color(0xFF2563EB),
+        backgroundColor: Color(0xFFEFF6FF),
+        color: Color(0xFF2563EB),
       ),
       _InterestChip(
         icon: Icons.data_object_rounded,
         label: 'Matemáticas',
-        bg: const Color(0xFFF3E8FF),
-        color: const Color(0xFF9333EA),
+        backgroundColor: Color(0xFFF3E8FF),
+        color: Color(0xFF9333EA),
       ),
       _InterestChip(
         icon: Icons.emoji_events_outlined,
         label: 'Liderazgo',
-        bg: const Color(0xFFFFF7ED),
-        color: const Color(0xFFF97316),
+        backgroundColor: Color(0xFFFFF7ED),
+        color: Color(0xFFF97316),
       ),
     ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: interests
-            .map(
-              (item) => Container(
+        children: interests.map((item) {
+          return Container(
             margin: EdgeInsets.only(right: 10.w),
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 9.h),
+            padding: EdgeInsets.symmetric(
+              horizontal: 14.w,
+              vertical: 9.h,
+            ),
             decoration: BoxDecoration(
-              color: item.bg,
+              color: item.backgroundColor,
               borderRadius: BorderRadius.circular(18.r),
             ),
             child: Row(
               children: [
-                Icon(item.icon, color: item.color, size: 17.sp),
+                Icon(
+                  item.icon,
+                  color: item.color,
+                  size: 17.sp,
+                ),
                 SizedBox(width: 6.w),
                 Text(
                   item.label,
@@ -393,15 +545,17 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
                 ),
               ],
             ),
-          ),
-        )
-            .toList(),
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildClarityCard() {
-    const clarity = 0.85;
+  Widget _buildClarityCard(
+      StudentResultsProvider provider,
+      ) {
+    final clarity = _getClarity(provider);
+    final percentage = (clarity * 100).round();
 
     return Container(
       padding: EdgeInsets.all(18.w),
@@ -422,22 +576,25 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
             children: [
               Icon(
                 Icons.star_border_rounded,
-                color: darkText,
+                color: StudentUiColors.darkText,
                 size: 24.sp,
               ),
+
               SizedBox(width: 8.w),
+
               Expanded(
                 child: Text(
                   'Claridad Vocacional',
                   style: TextStyle(
-                    color: darkText,
+                    color: StudentUiColors.darkText,
                     fontSize: 15.sp,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
+
               Text(
-                '85%',
+                '$percentage%',
                 style: TextStyle(
                   color: const Color(0xFF2563EB),
                   fontSize: 14.sp,
@@ -446,36 +603,46 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
               ),
             ],
           ),
+
           SizedBox(height: 16.h),
+
           ClipRRect(
             borderRadius: BorderRadius.circular(10.r),
             child: LinearProgressIndicator(
               value: clarity,
               minHeight: 9.h,
-              backgroundColor: const Color(0xFFF3E8FF),
-              color: primaryColor,
+              backgroundColor:
+              const Color(0xFFF3E8FF),
+              color: StudentUiColors.primary,
             ),
           ),
+
           SizedBox(height: 10.h),
+
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment:
+            MainAxisAlignment.spaceBetween,
             children: [
               _clarityLabel('EXPLORANDO'),
               _clarityLabel('DEFINIDO'),
               _clarityLabel('SEGURO'),
             ],
           ),
+
           SizedBox(height: 16.h),
+
           Container(
             width: double.infinity,
             padding: EdgeInsets.all(14.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF9FAFB),
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              border: Border.all(
+                color: const Color(0xFFE5E7EB),
+              ),
             ),
             child: Text(
-              '¡Excelente! Tus respuestas muestran una dirección muy clara hacia carreras técnicas. Estás listo para el siguiente paso.',
+              _getClarityMessage(clarity),
               style: TextStyle(
                 color: Colors.grey[700],
                 fontSize: 11.sp,
@@ -487,6 +654,33 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
         ],
       ),
     );
+  }
+
+  double _getClarity(
+      StudentResultsProvider provider,
+      ) {
+    if (provider.results.isEmpty) {
+      return 0.85;
+    }
+
+    /*
+     * Por ahora se conserva el valor visual.
+     * Cuando tu entidad incluya claridad vocacional,
+     * sustituye este valor por el dato real.
+     */
+    return 0.85;
+  }
+
+  String _getClarityMessage(double clarity) {
+    if (clarity >= 0.80) {
+      return '¡Excelente! Tus respuestas muestran una dirección muy clara hacia carreras técnicas. Estás listo para el siguiente paso.';
+    }
+
+    if (clarity >= 0.50) {
+      return 'Tu perfil comienza a mostrar una dirección vocacional. Continúa explorando carreras y realizando actividades.';
+    }
+
+    return 'Todavía estás explorando tus intereses. Realiza más actividades para fortalecer tu perfil vocacional.';
   }
 
   Widget _clarityLabel(String text) {
@@ -506,14 +700,16 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
       height: 58.h,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: StudentUiColors.primary,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18.r),
           ),
           elevation: 0,
         ),
-        onPressed: () => context.push(AppRoutes.careers.path),
+        onPressed: () {
+          context.push(AppRoutes.careers.path);
+        },
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -525,9 +721,66 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
               ),
             ),
             SizedBox(width: 12.w),
-            Icon(Icons.arrow_forward_rounded, size: 22.sp),
+            Icon(
+              Icons.arrow_forward_rounded,
+              size: 22.sp,
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ResultsErrorCard extends StatelessWidget {
+  final String message;
+  final Future<void> Function() onRetry;
+
+  const _ResultsErrorCard({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: Colors.red.shade100,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.redAccent,
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reintentar'),
+          ),
+        ],
       ),
     );
   }
@@ -536,13 +789,13 @@ class _VocationalResultsScreenState extends State<VocationalResultsScreen> {
 class _InterestChip {
   final IconData icon;
   final String label;
-  final Color bg;
+  final Color backgroundColor;
   final Color color;
 
-  _InterestChip({
+  const _InterestChip({
     required this.icon,
     required this.label,
-    required this.bg,
+    required this.backgroundColor,
     required this.color,
   });
 }

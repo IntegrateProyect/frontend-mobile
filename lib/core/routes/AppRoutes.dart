@@ -49,5 +49,6 @@ enum AppRoutes {
   adminUsers('/admin-users');
 
   final String path;
+
   const AppRoutes(this.path);
 }

@@ -1,56 +1,22 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../data/datasources/mappers/game_mapper.dart';
 import '../../domain/entities/game_entity.dart';
 import '../../domain/entities/game_question_entity.dart';
+import '../../domain/entities/vocational_mini_game_entity.dart';
+import '../../domain/usecases/finish_game_usecase.dart';
 import '../../domain/usecases/get_available_games_usecase.dart';
 import '../../domain/usecases/get_game_questions_usecase.dart';
-import '../../domain/usecases/start_game_usecase.dart';
 import '../../domain/usecases/send_game_answer_usecase.dart';
-import '../../domain/usecases/finish_game_usecase.dart';
-
-enum VocationalCategory {
-  calculo,
-  fisico,
-  biologico,
-  mecanico,
-  social,
-  literario,
-  persuasivo,
-  artistico,
-  musical,
-}
-
-class VocationalMiniGame {
-  final VocationalCategory category;
-  final String title;
-  final String description;
-  final IconData icon;
-  final List<GameQuestionEntity> questions;
-
-  VocationalMiniGame({
-    required this.category,
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.questions,
-  });
-
-  String get statusKey => category.name;
-}
-
-enum MiniGameStatus {
-  completed,
-  inProgress,
-  notStarted,
-}
+import '../../domain/usecases/start_game_usecase.dart';
 
 class GamesProvider extends ChangeNotifier {
-  final GetAvailableGamesUseCase _getGamesUseCase;
-  final GetGameQuestionsUseCase _getQuestionsUseCase;
-  final StartGameUseCase _startGameUseCase;
-  final SendGameAnswerUseCase _sendAnswerUseCase;
-  final FinishGameUseCase _finishGameUseCase;
+  final GetAvailableGamesUseCase _getGames;
+  final GetGameQuestionsUseCase _getQuestions;
+  final StartGameUseCase _startGame;
+  final SendGameAnswerUseCase _sendAnswer;
+  final FinishGameUseCase _finishGame;
 
   GamesProvider({
     required GetAvailableGamesUseCase getGamesUseCase,
@@ -58,223 +24,429 @@ class GamesProvider extends ChangeNotifier {
     required StartGameUseCase startGameUseCase,
     required SendGameAnswerUseCase sendAnswerUseCase,
     required FinishGameUseCase finishGameUseCase,
-  })  : _getGamesUseCase = getGamesUseCase,
-        _getQuestionsUseCase = getQuestionsUseCase,
-        _startGameUseCase = startGameUseCase,
-        _sendAnswerUseCase = sendAnswerUseCase,
-        _finishGameUseCase = finishGameUseCase;
+  })  : _getGames = getGamesUseCase,
+        _getQuestions = getQuestionsUseCase,
+        _startGame = startGameUseCase,
+        _sendAnswer = sendAnswerUseCase,
+        _finishGame = finishGameUseCase;
 
   List<GameEntity> _games = [];
   List<GameQuestionEntity> _questions = [];
-  List<VocationalMiniGame> _miniGames = [];
+  List<VocationalMiniGameEntity> _miniGames = [];
+
+  final Map<String, MiniGameStatus> _statuses = {};
+  final Map<String, int> _savedIndexes = {};
+
+  GameEntity? _activeGame;
+
+  String? _sessionId;
+  String? _sessionKey;
+  String? _errorMessage;
 
   bool _isLoading = false;
   bool _isLoadingQuestions = false;
 
-  String? _sessionId;
-  String? _errorMessage;
-  GameEntity? _activeGame;
-
   int _savedIndex = 0;
+
   Map<String, dynamic> _lastBackendResult = {};
-  final Map<String, MiniGameStatus> _miniGameStatus = {};
 
-  List<GameEntity> get games => _games;
-  List<GameQuestionEntity> get questions => _questions;
-  List<VocationalMiniGame> get miniGames => _miniGames;
+  List<GameEntity> get games => List.unmodifiable(_games);
 
-  bool get isLoading => _isLoading;
-  bool get isLoadingQuestions => _isLoadingQuestions;
+  List<GameQuestionEntity> get questions {
+    return List.unmodifiable(_questions);
+  }
 
-  String? get sessionId => _sessionId;
-  String? get errorMessage => _errorMessage;
+  List<VocationalMiniGameEntity> get miniGames {
+    return List.unmodifiable(_miniGames);
+  }
+
   GameEntity? get activeGame => _activeGame;
 
+  String? get sessionId => _sessionId;
+
+  String? get errorMessage => _errorMessage;
+
+  bool get isLoading => _isLoading;
+
+  bool get isLoadingQuestions => _isLoadingQuestions;
+
   int get savedIndex => _savedIndex;
-  Map<String, dynamic> get lastBackendResult => _lastBackendResult;
-  Map<String, MiniGameStatus> get miniGameStatus => _miniGameStatus;
 
-  MiniGameStatus getMiniGameStatus(String miniGameKey) {
-    return _miniGameStatus[miniGameKey] ?? MiniGameStatus.notStarted;
+  Map<String, dynamic> get lastBackendResult {
+    return Map.unmodifiable(_lastBackendResult);
   }
 
-  Future<void> loadMiniGameStatus(String miniGameKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    final isCompleted = prefs.getBool('game_completed_$miniGameKey') ?? false;
-    final savedSession = prefs.getString('game_session_$miniGameKey');
-    final savedIndex = prefs.getInt('game_index_$miniGameKey') ?? 0;
-
-    if (isCompleted) {
-      _miniGameStatus[miniGameKey] = MiniGameStatus.completed;
-    } else if ((savedSession != null && savedSession.isNotEmpty) ||
-        savedIndex > 0) {
-      _miniGameStatus[miniGameKey] = MiniGameStatus.inProgress;
-    } else {
-      _miniGameStatus[miniGameKey] = MiniGameStatus.notStarted;
-    }
-
-    notifyListeners();
+  MiniGameStatus getMiniGameStatus(String key) {
+    return _statuses[key] ?? MiniGameStatus.notStarted;
   }
 
-  Future<void> loadAllMiniGameStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    for (final miniGame in _miniGames) {
-      final key = miniGame.statusKey;
-      final isCompleted = prefs.getBool('game_completed_$key') ?? false;
-      final savedSession = prefs.getString('game_session_$key');
-      final savedIndex = prefs.getInt('game_index_$key') ?? 0;
-
-      if (isCompleted) {
-        _miniGameStatus[key] = MiniGameStatus.completed;
-      } else if ((savedSession != null && savedSession.isNotEmpty) ||
-          savedIndex > 0) {
-        _miniGameStatus[key] = MiniGameStatus.inProgress;
-      } else {
-        _miniGameStatus[key] = MiniGameStatus.notStarted;
-      }
+  double getMiniGameProgress(
+      String key,
+      int totalQuestions,
+      ) {
+    if (totalQuestions <= 0) {
+      return 0;
     }
 
-    notifyListeners();
+    if (getMiniGameStatus(key) ==
+        MiniGameStatus.completed) {
+      return 1;
+    }
+
+    final answeredQuestions = _savedIndexes[key] ?? 0;
+
+    return (answeredQuestions / totalQuestions)
+        .clamp(0.0, 1.0)
+        .toDouble();
   }
 
   Future<void> fetchGames() async {
     _isLoading = true;
     _errorMessage = null;
+
+    _games = [];
+    _questions = [];
     _miniGames = [];
+
+    _activeGame = null;
+    _sessionId = null;
+    _sessionKey = null;
+    _savedIndex = 0;
+
+    _statuses.clear();
+    _savedIndexes.clear();
+
     notifyListeners();
 
     try {
-      _games = await _getGamesUseCase();
+      _games = await _getGames();
 
-      if (_games.isNotEmpty) {
-        await prepareMiniGames(_games.first);
+      if (_games.isEmpty) {
+        _errorMessage =
+        'No hay minijuegos disponibles.';
+        return;
       }
-    } catch (e) {
-      _errorMessage = 'No se pudieron cargar los minijuegos.';
-      debugPrint('Error fetchGames: $e');
+
+      /*
+       * Actualmente el backend tiene un juego principal
+       * que contiene todas las preguntas RIASEC.
+       *
+       * Las preguntas se separan en minijuegos visuales
+       * mediante GameMapper.groupQuestions().
+       */
+      await _prepareMiniGames(_games.first);
+    } catch (error, stackTrace) {
+      _errorMessage =
+      'No se pudieron cargar los minijuegos.';
+
+      debugPrint(
+        'Error fetchGames: $error\n$stackTrace',
+      );
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> prepareMiniGames(GameEntity game) async {
+  Future<void> _prepareMiniGames(
+      GameEntity game,
+      ) async {
     _isLoadingQuestions = true;
     _errorMessage = null;
     _activeGame = game;
-    _questions = [];
-    _miniGames = [];
+
     notifyListeners();
 
     try {
-      final allQuestions = await _getQuestionsUseCase(game.id);
+      final loadedQuestions =
+      await _getQuestions(game.id);
 
-      if (allQuestions.isEmpty) {
-        _errorMessage = 'Este juego no tiene preguntas disponibles.';
+      if (loadedQuestions.isEmpty) {
+        _questions = [];
+        _miniGames = [];
+
+        _errorMessage =
+        'Este juego no tiene preguntas disponibles.';
+
         return;
       }
 
-      final grouped = <VocationalCategory, List<GameQuestionEntity>>{};
+      _questions = loadedQuestions;
 
-      for (final question in allQuestions) {
-        final category = detectCategory(question.text);
-        grouped.putIfAbsent(category, () => []);
-        grouped[category]!.add(question);
+      _miniGames = GameMapper.groupQuestions(
+        loadedQuestions,
+      );
+
+      if (_miniGames.isEmpty) {
+        _errorMessage =
+        'No se pudieron organizar las preguntas.';
+        return;
       }
 
-      _miniGames = grouped.entries
-          .where((entry) => entry.value.isNotEmpty)
-          .map(
-            (entry) => VocationalMiniGame(
-          category: entry.key,
-          title: _categoryTitle(entry.key),
-          description: _categoryDescription(entry.key),
-          icon: _categoryIcon(entry.key),
-          questions: entry.value,
-        ),
-      )
-          .toList();
+      await _loadStoredProgress();
+    } catch (error, stackTrace) {
+      _questions = [];
+      _miniGames = [];
 
-      _miniGames.sort((a, b) => a.title.compareTo(b.title));
+      _errorMessage =
+      'No se pudieron cargar las preguntas.';
 
-      await loadAllMiniGameStatus();
-    } catch (e) {
-      _errorMessage = 'No se pudieron dividir las preguntas por categoría.';
-      debugPrint('Error prepareMiniGames: $e');
+      debugPrint(
+        'Error prepareMiniGames: '
+            '$error\n$stackTrace',
+      );
     } finally {
       _isLoadingQuestions = false;
       notifyListeners();
     }
   }
 
+  Future<void> _loadStoredProgress() async {
+    final preferences =
+    await SharedPreferences.getInstance();
+
+    for (final miniGame in _miniGames) {
+      final key = miniGame.statusKey;
+
+      final isCompleted =
+          preferences.getBool(
+            'game_completed_$key',
+          ) ??
+              false;
+
+      final savedSession =
+      preferences.getString(
+        'game_session_$key',
+      );
+
+      final savedQuestionIndex =
+          preferences.getInt(
+            'game_index_$key',
+          ) ??
+              0;
+
+      _savedIndexes[key] = savedQuestionIndex;
+
+      if (isCompleted) {
+        _statuses[key] =
+            MiniGameStatus.completed;
+        continue;
+      }
+
+      final hasSavedSession =
+          savedSession != null &&
+              savedSession.isNotEmpty;
+
+      if (hasSavedSession ||
+          savedQuestionIndex > 0) {
+        _statuses[key] =
+            MiniGameStatus.inProgress;
+      } else {
+        _statuses[key] =
+            MiniGameStatus.notStarted;
+      }
+    }
+  }
+
+  Future<void> selectMiniGame(
+      VocationalMiniGameEntity miniGame,
+      ) async {
+    final key = miniGame.statusKey;
+
+    final preferences =
+    await SharedPreferences.getInstance();
+
+    if (_sessionKey != key) {
+      _sessionId = null;
+      _sessionKey = null;
+    }
+
+    _questions = List<GameQuestionEntity>.from(
+      miniGame.questions,
+    );
+
+    _savedIndex =
+        preferences.getInt(
+          'game_index_$key',
+        ) ??
+            0;
+
+    if (_savedIndex < 0 ||
+        _savedIndex >= _questions.length) {
+      _savedIndex = 0;
+    }
+
+    _savedIndexes[key] = _savedIndex;
+
+    notifyListeners();
+  }
+
   Future<void> startSessionIfNeeded(
       String gameId, {
         String? statusKey,
       }) async {
-    if (_sessionId != null && _sessionId!.isNotEmpty) return;
-
     final key = statusKey ?? gameId;
-    final prefs = await SharedPreferences.getInstance();
 
-    final savedSession = prefs.getString('game_session_$key');
-    final savedQuestionIndex = prefs.getInt('game_index_$key') ?? 0;
-    final isCompleted = prefs.getBool('game_completed_$key') ?? false;
+    final hasCurrentSession =
+        _sessionKey == key &&
+            _sessionId != null &&
+            _sessionId!.isNotEmpty;
 
-    if (isCompleted) {
-      _miniGameStatus[key] = MiniGameStatus.completed;
-      _savedIndex = 0;
-      notifyListeners();
+    if (hasCurrentSession) {
       return;
     }
 
-    if (savedSession != null && savedSession.isNotEmpty) {
+    final preferences =
+    await SharedPreferences.getInstance();
+
+    var savedSession =
+    preferences.getString(
+      'game_session_$key',
+    );
+
+    var savedQuestionIndex =
+        preferences.getInt(
+          'game_index_$key',
+        ) ??
+            0;
+
+    final wasCompleted =
+        preferences.getBool(
+          'game_completed_$key',
+        ) ??
+            false;
+
+    /*
+     * Si el minijuego ya fue completado y el alumno
+     * lo abre nuevamente, se inicia una sesión nueva.
+     */
+    if (wasCompleted) {
+      await preferences.remove(
+        'game_session_$key',
+      );
+
+      await preferences.remove(
+        'game_index_$key',
+      );
+
+      await preferences.setBool(
+        'game_completed_$key',
+        false,
+      );
+
+      savedSession = null;
+      savedQuestionIndex = 0;
+
+      _statuses[key] =
+          MiniGameStatus.notStarted;
+    }
+
+    if (savedSession != null &&
+        savedSession.isNotEmpty) {
       _sessionId = savedSession;
+      _sessionKey = key;
       _savedIndex = savedQuestionIndex;
-      _miniGameStatus[key] = MiniGameStatus.inProgress;
+
+      _savedIndexes[key] =
+          savedQuestionIndex;
+
+      _statuses[key] =
+          MiniGameStatus.inProgress;
+
       notifyListeners();
       return;
     }
 
-    final startResponse = await _startGameUseCase(gameId);
+    final response = await _startGame(gameId);
 
-    _sessionId = startResponse['sessionId']?.toString() ??
-        startResponse['data']?['sessionId']?.toString() ??
-        startResponse['data']?['id']?.toString() ??
-        startResponse['id']?.toString();
+    _sessionId = _extractSessionId(response);
+    _sessionKey = key;
+    _savedIndex = savedQuestionIndex;
 
-    if (_sessionId != null && _sessionId!.isNotEmpty) {
-      await prefs.setString('game_session_$key', _sessionId!);
-      await prefs.setBool('game_completed_$key', false);
-      _miniGameStatus[key] = MiniGameStatus.inProgress;
-    } else {
-      _miniGameStatus[key] = MiniGameStatus.notStarted;
+    _savedIndexes[key] =
+        savedQuestionIndex;
+
+    if (_sessionId == null ||
+        _sessionId!.isEmpty) {
+      _sessionId = null;
+      _sessionKey = null;
+
+      _statuses[key] =
+          MiniGameStatus.notStarted;
+
+      notifyListeners();
+
+      throw StateError(
+        'El backend no devolvió '
+            'un identificador de sesión.',
+      );
     }
 
-    _savedIndex = savedQuestionIndex;
+    await preferences.setString(
+      'game_session_$key',
+      _sessionId!,
+    );
+
+    await preferences.setBool(
+      'game_completed_$key',
+      false,
+    );
+
+    _statuses[key] =
+        MiniGameStatus.inProgress;
+
     notifyListeners();
   }
 
-  Future<void> selectMiniGame(VocationalMiniGame miniGame) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = miniGame.statusKey;
+  String? _extractSessionId(
+      Map<String, dynamic> response,
+      ) {
+    final data = _asMap(response['data']);
 
-    _questions = miniGame.questions;
-    _savedIndex = prefs.getInt('game_index_$key') ?? 0;
+    final possibleSessionId =
+        response['sessionId'] ??
+            response['session_id'] ??
+            response['id'] ??
+            data['sessionId'] ??
+            data['session_id'] ??
+            data['id'];
 
-    notifyListeners();
+    final value =
+    possibleSessionId?.toString().trim();
+
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+
+    return value;
   }
 
   Future<void> saveProgress({
     required String gameId,
     required int currentIndex,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
+    final safeIndex =
+    currentIndex < 0 ? 0 : currentIndex;
 
-    await prefs.setInt('game_index_$gameId', currentIndex);
-    await prefs.setBool('game_completed_$gameId', false);
+    final preferences =
+    await SharedPreferences.getInstance();
 
-    _miniGameStatus[gameId] = MiniGameStatus.inProgress;
+    await preferences.setInt(
+      'game_index_$gameId',
+      safeIndex,
+    );
+
+    await preferences.setBool(
+      'game_completed_$gameId',
+      false,
+    );
+
+    _savedIndex = safeIndex;
+    _savedIndexes[gameId] = safeIndex;
+
+    _statuses[gameId] =
+        MiniGameStatus.inProgress;
+
     notifyListeners();
   }
 
@@ -286,25 +458,58 @@ class GamesProvider extends ChangeNotifier {
     required Map<String, dynamic> weights,
     required int currentIndex,
     String? progressKey,
+    Map<String, dynamic> interactionData =
+    const <String, dynamic>{},
   }) async {
     final key = progressKey ?? gameId;
 
-    await startSessionIfNeeded(gameId, statusKey: key);
+    _errorMessage = null;
 
-    await _sendAnswerUseCase(gameId, {
-      'sessionId': _sessionId,
-      'questionId': questionId,
-      'selectedOptionId': optionId,
-      'rawData': {
-        'answerText': answer,
-        'weights': weights,
-      },
-    });
+    try {
+      await startSessionIfNeeded(
+        gameId,
+        statusKey: key,
+      );
 
-    await saveProgress(
-      gameId: key,
-      currentIndex: currentIndex,
-    );
+      if (_sessionId == null ||
+          _sessionId!.isEmpty) {
+        throw StateError(
+          'No existe una sesión activa.',
+        );
+      }
+
+      final answerData = <String, dynamic>{
+        'sessionId': _sessionId!,
+        'questionId': questionId,
+        'selectedOptionId': optionId,
+        'rawData': <String, dynamic>{
+          ...interactionData,
+          'answerText': answer,
+          'weights': weights,
+        },
+      };
+
+      await _sendAnswer(
+        gameId,
+        answerData,
+      );
+
+      await saveProgress(
+        gameId: key,
+        currentIndex: currentIndex,
+      );
+    } catch (error, stackTrace) {
+      _errorMessage =
+      'No se pudo guardar la respuesta.';
+
+      debugPrint(
+        'Error sendAnswer: '
+            '$error\n$stackTrace',
+      );
+
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> finishGame(
@@ -313,296 +518,132 @@ class GamesProvider extends ChangeNotifier {
       }) async {
     final key = statusKey ?? gameId;
 
-    await startSessionIfNeeded(gameId, statusKey: key);
+    _errorMessage = null;
 
-    if (_sessionId == null || _sessionId!.isEmpty) {
-      return {};
+    try {
+      await startSessionIfNeeded(
+        gameId,
+        statusKey: key,
+      );
+
+      if (_sessionId == null ||
+          _sessionId!.isEmpty) {
+        throw StateError(
+          'No existe una sesión activa.',
+        );
+      }
+
+      final response = await _finishGame(
+        gameId,
+        _sessionId!,
+      );
+
+      final responseData = _asMap(
+        response['data'] ?? response,
+      );
+
+      final backendResult = _asMap(
+        responseData['results'] ??
+            responseData['result'] ??
+            responseData,
+      );
+
+      _lastBackendResult = backendResult;
+
+      final preferences =
+      await SharedPreferences.getInstance();
+
+      await preferences.remove(
+        'game_session_$key',
+      );
+
+      await preferences.remove(
+        'game_index_$key',
+      );
+
+      await preferences.setBool(
+        'game_completed_$key',
+        true,
+      );
+
+      _sessionId = null;
+      _sessionKey = null;
+      _savedIndex = 0;
+
+      _savedIndexes[key] = 0;
+
+      _statuses[key] =
+          MiniGameStatus.completed;
+
+      notifyListeners();
+
+      return backendResult;
+    } catch (error, stackTrace) {
+      _errorMessage =
+      'No se pudo finalizar el minijuego.';
+
+      debugPrint(
+        'Error finishGame: '
+            '$error\n$stackTrace',
+      );
+
+      notifyListeners();
+      rethrow;
     }
-
-    final result = await _finishGameUseCase(gameId, _sessionId!);
-
-    debugPrint('XXX FINISH GAME RESPONSE: $result');
-
-    final data = _asMap(result['data'] ?? result);
-    final backendResult = _asMap(data['result'] ?? data['results'] ?? data);
-
-    _lastBackendResult = backendResult;
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('game_session_$key');
-    await prefs.remove('game_index_$key');
-    await prefs.setBool('game_completed_$key', true);
-
-    _sessionId = null;
-    _savedIndex = 0;
-    _miniGameStatus[key] = MiniGameStatus.completed;
-
-    notifyListeners();
-
-    return backendResult;
   }
 
-  Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map<String, dynamic>) return value;
-    if (value is Map) return Map<String, dynamic>.from(value);
-    return {};
+  Map<String, dynamic> _asMap(
+      dynamic value,
+      ) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(
+        value,
+      );
+    }
+
+    return <String, dynamic>{};
+  }
+
+  void clearError() {
+    if (_errorMessage == null) {
+      return;
+    }
+
+    _errorMessage = null;
+    notifyListeners();
   }
 
   void clearQuestions() {
     _questions = [];
     _errorMessage = null;
+
     notifyListeners();
   }
 
   void clearAllGameData() {
+    _games = [];
     _questions = [];
     _miniGames = [];
-    _sessionId = null;
+
     _activeGame = null;
+
+    _sessionId = null;
+    _sessionKey = null;
     _errorMessage = null;
+
+    _isLoading = false;
+    _isLoadingQuestions = false;
+
     _savedIndex = 0;
     _lastBackendResult = {};
-    _miniGameStatus.clear();
+
+    _statuses.clear();
+    _savedIndexes.clear();
+
     notifyListeners();
-  }
-
-  VocationalCategory detectCategory(String raw) {
-    final text = raw.toLowerCase();
-
-    if (_has(text, [
-      'calcular',
-      'aritmética',
-      'aritmetica',
-      'numérico',
-      'numerico',
-      'porcentajes',
-      'logaritmos',
-      'matemáticos',
-      'matematicos',
-      'área',
-      'area',
-      'grados',
-      'radios',
-      'mecanizaciones',
-      'regla de cálculo',
-    ])) {
-      return VocationalCategory.calculo;
-    }
-
-    if (_has(text, [
-      'eclipse',
-      'telescopio',
-      'estrellas',
-      'observatorio',
-      'energía atómica',
-      'energia atomica',
-      'rocas',
-      'espectro',
-      'luz',
-      'combustión',
-      'combustion',
-      'científica',
-      'cientifica',
-    ])) {
-      return VocationalCategory.fisico;
-    }
-
-    if (_has(text, [
-      'sangre',
-      'plantas',
-      'abejas',
-      'insectos',
-      'hormigas',
-      'organismos',
-      'acuario',
-      'oxígeno',
-      'oxigeno',
-      'primeros auxilios',
-      'operación médica',
-    ])) {
-      return VocationalCategory.biologico;
-    }
-
-    if (_has(text, [
-      'licuadora',
-      'máquina',
-      'maquina',
-      'taladro',
-      'reparar',
-      'soldar',
-      'reloj',
-      'eléctrico',
-      'electrico',
-      'torno',
-      'muebles',
-      'televisión',
-      'television',
-    ])) {
-      return VocationalCategory.mecanico;
-    }
-
-    if (_has(text, [
-      'ayudar',
-      'orfelinatos',
-      'consejero',
-      'niños',
-      'ninos',
-      'ciegos',
-      'escuchar',
-      'servir',
-      'personas de escasos recursos',
-      'hermanos menores',
-    ])) {
-      return VocationalCategory.social;
-    }
-
-    if (_has(text, [
-      'escribir',
-      'cuentos',
-      'novelas',
-      'literatura',
-      'biblioteca',
-      'periódico',
-      'periodico',
-      'cartas',
-      'clásicos',
-      'clasicos',
-      'reseñas',
-      'artículos',
-      'articulos',
-    ])) {
-      return VocationalCategory.literario;
-    }
-
-    if (_has(text, [
-      'debates',
-      'argumentos',
-      'convencer',
-      'políticos',
-      'politicos',
-      'defender',
-      'líder',
-      'lider',
-      'dirigir',
-      'producto',
-      'público',
-      'publico',
-      'candidatos',
-      'punto de vista',
-      'campañas',
-      'campanas',
-    ])) {
-      return VocationalCategory.persuasivo;
-    }
-
-    if (_has(text, [
-      'pintar',
-      'óleo',
-      'oleo',
-      'arte',
-      'dibujar',
-      'mosaicos',
-      'decoración',
-      'decoracion',
-      'paisajes',
-      'tapices',
-      'escenarios',
-      'pinturas',
-      'diseños',
-      'disenos',
-    ])) {
-      return VocationalCategory.artistico;
-    }
-
-    if (_has(text, [
-      'música',
-      'musica',
-      'concierto',
-      'instrumento',
-      'coral',
-      'compositor',
-      'discos',
-      'leer música',
-      'leer musica',
-      'músico',
-      'musico',
-    ])) {
-      return VocationalCategory.musical;
-    }
-
-    return VocationalCategory.artistico;
-  }
-
-  bool _has(String text, List<String> words) {
-    return words.any((word) => text.contains(word));
-  }
-
-  String _categoryTitle(VocationalCategory category) {
-    switch (category) {
-      case VocationalCategory.calculo:
-        return 'Juego de lógica y cálculo';
-      case VocationalCategory.fisico:
-        return 'Juego científico físico';
-      case VocationalCategory.biologico:
-        return 'Juego biológico';
-      case VocationalCategory.mecanico:
-        return 'Juego mecánico';
-      case VocationalCategory.social:
-        return 'Juego de servicio social';
-      case VocationalCategory.literario:
-        return 'Juego literario';
-      case VocationalCategory.persuasivo:
-        return 'Juego persuasivo';
-      case VocationalCategory.artistico:
-        return 'Juego artístico';
-      case VocationalCategory.musical:
-        return 'Juego musical';
-    }
-  }
-
-  String _categoryDescription(VocationalCategory category) {
-    switch (category) {
-      case VocationalCategory.calculo:
-        return 'Retos con números y razonamiento lógico.';
-      case VocationalCategory.fisico:
-        return 'Explora fenómenos naturales, luz, estrellas y energía.';
-      case VocationalCategory.biologico:
-        return 'Actividades sobre vida, plantas, salud y laboratorio.';
-      case VocationalCategory.mecanico:
-        return 'Reparar, armar, instalar y usar herramientas.';
-      case VocationalCategory.social:
-        return 'Ayudar, escuchar y acompañar a otras personas.';
-      case VocationalCategory.literario:
-        return 'Lectura, escritura y expresión de ideas.';
-      case VocationalCategory.persuasivo:
-        return 'Debatir, convencer, liderar y defender ideas.';
-      case VocationalCategory.artistico:
-        return 'Pintura, dibujo, diseño y creatividad visual.';
-      case VocationalCategory.musical:
-        return 'Música, instrumentos, conciertos y composición.';
-    }
-  }
-
-  IconData _categoryIcon(VocationalCategory category) {
-    switch (category) {
-      case VocationalCategory.calculo:
-        return Icons.calculate_outlined;
-      case VocationalCategory.fisico:
-        return Icons.public_outlined;
-      case VocationalCategory.biologico:
-        return Icons.biotech_outlined;
-      case VocationalCategory.mecanico:
-        return Icons.build_outlined;
-      case VocationalCategory.social:
-        return Icons.volunteer_activism_outlined;
-      case VocationalCategory.literario:
-        return Icons.menu_book_outlined;
-      case VocationalCategory.persuasivo:
-        return Icons.campaign_outlined;
-      case VocationalCategory.artistico:
-        return Icons.palette_outlined;
-      case VocationalCategory.musical:
-        return Icons.music_note_outlined;
-    }
   }
 }
