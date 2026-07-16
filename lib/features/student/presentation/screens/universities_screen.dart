@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'package:orientate/core/routes/AppRoutes.dart';
 
+import '../../../university/presentation/providers/universities_provider.dart';
 import '../components/common/student_ui_colors.dart';
 import '../components/universities/university_card.dart';
 import '../providers/universities_provider.dart';

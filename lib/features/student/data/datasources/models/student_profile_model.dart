@@ -17,159 +17,246 @@ class StudentProfileModel extends StudentProfileEntity {
     super.vocationalClarity,
   });
 
-  factory StudentProfileModel.fromJson(Map<String, dynamic> json) {
-    final student = _asMap(json['student']);
-    final user = _asMap(json['user']);
-    final profile = _asMap(json['profile']);
-    final group = _asMap(json['group']);
-    final schoolGroup = _asMap(json['schoolGroup']);
+  factory StudentProfileModel.fromJson(
+      Map<String, dynamic> json,
+      ) {
+    final Map<String, dynamic> root = _unwrapData(json);
 
-    final firstName = _str(
-      json['firstName'] ??
-          user['firstName'] ??
-          student['firstName'] ??
-          profile['firstName'],
-    );
+    final Map<String, dynamic>? profile = _firstMap([
+      root['profile'],
+      root['studentProfile'],
+      root['student_profile'],
+      root['vocationalProfile'],
+    ]);
 
-    final lastName = _str(
-      json['lastName'] ??
-          user['lastName'] ??
-          student['lastName'] ??
-          profile['lastName'],
-    );
+    final Map<String, dynamic> data = {
+      ...root,
+      if (profile != null) ...profile,
+    };
 
-    final fullName = _str(
-      json['name'] ??
-          json['fullName'] ??
-          json['studentName'] ??
-          user['name'] ??
-          user['fullName'] ??
-          student['name'] ??
-          student['fullName'] ??
-          profile['name'] ??
-          profile['fullName'],
-    );
+    final Map<String, dynamic>? student = _firstMap([
+      data['student'],
+      root['student'],
+    ]);
 
-    final name = fullName.isNotEmpty
-        ? fullName
-        : '$firstName $lastName'.trim().isNotEmpty
-        ? '$firstName $lastName'.trim()
-        : 'Estudiante';
+    final Map<String, dynamic>? user = _firstMap([
+      data['user'],
+      root['user'],
+      student?['user'],
+      profile?['user'],
+    ]);
+
+    final Map<String, dynamic>? group = _firstMap([
+      data['group'],
+      data['studentGroup'],
+      student?['group'],
+    ]);
+
+    final String? firstName = _firstNonEmpty([
+      data['firstName'],
+      data['first_name'],
+      data['nombre'],
+      user?['firstName'],
+      user?['first_name'],
+      user?['nombre'],
+    ]);
+
+    final String? lastName = _firstNonEmpty([
+      data['lastName'],
+      data['last_name'],
+      data['apellido'],
+      data['apellidos'],
+      user?['lastName'],
+      user?['last_name'],
+      user?['apellido'],
+      user?['apellidos'],
+    ]);
+
+    final String composedName = [
+      if (firstName != null) firstName,
+      if (lastName != null) lastName,
+    ].join(' ').trim();
+
+    final String resolvedName = _firstNonEmpty([
+      data['name'],
+      data['fullName'],
+      data['full_name'],
+      data['nombreCompleto'],
+      user?['name'],
+      user?['fullName'],
+      user?['full_name'],
+      user?['nombreCompleto'],
+      composedName,
+    ]) ??
+        '';
 
     return StudentProfileModel(
-      id: _str(
-        json['id'] ??
-            json['studentId'] ??
-            json['userId'] ??
-            student['id'] ??
-            user['id'] ??
-            profile['id'],
-      ),
-      name: name,
-      email: _str(
-        json['email'] ??
-            json['studentEmail'] ??
-            user['email'] ??
-            student['email'] ??
-            profile['email'],
-        fallback: 'Sin correo',
-      ),
-      profileImageUrl: _nullableStr(
-        json['profileImageUrl'] ??
-            json['avatarUrl'] ??
-            json['photoUrl'] ??
-            user['profileImageUrl'] ??
-            user['avatarUrl'] ??
-            user['photoUrl'] ??
-            student['profileImageUrl'] ??
-            profile['profileImageUrl'],
-      ),
-      groupName: _nullableStr(
-        json['groupName'] ??
-            json['group_name'] ??
-            group['name'] ??
-            group['groupName'] ??
-            schoolGroup['name'],
-      ),
-      groupCode: _nullableStr(
-        json['groupCode'] ??
-            json['accessCode'] ??
-            json['group_code'] ??
-            group['accessCode'] ??
-            group['code'] ??
-            schoolGroup['accessCode'],
-      ),
+      id: _firstNonEmpty([
+        data['id'],
+        data['_id'],
+        data['studentId'],
+        data['student_id'],
+        user?['id'],
+      ]) ??
+          '',
+      name: resolvedName,
+      email: _firstNonEmpty([
+        data['email'],
+        data['correo'],
+        user?['email'],
+      ]) ??
+          '',
+      profileImageUrl: _firstNonEmpty([
+        data['profileImageUrl'],
+        data['profile_image_url'],
+        data['avatarUrl'],
+        data['avatar_url'],
+        user?['profileImageUrl'],
+        user?['avatarUrl'],
+      ]),
+      groupName: _firstNonEmpty([
+        data['groupName'],
+        data['group_name'],
+        group?['name'],
+        group?['groupName'],
+      ]),
+      groupCode: _firstNonEmpty([
+        data['groupCode'],
+        data['group_code'],
+        group?['accessCode'],
+        group?['access_code'],
+        group?['code'],
+      ]),
       subjectsLiked: _toStringList(
-        json['subjectsLiked'] ??
-            profile['subjectsLiked'] ??
-            json['favoriteSubjects'],
+        data['subjectsLiked'] ??
+            data['subjects_liked'],
       ),
       subjectsDisliked: _toStringList(
-        json['subjectsDisliked'] ?? profile['subjectsDisliked'],
+        data['subjectsDisliked'] ??
+            data['subjects_disliked'],
       ),
       interests: _toStringList(
-        json['interests'] ??
-            profile['interests'] ??
-            student['interests'],
+        data['interests'],
       ),
       skills: _toStringList(
-        json['skills'] ??
-            profile['skills'] ??
-            student['skills'],
+        data['skills'],
       ),
-      needsScholarship: json['needsScholarship'] == true ||
-          profile['needsScholarship'] == true,
-      studyAbroad: json['studyAbroad'] == true || profile['studyAbroad'] == true,
+      needsScholarship: _toBool(
+        data['needsScholarship'] ??
+            data['needs_scholarship'],
+      ),
+      studyAbroad: _toBool(
+        data['studyAbroad'] ??
+            data['study_abroad'],
+      ),
       vocationalClarity: _toInt(
-        json['vocationalClarity'] ??
-            profile['vocationalClarity'] ??
-            student['vocationalClarity'] ??
-            json['clarity'],
+        data['vocationalClarity'] ??
+            data['vocational_clarity'],
         fallback: 1,
-      ).clamp(1, 10),
+      ),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'subjectsLiked': subjectsLiked,
-      'subjectsDisliked': subjectsDisliked,
-      'interests': interests,
-      'skills': skills,
-      'needsScholarship': needsScholarship,
-      'studyAbroad': studyAbroad,
-      'vocationalClarity': vocationalClarity,
-    };
+  static Map<String, dynamic> _unwrapData(
+      Map<String, dynamic> json,
+      ) {
+    if (json['data'] is Map) {
+      return Map<String, dynamic>.from(
+        json['data'] as Map,
+      );
+    }
+
+    return Map<String, dynamic>.from(json);
   }
 
-  static Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map) return Map<String, dynamic>.from(value);
-    return {};
+  static Map<String, dynamic>? _firstMap(
+      Iterable<dynamic> values,
+      ) {
+    for (final value in values) {
+      if (value is Map<String, dynamic>) {
+        return value;
+      }
+
+      if (value is Map) {
+        return Map<String, dynamic>.from(value);
+      }
+    }
+
+    return null;
   }
 
-  static String _str(dynamic value, {String fallback = ''}) {
-    if (value == null) return fallback;
-    final text = value.toString().trim();
-    return text.isEmpty ? fallback : text;
-  }
+  static String? _firstNonEmpty(
+      Iterable<dynamic> values,
+      ) {
+    for (final value in values) {
+      final String text = value?.toString().trim() ?? '';
 
-  static String? _nullableStr(dynamic value) {
-    if (value == null) return null;
-    final text = value.toString().trim();
-    return text.isEmpty ? null : text;
+      if (text.isNotEmpty &&
+          text.toLowerCase() != 'null' &&
+          text.toLowerCase() != 'undefined') {
+        return text;
+      }
+    }
+
+    return null;
   }
 
   static List<String> _toStringList(dynamic value) {
-    if (value is List) {
-      return value.map((e) => e.toString()).toList();
+    if (value is! List) {
+      return [];
     }
-    return [];
+
+    return value
+        .map((item) {
+      if (item is Map) {
+        return _firstNonEmpty([
+          item['name'],
+          item['label'],
+          item['title'],
+          item['value'],
+        ]) ??
+            '';
+      }
+
+      return item?.toString().trim() ?? '';
+    })
+        .where((item) => item.isNotEmpty)
+        .toList();
   }
 
-  static int _toInt(dynamic value, {required int fallback}) {
-    if (value is int) return value;
-    if (value is double) return value.round();
-    if (value is String) return int.tryParse(value) ?? fallback;
-    return fallback;
+  static bool _toBool(dynamic value) {
+    if (value is bool) {
+      return value;
+    }
+
+    if (value is num) {
+      return value != 0;
+    }
+
+    final normalized = value?.toString().toLowerCase();
+
+    return normalized == 'true' ||
+        normalized == '1' ||
+        normalized == 'yes' ||
+        normalized == 'si' ||
+        normalized == 'sí';
+  }
+
+  static int _toInt(
+      dynamic value, {
+        required int fallback,
+      }) {
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(
+      value?.toString() ?? '',
+    ) ??
+        fallback;
   }
 }

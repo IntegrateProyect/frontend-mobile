@@ -14,6 +14,7 @@ import 'features/student/presentation/providers/student_home_provider.dart';
 import 'features/student/presentation/providers/student_profile_provider.dart';
 import 'features/student/presentation/providers/student_results_provider.dart';
 import 'features/student/presentation/providers/universities_provider.dart';
+import 'features/university/presentation/providers/universities_provider.dart';
 import 'features/vocational_games/presentation/providers/games_provider.dart';
 
 Future<void> main() async {

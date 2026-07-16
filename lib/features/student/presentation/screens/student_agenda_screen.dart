@@ -1,0 +1,180 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:table_calendar/table_calendar.dart';
+
+import '../components/common/student_bottom_navigation_bar.dart';
+import '../components/common/student_ui_colors.dart';
+import '../providers/student_home_provider.dart';
+import '../../../counselor/domain/entities/appointment_entity.dart';
+
+class StudentAgendaScreen extends StatefulWidget {
+  const StudentAgendaScreen({super.key});
+
+  @override
+  State<StudentAgendaScreen> createState() => _StudentAgendaScreenState();
+}
+
+class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = _focusedDay;
+    Future.microtask(() {
+      context.read<StudentHomeProvider>().loadHomeData();
+    });
+  }
+
+  List<AppointmentEntity> _getEventsForDay(DateTime day, List<AppointmentEntity> appointments) {
+    return appointments.where((apt) => isSameDay(apt.sessionDate, day)).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<StudentHomeProvider>();
+    final appointments = provider.appointments;
+
+    return Scaffold(
+      backgroundColor: StudentUiColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Mi Agenda',
+          style: TextStyle(
+            color: StudentUiColors.darkText,
+            fontWeight: FontWeight.bold,
+            fontSize: 20.sp,
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            child: TableCalendar(
+              locale: 'es_ES',
+              firstDay: DateTime.now().subtract(const Duration(days: 30)),
+              lastDay: DateTime.now().add(const Duration(days: 90)),
+              focusedDay: _focusedDay,
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                  _focusedDay = focusedDay;
+                });
+              },
+              eventLoader: (day) => _getEventsForDay(day, appointments),
+              calendarStyle: const CalendarStyle(
+                todayDecoration: BoxDecoration(color: StudentUiColors.teal, shape: BoxShape.circle),
+                selectedDecoration: BoxDecoration(color: StudentUiColors.primary, shape: BoxShape.circle),
+                markerDecoration: BoxDecoration(color: StudentUiColors.pink, shape: BoxShape.circle),
+              ),
+              headerStyle: const HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+              ),
+            ),
+          ),
+          SizedBox(height: 16.h),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                SizedBox(width: 8.w),
+                const Text('Tu orientador agenda y gestiona estas citas.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          ),
+          SizedBox(height: 16.h),
+          Expanded(
+            child: _buildAppointmentList(_getEventsForDay(_selectedDay!, appointments)),
+          ),
+        ],
+      ),
+      bottomNavigationBar: const StudentBottomNavigationBar(currentIndex: 2),
+    );
+  }
+
+  Widget _buildAppointmentList(List<AppointmentEntity> dayAppointments) {
+    if (dayAppointments.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.event_busy, size: 60.sp, color: Colors.grey[300]),
+            SizedBox(height: 16.h),
+            Text(
+              'No hay citas para este día',
+              style: TextStyle(color: Colors.grey[500], fontSize: 14.sp),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      itemCount: dayAppointments.length,
+      itemBuilder: (context, index) {
+        final apt = dayAppointments[index];
+        final timeStr = DateFormat('hh:mm a').format(apt.sessionDate);
+
+        return Container(
+          margin: EdgeInsets.only(bottom: 12.h),
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16.r),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: StudentUiColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Text(
+                  timeStr,
+                  style: const TextStyle(
+                    color: StudentUiColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      apt.motive,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15.sp,
+                        color: StudentUiColors.darkText,
+                      ),
+                    ),
+                    Text(
+                      'Estado: ${apt.status}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

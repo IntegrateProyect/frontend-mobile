@@ -1,18 +1,24 @@
 import '../../../domain/entities/alumni_entity.dart';
 import '../../../domain/entities/career_entity.dart';
 import '../../../domain/entities/event_entity.dart';
-import '../../../domain/entities/scholarship_entity.dart';
 import '../../../domain/entities/student_profile_entity.dart';
-import '../../../domain/entities/university_entity.dart';
 import '../../../domain/entities/vocational_result_entity.dart';
+
+// Importaciones desde otros módulos (University y Counselor)
+import '../../../../university/domain/entities/university_entity.dart';
+import '../../../../university/domain/entities/scholarship_entity.dart';
+import '../../../../counselor/domain/entities/appointment_entity.dart';
 
 import '../models/alumni_model.dart';
 import '../models/career_model.dart';
 import '../models/event_model.dart';
-import '../models/scholarship_model.dart';
 import '../models/student_profile_model.dart';
-import '../models/university_model.dart';
 import '../models/vocational_result_model.dart';
+
+// Modelos desde otros módulos
+import '../../../../university/data/datasources/models/university_model.dart';
+import '../../../../university/data/datasources/models/scholarship_model.dart';
+import '../../../../counselor/data/datasources/models/appointment_model.dart';
 
 class StudentMapper {
   static StudentProfileEntity toProfileEntity(StudentProfileModel model) {
@@ -60,6 +66,8 @@ class StudentMapper {
       location: model.location,
       logoUrl: model.logoUrl,
       availableCareers: model.availableCareers,
+      isRegistered: model.isRegistered,
+      representativeUserId: model.representativeUserId,
     );
   }
 

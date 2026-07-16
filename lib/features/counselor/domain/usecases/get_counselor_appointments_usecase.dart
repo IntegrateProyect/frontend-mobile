@@ -1,4 +1,4 @@
-import '../../../student/domain/entities/appointment_entity.dart';
+import '../entities/appointment_entity.dart';
 import '../repositories/counselor_repository.dart';
 
 class GetCounselorAppointmentsUseCase {

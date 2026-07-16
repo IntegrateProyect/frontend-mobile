@@ -1,32 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 
-import 'package:orientate/features/counselor/presentation/providers/counselor_provider.dart';
-import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
 import 'package:orientate/core/routes/AppRoutes.dart';
-import 'package:orientate/features/student/domain/entities/student_profile_entity.dart';
-import 'package:orientate/features/student/domain/entities/appointment_entity.dart';
 
-import '../components/home/counselor_appointments_section.dart';
+import '../../domain/entities/appointment_entity.dart';
+import '../../domain/entities/student_consultation_entity.dart';
+import '../providers/counselor_provider.dart';
 
 class CounselorHomeScreen extends StatefulWidget {
-  const CounselorHomeScreen({super.key});
+  const CounselorHomeScreen({
+    super.key,
+  });
 
   @override
-  State<CounselorHomeScreen> createState() => _CounselorHomeScreenState();
+  State<CounselorHomeScreen> createState() {
+    return _CounselorHomeScreenState();
+  }
 }
 
-class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
+class _CounselorHomeScreenState
+    extends State<CounselorHomeScreen> {
+  static const Color _primaryColor = Color(0xFF311B92);
+  static const Color _darkText = Color(0xFF17164A);
+  static const Color _backgroundColor = Color(0xFFF8F9FE);
+
   int _selectedIndex = 0;
-  static const Color primaryColor = Color(0xFF311B92);
 
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
       context.read<CounselorProvider>().loadDashboardData();
     });
   }
@@ -34,1202 +43,1967 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CounselorProvider>();
-    final authProvider = context.watch<AuthProvider>();
-
-    final String? avatarUrl =
-        authProvider.user?.effectivePhotoUrl ?? provider.profile?.profileImageUrl;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        title: Text(
-          'Oriéntate+',
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: primaryColor,
-            fontWeight: FontWeight.w900,
-            fontSize: 22.sp,
-          ),
+      backgroundColor: _backgroundColor,
+      appBar: _buildAppBar(provider),
+      body: _buildBody(provider),
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(
+      CounselorProvider provider,
+      ) {
+    final int notificationCount = provider.consultations
+        .where(
+          (consultation) =>
+      consultation.status.trim().toLowerCase() !=
+          'responded',
+    )
+        .length;
+
+    return AppBar(
+      automaticallyImplyLeading: false,
+      toolbarHeight: 68.h,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 0,
+      centerTitle: true,
+      title: Text(
+        'Oriéntate+',
+        style: TextStyle(
+          color: _primaryColor,
+          fontSize: 24.sp,
+          fontWeight: FontWeight.w900,
+          letterSpacing: -0.5,
         ),
-        actions: [
-          IconButton(
+      ),
+      actions: [
+        Padding(
+          padding: EdgeInsets.only(right: 14.w),
+          child: IconButton(
+            tooltip: 'Notificaciones',
+            onPressed: () {
+              _showNotificationsSheet(provider);
+            },
             icon: Badge(
+              isLabelVisible: notificationCount > 0,
               backgroundColor: Colors.redAccent,
-              label: Text(provider.consultations.length.toString()),
+              label: Text(
+                notificationCount > 99
+                    ? '99+'
+                    : notificationCount.toString(),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 9.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               child: Icon(
-                Icons.notifications_none_outlined,
-                color: Colors.grey[700],
-              ),
-            ),
-            onPressed: () => setState(() => _selectedIndex = 3),
-          ),
-          Padding(
-            padding: EdgeInsets.only(right: 16.w, left: 8.w),
-            child: GestureDetector(
-              onTap: () => context.push(AppRoutes.counselorProfile.path),
-              child: CircleAvatar(
-                radius: 18.r,
-                backgroundColor: Colors.grey[200],
-                backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-                    ? NetworkImage(avatarUrl)
-                    : null,
-                child: avatarUrl == null || avatarUrl.isEmpty
-                    ? Icon(Icons.person, color: Colors.grey[500], size: 20.sp)
-                    : null,
+                Icons.notifications_none_rounded,
+                color: Colors.grey.shade800,
+                size: 27.sp,
               ),
             ),
           ),
-        ],
-      ),
-      body: provider.isLoading && provider.groups.isEmpty
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : _buildBody(provider),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: primaryColor,
-        unselectedItemColor: Colors.grey[400],
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded),
-            label: 'Resumen',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups_outlined),
-            label: 'Grupos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Alumnos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: 'Agenda',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.warning_amber_rounded),
-            label: 'Alertas',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBody(CounselorProvider provider) {
-    switch (_selectedIndex) {
-      case 0:
-        return _buildDashboardTab(provider);
-      case 1:
-        return _buildGroupsTab(provider);
-      case 2:
-        return _buildStudentsTab(provider);
-      case 3:
-        return _buildAppointmentsTab(provider);
-      case 4:
-        return _buildAlertsTab(provider);
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-
-  Widget _buildDashboardTab(CounselorProvider provider) {
-    return RefreshIndicator(
-      onRefresh: provider.loadDashboardData,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeader(
-              'Resumen General',
-              trailing: 'Actualizado hoy',
-            ),
-            SizedBox(height: 16.h),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMainStatCard(
-                    'ALUMNOS TOTALES',
-                    provider.totalStudentsCount.toString(),
-                    Icons.people_outline,
-                    Colors.blue,
-                    'Inscritos en el ciclo',
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: _buildMainStatCard(
-                    'ACTIVOS',
-                    provider.activeStudentsCount.toString(),
-                    Icons.trending_up,
-                    Colors.purple,
-                    'Participación mensual',
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: 20.h),
-
-            // SECCIÓN DE CITAS EN EL HOME
-            CounselorAppointmentsSection(
-              appointments: provider.appointments,
-              onSeeAll: () => setState(() => _selectedIndex = 3),
-            ),
-
-            SizedBox(height: 32.h),
-
-            _buildSectionHeader(
-              'Alertas Prioritarias',
-              hasDot: provider.consultations.isNotEmpty,
-              trailing: 'Ver todas',
-            ),
-
-            SizedBox(height: 16.h),
-
-            if (provider.consultations.isEmpty)
-              Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16.h),
-                  child: Text(
-                    'No hay alertas pendientes',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 15.sp,
-                    ),
-                  ),
-                ),
-              )
-            else
-              ...provider.consultations.take(3).map(
-                    (alert) => _buildAlertItem(
-                  alert.studentName,
-                  alert.message,
-                  'Hace poco',
-                ),
-              ),
-
-            SizedBox(height: 32.h),
-
-            _buildSectionHeader('Herramientas y Acciones'),
-            SizedBox(height: 16.h),
-            _buildQuickActionsGrid(),
-
-            SizedBox(height: 40.h),
-          ],
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildAppointmentsTab(CounselorProvider provider) {
-    if (provider.appointments.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.calendar_today_outlined, size: 80.sp, color: Colors.grey[300]),
-            SizedBox(height: 16.h),
-            Text(
-              'No tienes citas programadas',
-              style: TextStyle(fontSize: 16.sp, color: Colors.grey[600]),
-            ),
-          ],
+  Widget _buildBody(
+      CounselorProvider provider,
+      ) {
+    if (provider.isLoading &&
+        provider.groups.isEmpty &&
+        provider.appointments.isEmpty &&
+        provider.consultations.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: _primaryColor,
         ),
       );
     }
 
+    switch (_selectedIndex) {
+      case 0:
+        return _buildHomeTab(provider);
+
+      case 1:
+        return _buildGroupsTab(provider);
+
+      case 2:
+        return _buildAgendaTab(provider);
+
+      default:
+        return _buildHomeTab(provider);
+    }
+  }
+
+  // =========================================================
+  // HOME
+  // =========================================================
+
+  Widget _buildHomeTab(
+      CounselorProvider provider,
+      ) {
+    final upcomingAppointments = _getUpcomingAppointments(
+      provider.appointments,
+    );
+
+    final AppointmentEntity? nextAppointment =
+    upcomingAppointments.isNotEmpty
+        ? upcomingAppointments.first
+        : null;
+
+    final pendingConsultations = provider.consultations
+        .where(
+          (consultation) =>
+      consultation.status.trim().toLowerCase() !=
+          'responded',
+    )
+        .toList();
+
+    final StudentConsultationEntity? firstConsultation =
+    pendingConsultations.isNotEmpty
+        ? pendingConsultations.first
+        : null;
+
+    final int appointmentsToday = _appointmentsTodayCount(
+      provider.appointments,
+    );
+
+    final int pendingCount =
+        pendingConsultations.length +
+            provider.lowProgressCount +
+            provider.highIndecisionCount;
+
+    final int resultsPending = provider.reportesCount;
+
     return RefreshIndicator(
+      color: _primaryColor,
       onRefresh: provider.loadDashboardData,
-      child: ListView.builder(
-        padding: EdgeInsets.all(20.w),
-        itemCount: provider.appointments.length,
-        itemBuilder: (context, index) {
-          final apt = provider.appointments[index];
-          return _buildFullAppointmentCard(apt);
-        },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              18.w,
+              18.h,
+              18.w,
+              32.h,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  _buildGreetingCard(),
+
+                  SizedBox(height: 24.h),
+
+                  _buildSectionTitle(
+                    'Resumen general',
+                  ),
+
+                  SizedBox(height: 13.h),
+
+                  _buildStatsGrid(
+                    students: provider.totalStudentsCount,
+                    groups: provider.groupsCount,
+                    appointmentsToday: appointmentsToday,
+                    pending: pendingCount,
+                  ),
+
+                  SizedBox(height: 26.h),
+
+                  _buildSectionTitle('Hoy'),
+
+                  SizedBox(height: 13.h),
+
+                  _buildNextAppointmentCard(
+                    provider: provider,
+                    appointment: nextAppointment,
+                  ),
+
+                  SizedBox(height: 12.h),
+
+                  _buildFollowUpCard(
+                    provider: provider,
+                    consultation: firstConsultation,
+                    pendingCount: pendingConsultations.length,
+                  ),
+
+                  SizedBox(height: 26.h),
+
+                  _buildSectionTitle(
+                    'Pendientes de hoy',
+                  ),
+
+                  SizedBox(height: 13.h),
+
+                  _buildPendingActionCard(
+                    title: 'Expedientes por revisar',
+                    subtitle: pendingConsultations.isNotEmpty
+                        ? '${pendingConsultations.length} alumnos con alertas recientes'
+                        : 'No hay alertas recientes',
+                    value: pendingConsultations.length,
+                    icon: Icons.manage_search_rounded,
+                    mainColor: const Color(0xFF1687E8),
+                    backgroundColor: const Color(0xFFEAF4FF),
+                    onTap: () {
+                      _showNotificationsSheet(provider);
+                    },
+                  ),
+
+                  SizedBox(height: 12.h),
+
+                  _buildPendingActionCard(
+                    title: 'Resultados por revisar',
+                    subtitle: resultsPending > 0
+                        ? '$resultsPending resultados pendientes'
+                        : 'Sin resultados pendientes',
+                    value: resultsPending,
+                    icon: Icons.bar_chart_rounded,
+                    mainColor: const Color(0xFF159947),
+                    backgroundColor: const Color(0xFFEAF8ED),
+                    onTap: () {
+                      _showResultsMessage(
+                        resultsPending,
+                      );
+                    },
+                  ),
+
+                  SizedBox(height: 26.h),
+
+                  _buildSectionTitle(
+                    'Seguimiento prioritario',
+                  ),
+
+                  SizedBox(height: 13.h),
+
+                  _buildPrioritySection(
+                    provider,
+                    pendingConsultations,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFullAppointmentCard(AppointmentEntity apt) {
-    final dateStr = DateFormat('EEEE d MMMM', 'es').format(apt.sessionDate);
-    final timeStr = DateFormat('hh:mm a').format(apt.sessionDate);
-
+  Widget _buildGreetingCard() {
     return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(18.w),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: 18.w,
+        vertical: 17.h,
+      ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFF6F4FF),
+            Color(0xFFFCFBFF),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(23.r),
+        border: Border.all(
+          color: const Color(0xFFE7E1FF),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hola, orientador 👋',
+                  style: TextStyle(
+                    color: _darkText,
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                SizedBox(height: 7.h),
+                Text(
+                  'Revisa lo más importante de hoy.',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Container(
+            width: 58.w,
+            height: 58.w,
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(18.r),
+            ),
+            child: Icon(
+              Icons.assignment_turned_in_rounded,
+              color: _primaryColor,
+              size: 31.sp,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsGrid({
+    required int students,
+    required int groups,
+    required int appointmentsToday,
+    required int pending,
+  }) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                title: 'Alumnos',
+                value: students,
+                icon: Icons.people_outline_rounded,
+                iconColor: const Color(0xFF168ED4),
+                iconBackground: const Color(0xFFEAF6FD),
+              ),
+            ),
+            SizedBox(width: 11.w),
+            Expanded(
+              child: _buildStatCard(
+                title: 'Grupos',
+                value: groups,
+                icon: Icons.groups_rounded,
+                iconColor: const Color(0xFF8D1BB3),
+                iconBackground: const Color(0xFFF5EAFB),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 11.h),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                title: 'Citas hoy',
+                value: appointmentsToday,
+                icon: Icons.event_available_rounded,
+                iconColor: const Color(0xFF7418B8),
+                iconBackground: const Color(0xFFF2EAFB),
+              ),
+            ),
+            SizedBox(width: 11.w),
+            Expanded(
+              child: _buildStatCard(
+                title: 'Pendientes',
+                value: pending,
+                icon: Icons.pending_actions_rounded,
+                iconColor: const Color(0xFFE38900),
+                iconBackground: const Color(0xFFFFF3DC),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard({
+    required String title,
+    required int value,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBackground,
+  }) {
+    return Container(
+      height: 88.h,
+      padding: EdgeInsets.symmetric(
+        horizontal: 13.w,
+        vertical: 12.h,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20.r),
+        borderRadius: BorderRadius.circular(19.r),
+        border: Border.all(
+          color: const Color(0xFFECECF3),
+        ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.025),
+            blurRadius: 10,
+            offset: Offset(0, 4.h),
+          ),
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: EdgeInsets.all(12.w),
+            width: 44.w,
+            height: 44.w,
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
+              color: iconBackground,
               borderRadius: BorderRadius.circular(14.r),
             ),
-            child: Icon(Icons.event_note, color: primaryColor, size: 24.sp),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 23.sp,
+            ),
           ),
-          SizedBox(width: 16.w),
+          SizedBox(width: 11.w),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
               children: [
                 Text(
-                  apt.motive,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp, color: const Color(0xFF1D1B4B)),
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 10.8.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 3.h),
                 Text(
-                  '$dateStr • $timeStr',
-                  style: TextStyle(fontSize: 13.sp, color: Colors.grey[600], fontWeight: FontWeight.w500),
-                ),
-                SizedBox(height: 12.h),
-                Row(
-                  children: [
-                    Icon(Icons.person_outline, size: 14.sp, color: Colors.grey),
-                    SizedBox(width: 4.w),
-                    Text(
-                      'Alumno ID: ${apt.studentId.substring(0, 8)}...',
-                      style: TextStyle(fontSize: 12.sp, color: Colors.grey),
-                    ),
-                  ],
+                  value.toString(),
+                  style: TextStyle(
+                    color: _darkText,
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Text(
-              apt.status,
-              style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: Colors.blue),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildGroupsTab(CounselorProvider provider) {
-    if (provider.groups.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.groups_outlined, size: 80.sp, color: Colors.grey[300]),
-            SizedBox(height: 16.h),
-            Text(
-              'No tienes grupos creados',
-              style: TextStyle(
-                fontSize: 16.sp,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: 16.h),
-            ElevatedButton.icon(
-              onPressed: () => _showCreateGroupDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Crear mi primer grupo'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+  Widget _buildNextAppointmentCard({
+    required CounselorProvider provider,
+    required AppointmentEntity? appointment,
+  }) {
+    final bool hasAppointment = appointment != null;
 
-    return RefreshIndicator(
-      onRefresh: provider.loadDashboardData,
-      child: ListView.builder(
-        padding: EdgeInsets.all(20.w),
-        itemCount: provider.groups.length,
-        itemBuilder: (context, index) {
-          final group = Map<String, dynamic>.from(provider.groups[index] as Map);
-          return _buildGroupCard(group);
+    final String studentName = hasAppointment
+        ? _getStudentName(
+      provider,
+      appointment.studentId,
+    )
+        : '';
+
+    final bool hasRealName = studentName.isNotEmpty &&
+        studentName.toLowerCase() != 'alumno';
+
+    final String title = hasAppointment
+        ? hasRealName
+        ? studentName
+        : appointment.motive
+        : 'Sin citas próximas';
+
+    final String subtitle = hasAppointment
+        ? hasRealName
+        ? appointment.motive
+        : 'Alumno por identificar'
+        : 'No tienes citas programadas';
+
+    final String date = hasAppointment
+        ? DateFormat(
+      'dd/MM/yyyy · hh:mm a',
+    ).format(
+      appointment.sessionDate,
+    )
+        : 'Tu agenda está disponible';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedIndex = 2;
+          });
         },
-      ),
-    );
-  }
-
-  Widget _buildGroupCard(Map<String, dynamic> group) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+        child: Ink(
+          width: double.infinity,
+          padding: EdgeInsets.all(15.w),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F6FF),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(
+              color: const Color(0xFFD9CFFF),
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
+          child: Row(
             children: [
               Container(
-                padding: EdgeInsets.all(12.w),
+                width: 48.w,
+                height: 48.w,
                 decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12.r),
+                  color: _primaryColor.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(15.r),
                 ),
                 child: Icon(
-                  Icons.groups_rounded,
-                  color: primaryColor,
+                  Icons.event_available_rounded,
+                  color: _primaryColor,
+                  size: 25.sp,
+                ),
+              ),
+              SizedBox(width: 13.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Próxima cita',
+                      style: TextStyle(
+                        color: _primaryColor,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _darkText,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 10.8.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      date,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 10.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.grey.shade400,
+                size: 24.sp,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFollowUpCard({
+    required CounselorProvider provider,
+    required StudentConsultationEntity? consultation,
+    required int pendingCount,
+  }) {
+    final bool hasConsultation = consultation != null;
+
+    final String studentName = hasConsultation
+        ? _resolveConsultationStudentName(
+      provider,
+      consultation,
+    )
+        : '';
+
+    final String title = hasConsultation
+        ? studentName.isNotEmpty &&
+        studentName.toLowerCase() != 'alumno'
+        ? studentName
+        : 'Seguimiento requerido'
+        : 'Todo está en orden';
+
+    final String subtitle = hasConsultation
+        ? consultation.message
+        : 'No hay seguimientos pendientes';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: hasConsultation
+            ? () {
+          _openConsultationStudent(
+            consultation,
+          );
+        }
+            : null,
+        borderRadius: BorderRadius.circular(20.r),
+        child: Ink(
+          width: double.infinity,
+          padding: EdgeInsets.all(15.w),
+          decoration: BoxDecoration(
+            color: hasConsultation
+                ? const Color(0xFFFFFAF1)
+                : const Color(0xFFF5FBF7),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(
+              color: hasConsultation
+                  ? const Color(0xFFF5D79B)
+                  : const Color(0xFFCFE8D7),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48.w,
+                height: 48.w,
+                decoration: BoxDecoration(
+                  color: hasConsultation
+                      ? const Color(0xFFFFF0D4)
+                      : const Color(0xFFE6F6EB),
+                  borderRadius: BorderRadius.circular(15.r),
+                ),
+                child: Icon(
+                  hasConsultation
+                      ? Icons.warning_amber_rounded
+                      : Icons.check_circle_outline_rounded,
+                  color: hasConsultation
+                      ? const Color(0xFFE88A00)
+                      : const Color(0xFF159947),
+                  size: 25.sp,
+                ),
+              ),
+              SizedBox(width: 13.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            hasConsultation
+                                ? 'Seguimiento requerido'
+                                : 'Seguimiento',
+                            style: TextStyle(
+                              color: hasConsultation
+                                  ? const Color(0xFFE47F00)
+                                  : const Color(0xFF159947),
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        if (pendingCount > 0)
+                          Container(
+                            height: 25.h,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8.w,
+                            ),
+                            constraints: BoxConstraints(
+                              minWidth: 25.w,
+                            ),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFE9C0),
+                              borderRadius:
+                              BorderRadius.circular(20.r),
+                            ),
+                            child: Text(
+                              pendingCount.toString(),
+                              style: TextStyle(
+                                color: const Color(0xFFD87400),
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _darkText,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 10.5.sp,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (hasConsultation) ...[
+                SizedBox(width: 8.w),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400,
+                  size: 24.sp,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPendingActionCard({
+    required String title,
+    required String subtitle,
+    required int value,
+    required IconData icon,
+    required Color mainColor,
+    required Color backgroundColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(19.r),
+        child: Ink(
+          width: double.infinity,
+          padding: EdgeInsets.all(15.w),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(19.r),
+            border: Border.all(
+              color: mainColor.withOpacity(0.18),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 47.w,
+                height: 47.w,
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(15.r),
+                ),
+                child: Icon(
+                  icon,
+                  color: mainColor,
                   size: 24.sp,
                 ),
               ),
-              SizedBox(width: 14.w),
+              SizedBox(width: 13.w),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
                   children: [
                     Text(
-                      group['name']?.toString() ?? 'Sin nombre',
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                        color: const Color(0xFF1D1B4B),
+                        color: _darkText,
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
+                    SizedBox(height: 4.h),
                     Text(
-                      'Código: ${group['accessCode'] ?? group['code'] ?? '---'}',
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.grey[500],
-                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade600,
+                        fontSize: 10.5.sp,
+                        height: 1.25,
                       ),
                     ),
                   ],
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, color: primaryColor),
-                onPressed: () => _showEditGroupDialog(context, group),
-              ),
-            ],
-          ),
-          Divider(height: 24.h, color: Colors.grey[50]),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Creado: ${group['createdAt']?.toString().split('T')[0] ?? '---'}',
-                style: TextStyle(fontSize: 11.sp, color: Colors.grey[500]),
-              ),
-              TextButton(
-                onPressed: () => _showGroupDetails(group['id'].toString()),
-                child: Text(
-                  'Ver Detalle',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12.sp,
-                    color: primaryColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStudentsTab(CounselorProvider provider) {
-    if (provider.students.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_search_outlined, size: 80.sp, color: Colors.grey[300]),
-            SizedBox(height: 16.h),
-            Text(
-              'No hay alumnos registrados aún',
-              style: TextStyle(
-                fontSize: 16.sp,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              'Comparte el código de grupo para que se unan.',
-              style: TextStyle(fontSize: 13.sp, color: Colors.grey[400]),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: provider.loadDashboardData,
-      child: ListView.builder(
-        padding: EdgeInsets.all(20.w),
-        itemCount: provider.students.length,
-        itemBuilder: (context, index) {
-          final student = provider.students[index];
-          return _buildStudentCard(student);
-        },
-      ),
-    );
-  }
-
-  Widget _buildStudentCard(StudentProfileEntity student) {
-    final groupText = student.groupName != null && student.groupName!.isNotEmpty
-        ? 'Grupo: ${student.groupName}'
-        : 'Grupo no disponible';
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 26.r,
-                backgroundColor: primaryColor.withOpacity(0.1),
-                child: Text(
-                  student.name.isNotEmpty ? student.name[0].toUpperCase() : '?',
-                  style: TextStyle(
-                    color: primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18.sp,
-                  ),
-                ),
-              ),
-              SizedBox(width: 14.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      student.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                        color: const Color(0xFF1D1B4B),
-                      ),
-                    ),
-                    Text(
-                      groupText,
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        color: primaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      student.email,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              SizedBox(width: 10.w),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                height: 28.h,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 9.w,
+                ),
+                constraints: BoxConstraints(
+                  minWidth: 28.w,
+                ),
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(10.r),
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(20.r),
                 ),
                 child: Text(
-                  '${student.vocationalClarity * 10}% Claridad',
+                  value.toString(),
                   style: TextStyle(
-                    color: Colors.green[700],
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.bold,
+                    color: mainColor,
+                    fontSize: 10.5.sp,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-            ],
-          ),
-          Divider(height: 24.h, color: Colors.grey[50]),
-          Row(
-            children: [
-              Icon(Icons.star_outline_rounded, size: 14.sp, color: Colors.orange),
-              SizedBox(width: 6.w),
-              Expanded(
-                child: Text(
-                  student.interests.isNotEmpty
-                      ? student.interests.join(' • ')
-                      : 'Sin intereses definidos',
-                  style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  size: 20.sp,
-                  color: primaryColor,
-                ),
-                onPressed: () {
-                  context.push(
-                    AppRoutes.realChat.path,
-                    extra: {
-                      'contactId': student.id,
-                      'contactName': student.name,
-                    },
-                  );
-                },
-                visualDensity: VisualDensity.compact,
-              ),
-              TextButton(
-                onPressed: () {
-                  context.push(
-                    AppRoutes.studentFile.path,
-                    extra: {
-                      'studentId': student.id,
-                      'studentName': student.name,
-                    },
-                  );
-                },
-                style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                child: Text(
-                  'Ver Perfil',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12.sp,
-                    color: primaryColor,
-                  ),
-                ),
+              SizedBox(width: 4.w),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.grey.shade400,
+                size: 23.sp,
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildAlertsTab(CounselorProvider provider) {
-    if (provider.consultations.isEmpty) {
-      return Center(
-        child: Text(
-          'No hay alertas pendientes',
-          style: TextStyle(color: Colors.grey[500], fontSize: 16.sp),
-        ),
-      );
-    }
-
-    return ListView(
-      padding: EdgeInsets.all(20.w),
-      children: provider.consultations
-          .map((alert) => _buildAlertItem(alert.studentName, alert.message, 'Hace poco'))
-          .toList(),
-    );
-  }
-
-  Widget _buildMiniStatsRow(CounselorProvider provider) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildMiniStat(provider.solicitudesCount.toString(), 'SOLICITUDES'),
-          Container(height: 20.h, width: 1.w, color: Colors.grey[100]),
-          _buildMiniStat(provider.groupsCount.toString(), 'GRUPOS'),
-          Container(height: 20.h, width: 1.w, color: Colors.grey[100]),
-          _buildMiniStat(provider.appointments.length.toString(), 'CITAS'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionsGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      childAspectRatio: 1.4,
-      crossAxisSpacing: 12.w,
-      mainAxisSpacing: 12.w,
-      children: [
-        _buildQuickAction(
-          'Mapa Vocacional',
-          Icons.map_outlined,
-              () => context.push(AppRoutes.vocationalMap.path),
-          highlight: true,
-        ),
-        _buildQuickAction(
-          'Crear Grupo',
-          Icons.group_add_outlined,
-              () => _showCreateGroupDialog(context),
-        ),
-        _buildQuickAction(
-          'Ver Agenda',
-          Icons.calendar_today_outlined,
-              () => setState(() => _selectedIndex = 3),
-        ),
-        _buildQuickAction(
-          'Mensajes',
-          Icons.chat_bubble_outline_rounded,
-              () => context.push(AppRoutes.chatContacts.path),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader(
-      String title, {
-        String? trailing,
-        bool hasDot = false,
-      }) {
-    return Row(
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF1D1B4B),
-          ),
-        ),
-        if (hasDot) ...[
-          SizedBox(width: 8.w),
-          Container(
-            width: 8.w,
-            height: 8.w,
-            decoration: const BoxDecoration(
-              color: Colors.redAccent,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ],
-        const Spacer(),
-        if (trailing != null)
-          Text(
-            trailing,
-            style: TextStyle(
-              fontSize: 12.sp,
-              color: primaryColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildMainStatCard(
-      String label,
-      String value,
-      IconData icon,
-      Color color,
-      String sub,
+  Widget _buildPrioritySection(
+      CounselorProvider provider,
+      List<StudentConsultationEntity> consultations,
       ) {
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, color: color, size: 22.sp),
-              Text(
-                value,
-                style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w900),
-              ),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w800,
-              color: Colors.grey[800],
-            ),
-          ),
-          Text(
-            sub,
-            style: TextStyle(fontSize: 9.sp, color: Colors.grey[400]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMiniStat(String value, String label) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+    if (consultations.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(
+          horizontal: 18.w,
+          vertical: 20.h,
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 9.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAlertItem(String name, String sub, String time) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: Colors.grey[100]!),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20.r,
-            child: Text(name.isNotEmpty ? name[0] : '?'),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(
-                  sub,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.chevron_right, color: Colors.grey[300]),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickAction(
-      String title,
-      IconData icon,
-      VoidCallback onTap, {
-        bool highlight = false,
-      }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20.r),
-      child: Container(
         decoration: BoxDecoration(
-          color: highlight ? const Color(0xFFF5F3FF) : Colors.white,
-          borderRadius: BorderRadius.circular(20.r),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(21.r),
           border: Border.all(
-            color: highlight ? const Color(0xFFDED9FF) : Colors.grey[100]!,
+            color: const Color(0xFFECECF3),
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
-            Icon(icon, color: primaryColor, size: 28.sp),
-            SizedBox(height: 8.h),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13.sp,
-                color: const Color(0xFF1D1B4B),
+            Container(
+              width: 48.w,
+              height: 48.w,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF8ED),
+                borderRadius: BorderRadius.circular(15.r),
+              ),
+              child: Icon(
+                Icons.check_circle_outline_rounded,
+                color: const Color(0xFF159947),
+                size: 26.sp,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatMexicoDate(String? isoString) {
-    if (isoString == null) return 'N/A';
-
-    try {
-      final date = DateTime.parse(isoString).toUtc().subtract(
-        const Duration(hours: 6),
-      );
-      return DateFormat('dd/MM/yyyy hh:mm a').format(date);
-    } catch (_) {
-      return isoString;
-    }
-  }
-
-  Widget _buildDetailItem(String label, dynamic value) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12.h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12.sp,
-              color: Colors.grey,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            value?.toString() ?? 'N/A',
-            style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGroupDetails(String groupId) async {
-    final provider = context.read<CounselorProvider>();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    final details = await provider.getGroupDetails(groupId);
-
-    if (mounted) Navigator.pop(context);
-
-    if (details != null && mounted) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => Container(
-          padding: EdgeInsets.all(24.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Detalles del Grupo',
-                style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900),
-              ),
-              SizedBox(height: 16.h),
-              _buildDetailItem('Nombre', details['name']),
-              _buildDetailItem('Código de Acceso', details['accessCode']),
-              _buildDetailItem(
-                'Fecha de Creación',
-                _formatMexicoDate(details['createdAt']),
-              ),
-              _buildDetailItem(
-                'Última Actualización',
-                _formatMexicoDate(details['updatedAt']),
-              ),
-              SizedBox(height: 24.h),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Cerrar'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-  }
-
-  void _showEditGroupDialog(BuildContext context, Map<String, dynamic> group) {
-    final nameController = TextEditingController(text: group['name']?.toString());
-    final codeController =
-    TextEditingController(text: group['accessCode']?.toString());
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          top: 24.h,
-          left: 24.w,
-          right: 24.w,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Editar Grupo',
-                style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900),
-              ),
-              SizedBox(height: 24.h),
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Nombre del grupo',
-                  prefixIcon: const Icon(Icons.edit_outlined),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F9FE),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16.r),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              SizedBox(height: 16.h),
-              TextField(
-                controller: codeController,
-                decoration: InputDecoration(
-                  labelText: 'Código de acceso',
-                  prefixIcon: const Icon(Icons.vpn_key_outlined),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F9FE),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16.r),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                textCapitalization: TextCapitalization.characters,
-              ),
-              SizedBox(height: 32.h),
-              SizedBox(
-                width: double.infinity,
-                height: 56.h,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16.r),
-                    ),
-                  ),
-                  onPressed: () async {
-                    final success =
-                    await context.read<CounselorProvider>().updateGroup(
-                      group['id'].toString(),
-                      name: nameController.text,
-                      accessCode: codeController.text,
-                    );
-
-                    if (success && mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Grupo actualizado correctamente'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Guardar Cambios'),
-                ),
-              ),
-              SizedBox(height: 32.h),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showCreateGroupDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final codeController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          top: 24.h,
-          left: 24.w,
-          right: 24.w,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2.r),
-                  ),
-                ),
-              ),
-              SizedBox(height: 24.h),
-              Row(
+            SizedBox(width: 13.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: EdgeInsets.all(10.w),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F3FF),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Icon(
-                      Icons.group_add_outlined,
-                      color: primaryColor,
-                      size: 24.sp,
+                  Text(
+                    'Todo está en orden',
+                    style: TextStyle(
+                      color: _darkText,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  SizedBox(width: 16.w),
+                  SizedBox(height: 4.h),
                   Text(
-                    'Crear Nuevo Grupo',
+                    'No hay alumnos que requieran atención inmediata.',
                     style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFF1D1B4B),
+                      color: Colors.grey.shade600,
+                      fontSize: 10.8.sp,
+                      height: 1.3,
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 8.h),
-              Text(
-                'Define un nombre y un código único para que tus alumnos puedan unirse.',
-                style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
-              ),
-              SizedBox(height: 24.h),
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Nombre del grupo',
-                  hintText: 'Ej. 6to Semestre A',
-                  prefixIcon: const Icon(Icons.edit_outlined),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F9FE),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16.r),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              SizedBox(height: 16.h),
-              TextField(
-                controller: codeController,
-                decoration: InputDecoration(
-                  labelText: 'Código de acceso',
-                  hintText: 'Ej. ORIENTA2024',
-                  prefixIcon: const Icon(Icons.vpn_key_outlined),
-                  helperText: 'Este código es el que compartirás con tus alumnos.',
-                  filled: true,
-                  fillColor: const Color(0xFFF8F9FE),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16.r),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                textCapitalization: TextCapitalization.characters,
-              ),
-              SizedBox(height: 32.h),
-              SizedBox(
-                width: double.infinity,
-                height: 56.h,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16.r),
-                    ),
-                    elevation: 0,
-                  ),
-                  onPressed: () async {
-                    if (nameController.text.isNotEmpty &&
-                        codeController.text.isNotEmpty) {
-                      final success =
-                      await context.read<CounselorProvider>().createGroup(
-                        nameController.text,
-                        codeController.text,
-                      );
+            ),
+          ],
+        ),
+      );
+    }
 
-                      if (success && mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Grupo creado correctamente'),
-                            behavior: SnackBarBehavior.floating,
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                    }
+    final visibleConsultations =
+    consultations.take(3).toList();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(21.r),
+        border: Border.all(
+          color: const Color(0xFFECECF3),
+        ),
+      ),
+      child: Column(
+        children: List.generate(
+          visibleConsultations.length,
+              (index) {
+            final consultation =
+            visibleConsultations[index];
+
+            final String studentName =
+            _resolveConsultationStudentName(
+              provider,
+              consultation,
+            );
+
+            return Column(
+              children: [
+                _buildPriorityStudentRow(
+                  studentName: studentName,
+                  reason: consultation.message,
+                  onTap: () {
+                    _openConsultationStudent(
+                      consultation,
+                    );
                   },
-                  child: Text(
-                    'Crear Grupo',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
+                ),
+                if (index !=
+                    visibleConsultations.length - 1)
+                  Divider(
+                    height: 1,
+                    color: Colors.grey.shade100,
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPriorityStudentRow({
+    required String studentName,
+    required String reason,
+    required VoidCallback onTap,
+  }) {
+    final String cleanName =
+    studentName.trim().isNotEmpty
+        ? studentName.trim()
+        : 'Alumno';
+
+    final String initial = cleanName
+        .substring(0, 1)
+        .toUpperCase();
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.all(14.w),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22.r,
+                backgroundColor:
+                _primaryColor.withOpacity(0.09),
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    color: _primaryColor,
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              SizedBox(height: 32.h),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      cleanName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _darkText,
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      reason,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 10.5.sp,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Container(
+                width: 38.w,
+                height: 38.w,
+                decoration: BoxDecoration(
+                  color: _primaryColor.withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: _primaryColor,
+                  size: 22.sp,
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  // =========================================================
+  // GRUPOS
+  // =========================================================
+
+  Widget _buildGroupsTab(
+      CounselorProvider provider,
+      ) {
+    return RefreshIndicator(
+      color: _primaryColor,
+      onRefresh: provider.loadDashboardData,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              18.w,
+              18.h,
+              18.w,
+              28.h,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Mis grupos',
+                          style: TextStyle(
+                            color: _darkText,
+                            fontSize: 21.sp,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _showCreateGroupDialog,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.circular(14.r),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.add_rounded,
+                        ),
+                        label: const Text(
+                          'Nuevo grupo',
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 18.h),
+                  if (provider.groups.isEmpty)
+                    _buildEmptyGroups()
+                  else
+                    ...provider.groups.map(
+                          (rawGroup) {
+                        if (rawGroup is! Map) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return _buildGroupCard(
+                          Map<String, dynamic>.from(
+                            rawGroup,
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyGroups() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: 24.w,
+        vertical: 42.h,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22.r),
+        border: Border.all(
+          color: const Color(0xFFECECF3),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.groups_outlined,
+            size: 64.sp,
+            color: Colors.grey.shade300,
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            'No tienes grupos creados',
+            style: TextStyle(
+              color: _darkText,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(height: 7.h),
+          Text(
+            'Crea un grupo para comenzar a dar seguimiento a tus alumnos.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12.sp,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupCard(
+      Map<String, dynamic> group,
+      ) {
+    final String groupId =
+    (group['id'] ?? '').toString();
+
+    final String groupName =
+    (group['name'] ?? 'Grupo sin nombre')
+        .toString();
+
+    final String accessCode =
+    (group['accessCode'] ??
+        group['access_code'] ??
+        group['code'] ??
+        '---')
+        .toString();
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 14.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(21.r),
+        border: Border.all(
+          color: const Color(0xFFECECF3),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: groupId.isEmpty
+              ? null
+              : () {
+            context.push(
+              AppRoutes.groupStudents.path,
+              extra: {
+                'groupId': groupId,
+                'groupName': groupName,
+              },
+            );
+          },
+          borderRadius: BorderRadius.circular(21.r),
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Row(
+              children: [
+                Container(
+                  width: 50.w,
+                  height: 50.w,
+                  decoration: BoxDecoration(
+                    color:
+                    _primaryColor.withOpacity(0.09),
+                    borderRadius:
+                    BorderRadius.circular(16.r),
+                  ),
+                  child: Icon(
+                    Icons.groups_rounded,
+                    color: _primaryColor,
+                    size: 27.sp,
+                  ),
+                ),
+                SizedBox(width: 14.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        groupName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _darkText,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 5.h),
+                      Text(
+                        'Código: $accessCode',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 11.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // AGENDA
+  // =========================================================
+
+  Widget _buildAgendaTab(
+      CounselorProvider provider,
+      ) {
+    final appointments =
+    List<AppointmentEntity>.from(
+      provider.appointments,
+    );
+
+    appointments.sort(
+          (a, b) => a.sessionDate.compareTo(
+        b.sessionDate,
+      ),
+    );
+
+    return RefreshIndicator(
+      color: _primaryColor,
+      onRefresh: provider.loadDashboardData,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              18.w,
+              18.h,
+              18.w,
+              28.h,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  Text(
+                    'Agenda',
+                    style: TextStyle(
+                      color: _darkText,
+                      fontSize: 21.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 18.h),
+                  if (appointments.isEmpty)
+                    _buildEmptyAgenda()
+                  else
+                    ...appointments.map(
+                          (appointment) =>
+                          _buildAppointmentCard(
+                            provider,
+                            appointment,
+                          ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyAgenda() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: 24.w,
+        vertical: 42.h,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22.r),
+        border: Border.all(
+          color: const Color(0xFFECECF3),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.calendar_month_outlined,
+            size: 64.sp,
+            color: Colors.grey.shade300,
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            'No tienes citas programadas',
+            style: TextStyle(
+              color: _darkText,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppointmentCard(
+      CounselorProvider provider,
+      AppointmentEntity appointment,
+      ) {
+    final String studentName = _getStudentName(
+      provider,
+      appointment.studentId,
+    );
+
+    final String date = DateFormat(
+      'dd/MM/yyyy · hh:mm a',
+    ).format(
+      appointment.sessionDate,
+    );
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 13.h),
+      padding: EdgeInsets.all(15.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(19.r),
+        border: Border.all(
+          color: const Color(0xFFECECF3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46.w,
+            height: 46.w,
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.09),
+              borderRadius: BorderRadius.circular(14.r),
+            ),
+            child: const Icon(
+              Icons.event_note_rounded,
+              color: _primaryColor,
+            ),
+          ),
+          SizedBox(width: 13.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Text(
+                  studentName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _darkText,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 3.h),
+                Text(
+                  appointment.motive,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 11.sp,
+                  ),
+                ),
+                SizedBox(height: 3.h),
+                Text(
+                  date,
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 10.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================
+  // NAVEGACIÓN
+  // =========================================================
+
+  Widget _buildBottomNavigationBar() {
+    return BottomNavigationBar(
+      currentIndex: _selectedIndex,
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: Colors.white,
+      selectedItemColor: _primaryColor,
+      unselectedItemColor: Colors.grey.shade400,
+      selectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w800,
+      ),
+      onTap: (index) {
+        if (index == 3) {
+          context.push(
+            AppRoutes.chatContacts.path,
+          );
+          return;
+        }
+
+        if (index == 4) {
+          context.push(
+            AppRoutes.counselorProfile.path,
+          );
+          return;
+        }
+
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_rounded),
+          label: 'Inicio',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.groups_outlined),
+          label: 'Grupos',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(
+            Icons.calendar_month_outlined,
+          ),
+          label: 'Agenda',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(
+            Icons.chat_bubble_outline_rounded,
+          ),
+          label: 'Mensajes',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(
+            Icons.person_outline_rounded,
+          ),
+          label: 'Perfil',
+        ),
+      ],
+    );
+  }
+
+  // =========================================================
+  // NOTIFICACIONES
+  // =========================================================
+
+  void _showNotificationsSheet(
+      CounselorProvider provider,
+      ) {
+    final consultations = provider.consultations
+        .where(
+          (consultation) =>
+      consultation.status.trim().toLowerCase() !=
+          'responded',
+    )
+        .toList();
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (
+          BuildContext bottomSheetContext,
+          ) {
+        return SizedBox(
+          height: 0.72.sh,
+          child: Container(
+            padding: EdgeInsets.fromLTRB(
+              20.w,
+              18.h,
+              20.w,
+              24.h,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(28.r),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius:
+                      BorderRadius.circular(20.r),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                Text(
+                  'Notificaciones',
+                  style: TextStyle(
+                    color: _darkText,
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                Expanded(
+                  child: consultations.isEmpty
+                      ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons
+                              .notifications_off_outlined,
+                          color: Colors.grey.shade300,
+                          size: 48.sp,
+                        ),
+                        SizedBox(height: 12.h),
+                        Text(
+                          'No hay notificaciones pendientes',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color:
+                            Colors.grey.shade600,
+                            fontSize: 13.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                      : ListView.separated(
+                    itemCount: consultations.length,
+                    separatorBuilder: (_, __) {
+                      return SizedBox(height: 10.h);
+                    },
+                    itemBuilder: (
+                        context,
+                        index,
+                        ) {
+                      final consultation =
+                      consultations[index];
+
+                      final String studentName =
+                      consultation.studentName
+                          .trim()
+                          .isNotEmpty
+                          ? consultation.studentName
+                          .trim()
+                          : 'Alumno';
+
+                      return Material(
+                        color: Colors.transparent,
+                        child: ListTile(
+                          tileColor: const Color(
+                            0xFFF8F7FD,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.circular(
+                              16.r,
+                            ),
+                          ),
+                          leading: CircleAvatar(
+                            backgroundColor:
+                            _primaryColor
+                                .withOpacity(0.1),
+                            child: const Icon(
+                              Icons
+                                  .notification_important_outlined,
+                              color: _primaryColor,
+                            ),
+                          ),
+                          title: Text(
+                            studentName,
+                            style: const TextStyle(
+                              color: _darkText,
+                              fontWeight:
+                              FontWeight.w800,
+                            ),
+                          ),
+                          subtitle: Text(
+                            consultation.message,
+                            maxLines: 2,
+                            overflow:
+                            TextOverflow.ellipsis,
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                          ),
+                          onTap: () {
+                            Navigator.pop(
+                              bottomSheetContext,
+                            );
+
+                            _openConsultationStudent(
+                              consultation,
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // =========================================================
+  // CREAR GRUPO
+  // =========================================================
+
+  Future<void> _showCreateGroupDialog() async {
+    final nameController = TextEditingController();
+    final codeController = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      builder: (
+          BuildContext dialogContext,
+          ) {
+        bool submitting = false;
+
+        return StatefulBuilder(
+          builder: (
+              context,
+              setDialogState,
+              ) {
+            return AlertDialog(
+              title: const Text(
+                'Crear grupo',
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre del grupo',
+                      prefixIcon: Icon(Icons.groups),
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextField(
+                    controller: codeController,
+                    textCapitalization:
+                    TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      labelText: 'Código opcional',
+                      prefixIcon: Icon(Icons.key),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: submitting
+                      ? null
+                      : () {
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text(
+                    'Cancelar',
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: submitting
+                      ? null
+                      : () async {
+                    final String name =
+                    nameController.text.trim();
+
+                    if (name.isEmpty) {
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Ingresa el nombre del grupo.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    setDialogState(() {
+                      submitting = true;
+                    });
+
+                    final bool created = await context
+                        .read<CounselorProvider>()
+                        .createGroup(
+                      name,
+                      codeController.text,
+                    );
+
+                    if (!dialogContext.mounted) {
+                      return;
+                    }
+
+                    if (created) {
+                      Navigator.pop(dialogContext);
+                    } else {
+                      setDialogState(() {
+                        submitting = false;
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: submitting
+                      ? SizedBox(
+                    width: 20.w,
+                    height: 20.w,
+                    child:
+                    const CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                      : const Text('Crear'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    nameController.dispose();
+    codeController.dispose();
+  }
+
+  // =========================================================
+  // HELPERS
+  // =========================================================
+
+  Widget _buildSectionTitle(
+      String title,
+      ) {
+    return Text(
+      title,
+      style: TextStyle(
+        color: _darkText,
+        fontSize: 18.sp,
+        fontWeight: FontWeight.w900,
+        letterSpacing: -0.2,
+      ),
+    );
+  }
+
+  List<AppointmentEntity> _getUpcomingAppointments(
+      List<AppointmentEntity> appointments,
+      ) {
+    final DateTime now = DateTime.now();
+
+    final upcoming = appointments
+        .where(
+          (appointment) =>
+          appointment.sessionDate.isAfter(
+            now.subtract(
+              const Duration(minutes: 30),
+            ),
+          ),
+    )
+        .toList();
+
+    upcoming.sort(
+          (a, b) => a.sessionDate.compareTo(
+        b.sessionDate,
+      ),
+    );
+
+    return upcoming;
+  }
+
+  int _appointmentsTodayCount(
+      List<AppointmentEntity> appointments,
+      ) {
+    final DateTime now = DateTime.now();
+
+    return appointments.where(
+          (appointment) {
+        final date = appointment.sessionDate;
+
+        return date.year == now.year &&
+            date.month == now.month &&
+            date.day == now.day;
+      },
+    ).length;
+  }
+
+  String _getStudentName(
+      CounselorProvider provider,
+      String studentId,
+      ) {
+    for (final student in provider.students) {
+      if (student.id.trim() == studentId.trim()) {
+        final String name = student.name.trim();
+
+        if (name.isNotEmpty &&
+            name.toLowerCase() !=
+                'alumno sin nombre' &&
+            name.toLowerCase() != 'alumno') {
+          return name;
+        }
+      }
+    }
+
+    return '';
+  }
+
+  String _resolveConsultationStudentName(
+      CounselorProvider provider,
+      StudentConsultationEntity consultation,
+      ) {
+    final String consultationName =
+    consultation.studentName.trim();
+
+    if (consultationName.isNotEmpty &&
+        consultationName.toLowerCase() !=
+            'alumno sin nombre' &&
+        consultationName.toLowerCase() != 'alumno') {
+      return consultationName;
+    }
+
+    return _getStudentName(
+      provider,
+      consultation.studentId,
+    );
+  }
+
+  void _openConsultationStudent(
+      StudentConsultationEntity consultation,
+      ) {
+    final String studentId =
+    consultation.studentId.trim();
+
+    if (studentId.isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'La alerta no contiene un alumno válido.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+      return;
+    }
+
+    final String studentName =
+    consultation.studentName.trim().isNotEmpty
+        ? consultation.studentName.trim()
+        : 'Alumno';
+
+    context.push(
+      AppRoutes.studentFile.path,
+      extra: {
+        'studentId': studentId,
+        'studentName': studentName,
+      },
+    );
+  }
+
+  void _showResultsMessage(
+      int resultsPending,
+      ) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            resultsPending > 0
+                ? 'Tienes $resultsPending resultados pendientes por revisar.'
+                : 'No hay resultados pendientes.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 }

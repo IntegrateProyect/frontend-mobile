@@ -59,7 +59,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     ),
                   ),
                   SizedBox(height: 32.h),
-                  
+
                   // Cambiamos GridView por una lista de Widgets para permitir altura dinámica
                   _buildRoleCard(
                     title: 'Estudiante',
@@ -83,7 +83,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 ],
               ),
             ),
-            
+
             _buildFooter(),
           ],
         ),

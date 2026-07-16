@@ -26,6 +26,11 @@ class StudentBottomNavigationBar extends StatelessWidget {
       path: AppRoutes.games.path,
     ),
     _StudentNavigationItem(
+      label: 'Agenda',
+      icon: Icons.calendar_month_outlined,
+      path: AppRoutes.studentAgenda.path,
+    ),
+    _StudentNavigationItem(
       label: 'Resultados',
       icon: Icons.bar_chart_outlined,
       path: AppRoutes.vocationalResults.path,

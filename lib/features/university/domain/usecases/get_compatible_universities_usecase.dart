@@ -1,12 +1,10 @@
-import '../../../university/domain/entities/university_catalog_page_entity.dart';
-import '../../../university/domain/repositories/university_repository.dart';
+import '../entities/university_catalog_page_entity.dart';
+import '../repositories/university_repository.dart';
 
 class GetCompatibleUniversitiesUseCase {
   final UniversityRepository repository;
 
-  GetCompatibleUniversitiesUseCase(
-    this.repository,
-  );
+  GetCompatibleUniversitiesUseCase(this.repository);
 
   Future<UniversityCatalogPageEntity> call({
     int page = 1,

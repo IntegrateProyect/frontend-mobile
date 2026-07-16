@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../university/domain/entities/university_entity.dart';
 import '../../../domain/entities/university_entity.dart';
 import '../common/student_ui_colors.dart';
 
