@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+
+import '../../../../counselor/domain/entities/appointment_entity.dart';
 import '../../../domain/entities/appointment_entity.dart';
 import '../common/student_ui_colors.dart';
-import 'appointment_booking_sheet.dart';
 
 class StudentAppointmentsSection extends StatelessWidget {
   final List<AppointmentEntity> appointments;
@@ -20,118 +21,195 @@ class StudentAppointmentsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Mis Citas',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: StudentUiColors.darkText,
-              ),
-            ),
-            TextButton.icon(
-              onPressed: () => showAppointmentBookingSheet(context),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Agendar'),
-              style: TextButton.styleFrom(foregroundColor: StudentUiColors.primary),
-            ),
-          ],
+        Text(
+          'Mis citas',
+          style: TextStyle(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w800,
+            color: StudentUiColors.darkText,
+          ),
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: 12.h),
+
         if (appointments.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: Colors.grey.shade100),
-            ),
-            child: Column(
-              children: [
-                Icon(Icons.calendar_today_outlined, color: Colors.grey[300], size: 40.sp),
-                SizedBox(height: 8.h),
-                Text(
-                  'No tienes citas programadas',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13.sp),
-                ),
-              ],
-            ),
-          )
+          _buildEmptyAppointments()
         else
-          ...appointments.take(2).map((apt) => _buildAppointmentCard(apt)),
+          ...appointments
+              .take(3)
+              .map(
+                (appointment) => _buildAppointmentCard(appointment),
+          ),
       ],
     );
   }
 
-  Widget _buildAppointmentCard(AppointmentEntity apt) {
-    final dateStr = DateFormat('EEEE d MMMM', 'es').format(apt.sessionDate);
-    final timeStr = DateFormat('hh:mm a').format(apt.sessionDate);
+  Widget _buildEmptyAppointments() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: 22.w,
+        vertical: 22.h,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: const Color(0xFFECEEF4),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.025),
+            blurRadius: 10,
+            offset: Offset(0, 4.h),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 52.w,
+            height: 52.w,
+            decoration: BoxDecoration(
+              color: StudentUiColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Icon(
+              Icons.calendar_month_outlined,
+              color: StudentUiColors.primary.withOpacity(0.55),
+              size: 29.sp,
+            ),
+          ),
+          SizedBox(height: 13.h),
+          Text(
+            'Aquí aparecerán las citas con tu orientador',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: StudentUiColors.darkText,
+              fontSize: 13.5.sp,
+              fontWeight: FontWeight.w700,
+              height: 1.3,
+            ),
+          ),
+          SizedBox(height: 5.h),
+          Text(
+            'Por ahora no tienes ninguna.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppointmentCard(AppointmentEntity appointment) {
+    final String dateText = DateFormat(
+      'EEEE d MMMM',
+      'es',
+    ).format(appointment.sessionDate);
+
+    final String timeText = DateFormat(
+      'hh:mm a',
+      'es',
+    ).format(appointment.sessionDate);
+
+    final Color statusColor = _getStatusColor(
+      appointment.status,
+    );
 
     return Container(
+      width: double.infinity,
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: const Color(0xFFECEEF4),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4.h),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(10.w),
+            width: 44.w,
+            height: 44.w,
             decoration: BoxDecoration(
-              color: StudentUiColors.primary.withOpacity(0.1),
+              color: StudentUiColors.primary.withOpacity(0.10),
               borderRadius: BorderRadius.circular(12.r),
             ),
-            child: const Icon(Icons.event, color: StudentUiColors.primary),
+            child: Icon(
+              Icons.event_outlined,
+              color: StudentUiColors.primary,
+              size: 23.sp,
+            ),
           ),
-          SizedBox(width: 14.w),
+          SizedBox(width: 13.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  apt.motive,
+                  appointment.motive,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.5.sp,
                     color: StudentUiColors.darkText,
                   ),
                 ),
-                SizedBox(height: 4.h),
-                Text(
-                  '$dateStr • $timeStr',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: Colors.grey[600],
-                  ),
+                SizedBox(height: 5.h),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: 14.sp,
+                      color: Colors.grey.shade500,
+                    ),
+                    SizedBox(width: 4.w),
+                    Expanded(
+                      child: Text(
+                        '$dateText • $timeText',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5.sp,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          SizedBox(width: 8.w),
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            padding: EdgeInsets.symmetric(
+              horizontal: 8.w,
+              vertical: 5.h,
+            ),
             decoration: BoxDecoration(
-              color: _getStatusColor(apt.status).withOpacity(0.1),
+              color: statusColor.withOpacity(0.10),
               borderRadius: BorderRadius.circular(8.r),
             ),
             child: Text(
-              _getStatusLabel(apt.status),
+              _getStatusLabel(appointment.status),
               style: TextStyle(
-                fontSize: 10.sp,
-                fontWeight: FontWeight.bold,
-                color: _getStatusColor(apt.status),
+                fontSize: 9.sp,
+                fontWeight: FontWeight.w800,
+                color: statusColor,
               ),
             ),
           ),
@@ -141,20 +219,36 @@ class StudentAppointmentsSection extends StatelessWidget {
   }
 
   Color _getStatusColor(String status) {
-    switch (status) {
-      case 'SCHEDULED': return Colors.blue;
-      case 'COMPLETED': return Colors.green;
-      case 'CANCELLED': return Colors.red;
-      default: return Colors.grey;
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+      case 'SCHEDULED':
+        return Colors.blue;
+
+      case 'COMPLETED':
+        return Colors.green;
+
+      case 'CANCELLED':
+        return Colors.red;
+
+      default:
+        return Colors.grey;
     }
   }
 
   String _getStatusLabel(String status) {
-    switch (status) {
-      case 'SCHEDULED': return 'PENDIENTE';
-      case 'COMPLETED': return 'COMPLETADA';
-      case 'CANCELLED': return 'CANCELADA';
-      default: return status;
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+      case 'SCHEDULED':
+        return 'PENDIENTE';
+
+      case 'COMPLETED':
+        return 'COMPLETADA';
+
+      case 'CANCELLED':
+        return 'CANCELADA';
+
+      default:
+        return status.toUpperCase();
     }
   }
 }

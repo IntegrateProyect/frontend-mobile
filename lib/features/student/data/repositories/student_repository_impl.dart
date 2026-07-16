@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../../core/api/IApi.dart';
 import '../../../../core/utils/UserService.dart';
 
+import '../../../counselor/data/datasources/models/appointment_model.dart';
+import '../../../counselor/domain/entities/appointment_entity.dart';
+import '../../../university/data/datasources/models/university_catalog_page_model.dart';
+import '../../../university/domain/entities/scholarship_entity.dart';
+import '../../../university/domain/entities/university_catalog_page_entity.dart';
 import '../../domain/entities/alumni_entity.dart';
 import '../../domain/entities/career_entity.dart';
 import '../../domain/entities/event_entity.dart';
@@ -39,10 +44,6 @@ class StudentRepositoryImpl implements StudentRepository {
 
     final response = await api.getStudentProfile(token);
 
-    debugPrint(
-      'GET STUDENT PROFILE RESPONSE: $response',
-    );
-
     final dynamic data = response['data'] ?? response;
 
     if (data is Map<String, dynamic>) {
@@ -72,25 +73,21 @@ class StudentRepositoryImpl implements StudentRepository {
       );
     }
 
-    final model = StudentProfileModel(
-      id: profile.id,
-      name: profile.name,
-      email: profile.email,
-      profileImageUrl: profile.profileImageUrl,
-      groupName: profile.groupName,
-      groupCode: profile.groupCode,
-      subjectsLiked: profile.subjectsLiked,
-      subjectsDisliked: profile.subjectsDisliked,
-      interests: profile.interests,
-      skills: profile.skills,
-      needsScholarship: profile.needsScholarship,
-      studyAbroad: profile.studyAbroad,
-      vocationalClarity: profile.vocationalClarity,
-    );
+    // Mapeo directo para evitar errores de compilación con toJson()
+    final Map<String, dynamic> profileData = {
+      'name': profile.name,
+      'subjectsLiked': profile.subjectsLiked,
+      'subjectsDisliked': profile.subjectsDisliked,
+      'interests': profile.interests,
+      'skills': profile.skills,
+      'needsScholarship': profile.needsScholarship,
+      'studyAbroad': profile.studyAbroad,
+      'vocationalClarity': profile.vocationalClarity,
+    };
 
     await api.updateStudentProfile(
       token,
-      model.toJson(),
+      profileData,
     );
   }
 
@@ -141,10 +138,6 @@ class StudentRepositoryImpl implements StudentRepository {
       page: page,
       limit: limit,
       search: search,
-    );
-
-    debugPrint(
-      'GET UNIVERSITIES RESPONSE: $response',
     );
 
     return UniversityCatalogPageModel.fromJson(

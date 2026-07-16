@@ -7,7 +7,13 @@ enum AppRoutes {
 
   // Student
   home('/home'),
+
+  // Pantalla obligatoria después del primer login
+  studentProfileSetup('/student-profile-setup'),
+
+  // Pantalla normal para consultar o editar el perfil
   studentProfile('/student-profile'),
+
   vocationalResults('/vocational-results'),
   careers('/careers'),
   careerDetail('/career-detail'),
@@ -20,6 +26,7 @@ enum AppRoutes {
   favorites('/favorites'),
   requestSupport('/request-support'),
   vocationalRoute('/vocational-route'),
+  studentAgenda('/student-agenda'),
 
   // Chat
   chat('/chat'),
@@ -35,6 +42,7 @@ enum AppRoutes {
   counselorProfile('/counselor-profile'),
   vocationalMap('/vocational-map'),
   studentFile('/student-file'),
+  groupStudents('/group-students'),
 
   // University
   universityHome('/university-home'),

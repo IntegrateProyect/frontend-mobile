@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import '../../../../student/domain/entities/appointment_entity.dart';
+import '../../../domain/entities/appointment_entity.dart';
 
 class CounselorAppointmentsSection extends StatelessWidget {
   final List<AppointmentEntity> appointments;

@@ -2,29 +2,60 @@ import 'package:go_router/go_router.dart';
 
 import 'AppRoutes.dart';
 
+// =========================================================
+// ONBOARDING
+// =========================================================
+
 import '../../features/onboarding/presentation/screens/splash_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
+
+// =========================================================
+// AUTENTICACIÓN
+// =========================================================
 
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/role_selection_screen.dart';
+import '../../features/auth/presentation/screens/student_profile_setup_screen.dart';
+
+// =========================================================
+// ESTUDIANTE
+// =========================================================
 
 import '../../features/student/presentation/screens/student_home_screen.dart';
 import '../../features/student/presentation/screens/student_profile_screen.dart';
 import '../../features/student/presentation/screens/vocational_results_screen.dart';
 import '../../features/student/presentation/screens/CareersScreen.dart';
 import '../../features/student/presentation/screens/universities_screen.dart';
+import '../../features/student/presentation/screens/student_agenda_screen.dart';
+
+// =========================================================
+// MINIJUEGOS
+// =========================================================
 
 import '../../features/vocational_games/presentation/screens/games_list_screen.dart';
+
+// =========================================================
+// CHAT
+// =========================================================
 
 import '../../features/chat/presentation/screens/chat_contacts_screen.dart';
 import '../../features/chat/presentation/screens/real_chat_screen.dart';
 import '../../features/chatbot/presentation/screens/chat_screen.dart';
 
+// =========================================================
+// ORIENTADOR
+// =========================================================
+
 import '../../features/counselor/presentation/screens/counselor_home_screen.dart';
 import '../../features/counselor/presentation/screens/counselor_profile_screen.dart';
 import '../../features/counselor/presentation/screens/vocational_map_screen.dart';
 import '../../features/counselor/presentation/screens/student_file_screen.dart';
+import '../../features/counselor/presentation/screens/group_students_screen.dart';
+
+// =========================================================
+// OTROS ROLES
+// =========================================================
 
 import '../../features/admin/presentation/screens/admin_home_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_home_screen.dart';
@@ -85,6 +116,21 @@ final GoRouter appRouter = GoRouter(
     // ESTUDIANTE
     // =========================================================
 
+    /*
+     * Esta pantalla aparece después del login solamente
+     * cuando el estudiante todavía no tiene perfil vocacional.
+     */
+    GoRoute(
+      path: AppRoutes.studentProfileSetup.path,
+      builder: (context, state) {
+        return const StudentProfileSetupScreen();
+      },
+    ),
+
+    /*
+     * Home normal del estudiante.
+     * Solo entra aquí si ya tiene perfil vocacional.
+     */
     GoRoute(
       path: AppRoutes.home.path,
       builder: (context, state) {
@@ -117,6 +163,13 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.universities.path,
       builder: (context, state) {
         return const UniversitiesScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.studentAgenda.path,
+      builder: (context, state) {
+        return const StudentAgendaScreen();
       },
     ),
 
@@ -153,11 +206,14 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.realChat.path,
       builder: (context, state) {
         final args =
-        state.extra as Map<String, dynamic>;
+            state.extra as Map<String, dynamic>? ?? {};
 
         return RealChatScreen(
-          contactId: args['contactId'],
-          contactName: args['contactName'],
+          contactId:
+          args['contactId']?.toString() ?? '',
+          contactName:
+          args['contactName']?.toString() ??
+              'Contacto',
         );
       },
     ),
@@ -191,17 +247,36 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.studentFile.path,
       builder: (context, state) {
         final args =
-        state.extra as Map<String, dynamic>;
+            state.extra as Map<String, dynamic>? ?? {};
 
         return StudentFileScreen(
-          studentId: args['studentId'],
-          studentName: args['studentName'],
+          studentId:
+          args['studentId']?.toString() ?? '',
+          studentName:
+          args['studentName']?.toString() ??
+              'Estudiante',
+        );
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.groupStudents.path,
+      builder: (context, state) {
+        final args =
+            state.extra as Map<String, dynamic>? ?? {};
+
+        return GroupStudentsScreen(
+          groupId:
+          args['groupId']?.toString() ?? '',
+          groupName:
+          args['groupName']?.toString() ??
+              'Grupo',
         );
       },
     ),
 
     // =========================================================
-    // OTROS ROLES
+    // ADMINISTRADOR
     // =========================================================
 
     GoRoute(
@@ -211,12 +286,20 @@ final GoRouter appRouter = GoRouter(
       },
     ),
 
+    // =========================================================
+    // ALUMNI
+    // =========================================================
+
     GoRoute(
       path: AppRoutes.alumniHome.path,
       builder: (context, state) {
         return const AlumniHomeScreen();
       },
     ),
+
+    // =========================================================
+    // UNIVERSIDAD
+    // =========================================================
 
     GoRoute(
       path: AppRoutes.universityHome.path,

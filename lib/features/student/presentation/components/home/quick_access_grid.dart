@@ -48,20 +48,8 @@ class QuickAccessGrid extends StatelessWidget {
               color: StudentUiColors.teal,
               onTap: onMessagesTap,
             ),
-            _QuickAccessCard(
-              icon: Icons.school_outlined,
-              title: 'Carreras',
-              description: 'Explora opciones',
-              color: StudentUiColors.pink,
-              onTap: onCareersTap,
-            ),
-            _QuickAccessCard(
-              icon: Icons.account_balance_outlined,
-              title: 'Universidades',
-              description: 'Conoce instituciones',
-              color: StudentUiColors.blue,
-              onTap: onUniversitiesTap,
-            ),
+
+
             _QuickAccessCard(
               icon: Icons.event_outlined,
               title: 'Eventos',

@@ -1,88 +1,92 @@
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:confetti/confetti.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../providers/auth_provider.dart';
-import '../../../../core/utils/media_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/routes/AppRoutes.dart';
+import '../../../../core/utils/media_service.dart';
+import '../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String role;
 
   const RegisterScreen({
     super.key,
-    this.role = 'student',
+    this.role = 'estudiante',
   });
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<RegisterScreen> createState() {
+    return _RegisterScreenState();
+  }
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  static const Color _primaryColor = Color(0xFF311B92);
+  static const Color _darkTextColor = Color(0xFF1D1B4B);
+  static const Color _fieldColor = Color(0xFFF8F9FC);
+
   int _currentStep = 0;
 
   bool _acceptTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  String? _selectedRole;
   Uint8List? _profileImage;
 
   final ScrollController _scrollController = ScrollController();
-  late ConfettiController _confettiController;
 
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  final TextEditingController _nameController =
+  TextEditingController();
 
-  final _ageController = TextEditingController();
-  final _schoolController = TextEditingController();
-  final _specialtyController = TextEditingController();
+  final TextEditingController _emailController =
+  TextEditingController();
 
-  final _groupCodeController = TextEditingController();
-  final _groupNameController = TextEditingController();
+  final TextEditingController _passwordController =
+  TextEditingController();
 
-  final Set<String> _likes = {};
-  final Set<String> _dislikes = {};
-  final Set<String> _interests = {};
-  final Set<String> _skills = {};
+  final TextEditingController _confirmPasswordController =
+  TextEditingController();
 
-  bool _needsScholarship = false;
-  bool _studyAbroad = false;
-  double _careerCertainty = 5.0;
+  final TextEditingController _ageController =
+  TextEditingController();
 
-  final List<String> _subjectsList = [
-    'Matemáticas', 'Física', 'Química', 'Biología', 'Programación',
-    'Español', 'Historia', 'Inglés', 'Arte', 'Educación Física', 'Otra',
-  ];
+  final TextEditingController _schoolController =
+  TextEditingController();
 
-  final List<String> _areasList = [
-    'Tecnología', 'Robótica', 'Medicina', 'Educación', 'Negocios',
-    'Arte', 'Música', 'Deportes', 'Derecho', 'Psicología', 'Comunicación',
-    'Medio ambiente', 'Investigación', 'Otra',
-  ];
+  final TextEditingController _specialtyController =
+  TextEditingController();
 
-  final List<String> _skillsList = [
-    'Liderazgo', 'Comunicación', 'Creatividad', 'Pensamiento lógico',
-    'Resolución de problemas', 'Trabajo en equipo', 'Organización',
-    'Programación', 'Diseño', 'Investigación', 'Empatía', 'Otra',
-  ];
+  final TextEditingController _groupNameController =
+  TextEditingController();
 
-  bool get _isStudent =>
-      _selectedRole == 'student' || _selectedRole == 'estudiante';
+  final TextEditingController _groupCodeController =
+  TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedRole = widget.role;
-    _confettiController = ConfettiController(
-      duration: const Duration(seconds: 1),
-    );
+  String get _normalizedRole {
+    final role = widget.role.trim().toLowerCase();
+
+    if (role == 'student') {
+      return 'estudiante';
+    }
+
+    if (role == 'counselor') {
+      return 'orientador';
+    }
+
+    if (role == 'university') {
+      return 'universidad';
+    }
+
+    return role;
+  }
+
+  bool get _isStudent {
+    return _normalizedRole == 'estudiante';
   }
 
   @override
@@ -91,330 +95,1009 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+
     _ageController.dispose();
     _schoolController.dispose();
     _specialtyController.dispose();
-    _groupCodeController.dispose();
+
     _groupNameController.dispose();
+    _groupCodeController.dispose();
+
     _scrollController.dispose();
-    _confettiController.dispose();
+
     super.dispose();
   }
 
   void _scrollToTop() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    if (!_scrollController.hasClients) {
+      return;
     }
+
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
-  void _showMessage(String message, {bool isError = true}) {
+  void _showMessage(
+      String message, {
+        bool isError = true,
+      }) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.redAccent : const Color(0xFF311B92),
+        backgroundColor:
+        isError ? Colors.redAccent : _primaryColor,
         behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(18.w),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.r),
+        ),
       ),
     );
   }
 
   Future<void> _pickImage() async {
     final mediaService = sl<MediaService>();
-    showModalBottomSheet(
+
+    await showModalBottomSheet<void>(
       context: context,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20.r))),
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Galería'),
-              onTap: () async {
-                final bytes = await mediaService.pickImageFromGallery();
-                if (bytes != null) setState(() => _profileImage = bytes);
-                if (mounted) Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Cámara'),
-              onTap: () async {
-                final bytes = await mediaService.takePhoto();
-                if (bytes != null) setState(() => _profileImage = bytes);
-                if (mounted) Navigator.pop(context);
-              },
-            ),
-          ],
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24.r),
         ),
       ),
+      builder: (bottomSheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.h),
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.photo_library_outlined,
+                    color: _primaryColor,
+                  ),
+                  title: const Text(
+                    'Elegir desde galería',
+                  ),
+                  onTap: () async {
+                    Navigator.pop(bottomSheetContext);
+
+                    final bytes = await mediaService
+                        .pickImageFromGallery();
+
+                    if (bytes != null && mounted) {
+                      setState(() {
+                        _profileImage = bytes;
+                      });
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.camera_alt_outlined,
+                    color: _primaryColor,
+                  ),
+                  title: const Text(
+                    'Tomar una fotografía',
+                  ),
+                  onTap: () async {
+                    Navigator.pop(bottomSheetContext);
+
+                    final bytes =
+                    await mediaService.takePhoto();
+
+                    if (bytes != null && mounted) {
+                      setState(() {
+                        _profileImage = bytes;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  bool _validateCurrentStep() {
-    if (_currentStep == 0) {
-      final name = _nameController.text.trim();
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
-      final confirmPassword = _confirmPasswordController.text.trim();
+  bool _validateAccountStep() {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword =
+        _confirmPasswordController.text;
 
-      if (name.isEmpty || email.isEmpty || password.isEmpty) {
-        _showMessage('Por favor rellena los campos obligatorios');
-        return false;
-      }
-      if (password != confirmPassword) {
-        _showMessage('Las contraseñas no coinciden');
-        return false;
-      }
-      if (!_acceptTerms) {
-        _showMessage('Debes aceptar los términos y condiciones');
-        return false;
-      }
+    if (name.isEmpty) {
+      _showMessage(
+        'Escribe tu nombre completo',
+      );
+      return false;
     }
+
+    if (name.length < 3) {
+      _showMessage(
+        'El nombre debe tener mínimo 3 letras',
+      );
+      return false;
+    }
+
+    final nameRegex = RegExp(
+      r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-\']+$",
+    );
+
+    if (!nameRegex.hasMatch(name)) {
+      _showMessage(
+        'El nombre contiene caracteres no permitidos',
+      );
+      return false;
+    }
+
+    if (email.isEmpty) {
+      _showMessage(
+        'Escribe tu correo electrónico',
+      );
+      return false;
+    }
+
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+
+    if (!emailRegex.hasMatch(email)) {
+      _showMessage(
+        'Ingresa un correo electrónico válido',
+      );
+      return false;
+    }
+
+    if (password.isEmpty) {
+      _showMessage(
+        'Escribe una contraseña',
+      );
+      return false;
+    }
+
+    if (password.length < 8) {
+      _showMessage(
+        'La contraseña debe tener mínimo 8 caracteres',
+      );
+      return false;
+    }
+
+    if (confirmPassword.isEmpty) {
+      _showMessage(
+        'Confirma tu contraseña',
+      );
+      return false;
+    }
+
+    if (password != confirmPassword) {
+      _showMessage(
+        'Las contraseñas no coinciden',
+      );
+      return false;
+    }
+
+    if (!_acceptTerms) {
+      _showMessage(
+        'Debes aceptar el aviso de privacidad',
+      );
+      return false;
+    }
+
     return true;
   }
 
-  Future<void> _handleRegister() async {
-    if (!_validateCurrentStep()) return;
+  bool _validateCounselorProfile() {
+    if (_schoolController.text.trim().isEmpty) {
+      _showMessage(
+        'Escribe la institución del orientador',
+      );
+      return false;
+    }
 
-    final authProvider = context.read<AuthProvider>();
-    final router = GoRouter.of(context);
+    if (_specialtyController.text.trim().isEmpty) {
+      _showMessage(
+        'Escribe la especialidad o cargo',
+      );
+      return false;
+    }
 
-    final String mappedRole = _isStudent ? 'estudiante' : 'orientador';
+    return true;
+  }
 
-    final Map<String, dynamic> studentProfile = {
-      'subjectsLiked': _likes.toList(),
-      'subjectsDisliked': _dislikes.toList(),
-      'interests': _interests.toList(),
-      'skills': _skills.toList(),
-      'needsScholarship': _needsScholarship,
-      'studyAbroad': _studyAbroad,
-      'vocationalClarity': _careerCertainty.round().clamp(1, 10),
-    };
+  Map<String, dynamic> _buildCounselorData() {
+    final groupName = _groupNameController.text.trim();
+    final groupCode = _groupCodeController.text.trim();
 
-    final Map<String, dynamic> counselorData = {
-      'age': int.tryParse(_ageController.text.trim()) ?? 0,
+    return {
+      'age': int.tryParse(
+        _ageController.text.trim(),
+      ) ??
+          0,
       'institution': _schoolController.text.trim(),
       'specialty': _specialtyController.text.trim(),
       'group': {
-        'name': _groupNameController.text.trim().isEmpty ? 'Mi Grupo' : _groupNameController.text.trim(),
-        'accessCode': _groupCodeController.text.trim(),
+        'name': groupName.isEmpty
+            ? 'Mi Grupo'
+            : groupName,
+        'accessCode': groupCode,
       },
     };
+  }
 
-    // Pasamos el _profileImage directamente al método register
+  Future<void> _registerStudentAccount() async {
+    FocusScope.of(context).unfocus();
+
+    if (!_validateAccountStep()) {
+      return;
+    }
+
+    final authProvider =
+    context.read<AuthProvider>();
+
     final success = await authProvider.register(
       email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
+      password: _passwordController.text,
       name: _nameController.text.trim(),
-      role: mappedRole,
+      role: 'estudiante',
       privacyAccepted: _acceptTerms,
-      profileImage: _profileImage, // <-- Esto asegura que se inicie el flujo de S3
-      studentProfile: _isStudent ? studentProfile : null,
-      accessCode: _isStudent ? _groupCodeController.text.trim() : null,
-      additionalData: _isStudent ? null : counselorData,
+      profileImage: _profileImage,
+      studentProfile: null,
+      accessCode: null,
+      additionalData: null,
     );
 
-    if (success && mounted) {
-      _confettiController.play();
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            width: 280.w,
-            padding: EdgeInsets.all(32.w),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24.r)),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.celebration, color: const Color(0xFFFFD700), size: 80.sp),
-                SizedBox(height: 24.h),
-                Text('¡Bienvenido!', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 22.sp)),
-                SizedBox(height: 8.h),
-                const Text('Tu cuenta ha sido creada exitosamente.', textAlign: TextAlign.center),
-              ],
-            ),
-          ),
-        ),
-      );
+    if (!mounted) {
+      return;
+    }
 
-      await Future.delayed(const Duration(milliseconds: 2000));
-      if (mounted) router.go('/login');
-    } else if (mounted) {
-      _showMessage(authProvider.errorMessage ?? 'Error al registrar');
+    if (!success) {
+      _showMessage(
+        authProvider.errorMessage ??
+            'No fue posible crear la cuenta',
+      );
+      return;
+    }
+
+    await _showStudentRegistrationSuccess();
+
+    await authProvider.logout();
+
+    if (mounted) {
+      context.go(
+        AppRoutes.login.path,
+      );
     }
   }
 
-  void _nextStep() {
-    if (!_validateCurrentStep()) return;
-    if (_currentStep < 2) {
-      setState(() => _currentStep++);
-      _scrollToTop();
-    } else {
-      _handleRegister();
+  Future<void> _registerCounselor() async {
+    FocusScope.of(context).unfocus();
+
+    final authProvider =
+    context.read<AuthProvider>();
+
+    final success = await authProvider.register(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      name: _nameController.text.trim(),
+      role: 'orientador',
+      privacyAccepted: _acceptTerms,
+      profileImage: _profileImage,
+      studentProfile: null,
+      accessCode: null,
+      additionalData: _buildCounselorData(),
+    );
+
+    if (!mounted) {
+      return;
     }
+
+    if (!success) {
+      _showMessage(
+        authProvider.errorMessage ??
+            'No fue posible registrar al orientador',
+      );
+      return;
+    }
+
+    await _showCounselorSuccess();
+
+    await authProvider.logout();
+
+    if (mounted) {
+      context.go(
+        AppRoutes.login.path,
+      );
+    }
+  }
+
+  Future<void> _nextStep() async {
+    FocusScope.of(context).unfocus();
+
+    if (_isStudent) {
+      await _registerStudentAccount();
+      return;
+    }
+
+    if (_currentStep == 0) {
+      if (!_validateAccountStep()) {
+        return;
+      }
+
+      setState(() {
+        _currentStep = 1;
+      });
+
+      _scrollToTop();
+      return;
+    }
+
+    if (_currentStep == 1) {
+      if (!_validateCounselorProfile()) {
+        return;
+      }
+
+      setState(() {
+        _currentStep = 2;
+      });
+
+      _scrollToTop();
+      return;
+    }
+
+    await _registerCounselor();
   }
 
   void _previousStep() {
+    FocusScope.of(context).unfocus();
+
     if (_currentStep > 0) {
-      setState(() => _currentStep--);
+      setState(() {
+        _currentStep--;
+      });
+
       _scrollToTop();
-    } else {
-      Navigator.pop(context);
+      return;
     }
+
+    context.pop();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: _previousStep),
-        title: Text(_isStudent ? 'Registro Estudiante' : 'Registro Orientador', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Column(
+  Future<void>
+  _showStudentRegistrationSuccess() async {
+    BuildContext? dialogBuildContext;
+
+    final dialogFuture = showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (dialogContext) {
+        dialogBuildContext = dialogContext;
+
+        return PopScope(
+          canPop: false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.symmetric(
+              horizontal: 48.w,
+            ),
+            child: Container(
+              padding: EdgeInsets.fromLTRB(
+                26.w,
+                34.h,
+                26.w,
+                36.h,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(
+                  28.r,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(
+                      0.14,
+                    ),
+                    blurRadius: 28.r,
+                    offset: Offset(0, 12.h),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildCelebrationIcon(),
+                  SizedBox(height: 20.h),
+                  Text(
+                    '¡Registro exitoso!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 25.sp,
+                      fontWeight: FontWeight.w900,
+                      color: _darkTextColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    await Future<void>.delayed(
+      const Duration(milliseconds: 1900),
+    );
+
+    if (dialogBuildContext != null &&
+        dialogBuildContext!.mounted) {
+      Navigator.of(
+        dialogBuildContext!,
+        rootNavigator: true,
+      ).pop();
+    }
+
+    await dialogFuture;
+  }
+
+  Widget _buildCelebrationIcon() {
+    return SizedBox(
+      width: 155.w,
+      height: 135.h,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
         children: [
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 40.w),
-            child: Row(
-              children: [
-                _buildStepCircle(icon: Icons.person, step: 0),
-                _buildStepLine(step: 0),
-                _buildStepCircle(icon: _isStudent ? Icons.psychology : Icons.work, step: 1),
-                _buildStepLine(step: 1),
-                _buildStepCircle(icon: _isStudent ? Icons.groups : Icons.group_add, step: 2),
-              ],
+          Container(
+            width: 110.w,
+            height: 110.w,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1EEFF),
+              shape: BoxShape.circle,
             ),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
-              child: _buildCurrentStepContent(),
+          Transform.rotate(
+            angle: -0.18,
+            child: Icon(
+              Icons.celebration_rounded,
+              color: _primaryColor,
+              size: 78.sp,
             ),
           ),
-          _buildBottomAction(authProvider.isLoading),
+          Positioned(
+            top: 4.h,
+            left: 24.w,
+            child: _buildColorSpark(
+              color: const Color(0xFFFFC107),
+              size: 13,
+            ),
+          ),
+          Positioned(
+            top: 7.h,
+            right: 25.w,
+            child: _buildColorSpark(
+              color: const Color(0xFFFF5252),
+              size: 11,
+            ),
+          ),
+          Positioned(
+            top: 43.h,
+            right: 3.w,
+            child: _buildColorSpark(
+              color: const Color(0xFF00BFA5),
+              size: 10,
+            ),
+          ),
+          Positioned(
+            bottom: 17.h,
+            right: 20.w,
+            child: _buildColorSpark(
+              color: const Color(0xFF2196F3),
+              size: 12,
+            ),
+          ),
+          Positioned(
+            bottom: 8.h,
+            left: 26.w,
+            child: _buildColorSpark(
+              color: const Color(0xFFFF7043),
+              size: 9,
+            ),
+          ),
+          Positioned(
+            top: 50.h,
+            left: 3.w,
+            child: _buildColorSpark(
+              color: const Color(0xFFAB47BC),
+              size: 11,
+            ),
+          ),
+          Positioned(
+            top: 2.h,
+            right: 57.w,
+            child: _buildConfettiStrip(
+              color: const Color(0xFF42A5F5),
+              angle: 0.6,
+            ),
+          ),
+          Positioned(
+            bottom: 6.h,
+            right: 57.w,
+            child: _buildConfettiStrip(
+              color: const Color(0xFFFFC107),
+              angle: -0.5,
+            ),
+          ),
+          Positioned(
+            top: 32.h,
+            left: 27.w,
+            child: _buildConfettiStrip(
+              color: const Color(0xFFFF5252),
+              angle: -0.8,
+              width: 6,
+              height: 14,
+            ),
+          ),
+          Positioned(
+            top: 21.h,
+            right: 22.w,
+            child: _buildConfettiStrip(
+              color: const Color(0xFF66BB6A),
+              angle: 0.8,
+              width: 6,
+              height: 13,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCurrentStepContent() {
-    if (_currentStep == 0) return _buildStepAccount();
-    if (_isStudent) return _currentStep == 1 ? _buildStepVocationalProfile() : _buildStepJoinGroup();
-    return _currentStep == 1 ? _buildStepCounselorProfile() : _buildStepInitialGroup();
+  Widget _buildColorSpark({
+    required Color color,
+    required double size,
+  }) {
+    return Container(
+      width: size.w,
+      height: size.w,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.32),
+            blurRadius: 6.r,
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildStepAccount() {
+  Widget _buildConfettiStrip({
+    required Color color,
+    required double angle,
+    double width = 7,
+    double height = 17,
+  }) {
+    return Transform.rotate(
+      angle: angle,
+      child: Container(
+        width: width.w,
+        height: height.h,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(
+            3.r,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showCounselorSuccess() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(
+              22.r,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
+                color: _primaryColor,
+                size: 70.sp,
+              ),
+              SizedBox(height: 18.h),
+              Text(
+                '¡Registro exitoso!',
+                style: TextStyle(
+                  fontSize: 22.sp,
+                  fontWeight: FontWeight.w900,
+                  color: _darkTextColor,
+                ),
+              ),
+              SizedBox(height: 20.h),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Continuar'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider =
+    context.watch<AuthProvider>();
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: authProvider.isLoading
+              ? null
+              : _previousStep,
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.black,
+            size: 27.sp,
+          ),
+        ),
+        title: Text(
+          _isStudent
+              ? 'Registro Estudiante'
+              : 'Registro Orientador',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          /*
+           * El indicador superior solamente se muestra
+           * para el orientador.
+           *
+           * En el estudiante no aparece ningún icono
+           * encima de la fotografía.
+           */
+          if (!_isStudent)
+            _buildCounselorProgressHeader(),
+
+          Expanded(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              keyboardDismissBehavior:
+              ScrollViewKeyboardDismissBehavior
+                  .onDrag,
+              padding: EdgeInsets.fromLTRB(
+                24.w,
+                _isStudent ? 30.h : 10.h,
+                24.w,
+                30.h,
+              ),
+              child: _buildCurrentContent(),
+            ),
+          ),
+          _buildBottomAction(
+            authProvider.isLoading,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCounselorProgressHeader() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        48.w,
+        22.h,
+        48.w,
+        28.h,
+      ),
+      child: Row(
+        children: [
+          _buildStepCircle(
+            icon: Icons.person_rounded,
+            step: 0,
+          ),
+          _buildStepLine(
+            completed: _currentStep > 0,
+          ),
+          _buildStepCircle(
+            icon: Icons.work_outline_rounded,
+            step: 1,
+          ),
+          _buildStepLine(
+            completed: _currentStep > 1,
+          ),
+          _buildStepCircle(
+            icon: Icons.group_add_rounded,
+            step: 2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrentContent() {
+    if (_isStudent || _currentStep == 0) {
+      return _buildAccountStep();
+    }
+
+    if (_currentStep == 1) {
+      return _buildCounselorProfileStep();
+    }
+
+    return _buildCounselorGroupStep();
+  }
+
+  Widget _buildAccountStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Center(
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
               CircleAvatar(
-                radius: 50.r,
-                backgroundColor: const Color(0xFFF3F4F6),
-                backgroundImage: _profileImage != null ? MemoryImage(_profileImage!) : null,
-                child: _profileImage == null ? Icon(Icons.person, size: 50.sp, color: Colors.grey[400]) : null,
+                radius: 53.r,
+                backgroundColor:
+                const Color(0xFFF1F2F6),
+                backgroundImage: _profileImage != null
+                    ? MemoryImage(_profileImage!)
+                    : null,
+                child: _profileImage == null
+                    ? Icon(
+                  Icons.person_rounded,
+                  size: 54.sp,
+                  color: Colors.grey[400],
+                )
+                    : null,
               ),
               Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    padding: EdgeInsets.all(8.w),
-                    decoration: const BoxDecoration(color: Color(0xFF311B92), shape: BoxShape.circle),
-                    child: Icon(Icons.camera_alt, color: Colors.white, size: 18.sp),
+                bottom: -2.h,
+                right: -4.w,
+                child: Material(
+                  color: _primaryColor,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: _pickImage,
+                    customBorder:
+                    const CircleBorder(),
+                    child: Padding(
+                      padding: EdgeInsets.all(11.w),
+                      child: Icon(
+                        Icons.camera_alt_rounded,
+                        color: Colors.white,
+                        size: 21.sp,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
         ),
-        SizedBox(height: 24.h),
-        const Text('Información personal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        SizedBox(height: 24.h),
-        _buildInputField(label: 'Nombre completo *', hint: 'Ej. Juan Pérez', icon: Icons.person_outline, controller: _nameController),
-        SizedBox(height: 16.h),
-        _buildInputField(label: 'Correo electrónico *', hint: 'juan@gmail.com', icon: Icons.email_outlined, controller: _emailController, keyboardType: TextInputType.emailAddress),
-        SizedBox(height: 16.h),
-        _buildInputField(label: 'Contraseña *', hint: 'Mínimo 8 caracteres', icon: Icons.lock_outline, isPassword: true, controller: _passwordController, isObs: _obscurePassword, onToggleObs: () => setState(() => _obscurePassword = !_obscurePassword)),
-        SizedBox(height: 16.h),
-        _buildInputField(label: 'Confirmar contraseña *', hint: 'Repite tu contraseña', icon: Icons.lock_reset, isPassword: true, controller: _confirmPasswordController, isObs: _obscureConfirmPassword, onToggleObs: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword)),
-        SizedBox(height: 24.h),
-        Row(
-          children: [
-            Checkbox(value: _acceptTerms, onChanged: (v) => setState(() => _acceptTerms = v ?? false), activeColor: const Color(0xFF311B92)),
-            const Expanded(child: Text('Acepto los términos y condiciones')),
-          ],
+        SizedBox(height: 44.h),
+        Text(
+          'Información personal',
+          style: TextStyle(
+            fontSize: 24.sp,
+            fontWeight: FontWeight.w900,
+            color: _darkTextColor,
+          ),
+        ),
+        SizedBox(height: 28.h),
+        _buildInputField(
+          label: 'Nombre completo *',
+          hint: 'Ej. Juan Pérez',
+          icon: Icons.person_outline_rounded,
+          controller: _nameController,
+          textCapitalization:
+          TextCapitalization.words,
+        ),
+        SizedBox(height: 20.h),
+        _buildInputField(
+          label: 'Correo electrónico *',
+          hint: 'juan@gmail.com',
+          icon: Icons.email_outlined,
+          controller: _emailController,
+          keyboardType:
+          TextInputType.emailAddress,
+        ),
+        SizedBox(height: 20.h),
+        _buildInputField(
+          label: 'Contraseña *',
+          hint: 'Mínimo 8 caracteres',
+          icon: Icons.lock_outline_rounded,
+          controller: _passwordController,
+          isPassword: true,
+          obscureText: _obscurePassword,
+          onTogglePassword: () {
+            setState(() {
+              _obscurePassword =
+              !_obscurePassword;
+            });
+          },
+        ),
+        SizedBox(height: 20.h),
+        _buildInputField(
+          label: 'Confirmar contraseña *',
+          hint: 'Repite tu contraseña',
+          icon: Icons.lock_reset_rounded,
+          controller:
+          _confirmPasswordController,
+          isPassword: true,
+          obscureText:
+          _obscureConfirmPassword,
+          onTogglePassword: () {
+            setState(() {
+              _obscureConfirmPassword =
+              !_obscureConfirmPassword;
+            });
+          },
+        ),
+        SizedBox(height: 22.h),
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: 10.w,
+            vertical: 6.h,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAFAFC),
+            borderRadius: BorderRadius.circular(
+              14.r,
+            ),
+            border: Border.all(
+              color: const Color(0xFFE7E7EC),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: _acceptTerms,
+                activeColor: _primaryColor,
+                onChanged: (value) {
+                  setState(() {
+                    _acceptTerms =
+                        value ?? false;
+                  });
+                },
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: 11.h,
+                    right: 4.w,
+                  ),
+                  child: Text(
+                    'Acepto el aviso de privacidad y el uso de mis datos dentro de Oriéntate+.',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.grey[700],
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildStepVocationalProfile() {
+  Widget _buildCounselorProfileStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Cuéntanos sobre ti', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        SizedBox(height: 24.h),
-        _buildMultiSelect('Materias que te gustan *', _subjectsList, _likes),
-        _buildMultiSelect('Materias que no te gustan *', _subjectsList, _dislikes),
-        _buildMultiSelect('¿Qué áreas te interesan? *', _areasList, _interests),
-        _buildMultiSelect('¿Cuáles consideras que son tus habilidades? *', _skillsList, _skills),
-        _buildRadioOption('¿Necesitas apoyo mediante una beca? *', _needsScholarship, (v) => setState(() => _needsScholarship = v)),
-        _buildRadioOption('¿Te gustaría estudiar en el extranjero? *', _studyAbroad, (v) => setState(() => _studyAbroad = v)),
-        SizedBox(height: 24.h),
-        Text('¿Qué tan claro tienes qué carrera estudiar? *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
-        Slider(value: _careerCertainty, min: 1, max: 10, divisions: 9, label: _careerCertainty.round().toString(), activeColor: const Color(0xFF311B92), onChanged: (v) => setState(() => _careerCertainty = v)),
-        const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Nada claro', style: TextStyle(fontSize: 12, color: Colors.grey)), Text('Muy claro', style: TextStyle(fontSize: 12, color: Colors.grey))]),
-        SizedBox(height: 40.h),
+        Text(
+          'Perfil profesional',
+          style: TextStyle(
+            fontSize: 26.sp,
+            fontWeight: FontWeight.w900,
+            color: _darkTextColor,
+          ),
+        ),
+        SizedBox(height: 32.h),
+        _buildInputField(
+          label: 'Edad',
+          hint: 'Ej. 35',
+          icon: Icons.calendar_today_outlined,
+          controller: _ageController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+          ],
+        ),
+        SizedBox(height: 20.h),
+        _buildInputField(
+          label: 'Institución *',
+          hint: 'Ej. Preparatoria Sur',
+          icon: Icons.business_outlined,
+          controller: _schoolController,
+        ),
+        SizedBox(height: 20.h),
+        _buildInputField(
+          label: 'Especialidad o cargo *',
+          hint: 'Ej. Psicólogo educativo',
+          icon: Icons.badge_outlined,
+          controller: _specialtyController,
+        ),
       ],
     );
   }
 
-  Widget _buildStepJoinGroup() {
+  Widget _buildCounselorGroupStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Unirse a un grupo', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        SizedBox(height: 8.h),
-        const Text('Ingresa el código que te dio tu orientador.', style: TextStyle(color: Colors.grey)),
+        Text(
+          'Crear mi primer grupo',
+          style: TextStyle(
+            fontSize: 26.sp,
+            fontWeight: FontWeight.w900,
+            color: _darkTextColor,
+          ),
+        ),
         SizedBox(height: 32.h),
-        _buildInputField(label: 'Código del grupo *', hint: 'Ej. INV-69941', icon: Icons.qr_code, controller: _groupCodeController, inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\-_]'))]),
-      ],
-    );
-  }
-
-  Widget _buildStepCounselorProfile() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Perfil profesional', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        SizedBox(height: 32.h),
-        _buildInputField(label: 'Edad', hint: 'Ej. 35', icon: Icons.calendar_today, controller: _ageController, keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-        SizedBox(height: 16.h),
-        _buildInputField(label: 'Institución', hint: 'Ej. Prepa Sur', icon: Icons.business, controller: _schoolController),
-        SizedBox(height: 16.h),
-        _buildInputField(label: 'Especialidad / Cargo', hint: 'Ej. Psicólogo Educativo', icon: Icons.badge, controller: _specialtyController),
-      ],
-    );
-  }
-
-  Widget _buildStepInitialGroup() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Crear mi primer grupo', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        SizedBox(height: 32.h),
-        _buildInputField(label: 'Nombre del grupo', hint: 'Ej. 6to Semestre A', icon: Icons.groups, controller: _groupNameController),
-        SizedBox(height: 16.h),
-        _buildInputField(label: 'Código de acceso inicial', hint: 'Ej. GRUPO-2024', icon: Icons.vpn_key, controller: _groupCodeController, inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\-_]'))]),
+        _buildInputField(
+          label: 'Nombre del grupo',
+          hint: 'Ej. Sexto semestre A',
+          icon: Icons.groups_outlined,
+          controller: _groupNameController,
+        ),
+        SizedBox(height: 20.h),
+        _buildInputField(
+          label: 'Código de acceso inicial',
+          hint: 'Ej. GRUPO-2026',
+          icon: Icons.vpn_key_outlined,
+          controller: _groupCodeController,
+          textCapitalization:
+          TextCapitalization.characters,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(
+              RegExp(r'[a-zA-Z0-9\-_]'),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -423,105 +1106,200 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required String label,
     required String hint,
     required IconData icon,
+    required TextEditingController controller,
     bool isPassword = false,
-    bool isObs = false,
-    VoidCallback? onToggleObs,
-    TextEditingController? controller,
-    List<TextInputFormatter>? inputFormatters,
+    bool obscureText = false,
+    VoidCallback? onTogglePassword,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    TextCapitalization textCapitalization =
+        TextCapitalization.none,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-        SizedBox(height: 6.h),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w800,
+            color: Colors.black87,
+          ),
+        ),
+        SizedBox(height: 9.h),
         TextFormField(
           controller: controller,
-          obscureText: isPassword && isObs,
+          obscureText:
+          isPassword && obscureText,
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
+          textCapitalization:
+          textCapitalization,
+          style: TextStyle(
+            fontSize: 15.sp,
+            color: Colors.black87,
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(icon, size: 18),
-            suffixIcon: isPassword ? IconButton(icon: Icon(isObs ? Icons.visibility : Icons.visibility_off), onPressed: onToggleObs) : null,
+            prefixIcon: Icon(
+              icon,
+              color: Colors.grey[700],
+              size: 22.sp,
+            ),
+            suffixIcon: isPassword
+                ? IconButton(
+              onPressed:
+              onTogglePassword,
+              icon: Icon(
+                obscureText
+                    ? Icons.visibility_rounded
+                    : Icons
+                    .visibility_off_rounded,
+              ),
+            )
+                : null,
             filled: true,
-            fillColor: const Color(0xFFF9FAFB),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: const BorderSide(color: Color(0xFF311B92), width: 1.5)),
+            fillColor: _fieldColor,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 18.w,
+              vertical: 19.h,
+            ),
+            border: OutlineInputBorder(
+              borderRadius:
+              BorderRadius.circular(16.r),
+              borderSide: const BorderSide(
+                color: Color(0xFFE2E3E8),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius:
+              BorderRadius.circular(16.r),
+              borderSide: const BorderSide(
+                color: Color(0xFFE2E3E8),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius:
+              BorderRadius.circular(16.r),
+              borderSide: const BorderSide(
+                color: _primaryColor,
+                width: 1.7,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMultiSelect(String title, List<String> options, Set<String> selection) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
-        SizedBox(height: 8.h),
-        Wrap(
-          spacing: 8.w,
-          runSpacing: 8.h,
-          children: options.map((opt) => FilterChip(
-            label: Text(opt, style: TextStyle(fontSize: 11.sp)),
-            selected: selection.contains(opt),
-            onSelected: (v) => setState(() => v ? selection.add(opt) : selection.remove(opt)),
-            selectedColor: const Color(0xFF311B92).withOpacity(0.2),
-            checkmarkColor: const Color(0xFF311B92),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-            side: BorderSide(color: selection.contains(opt) ? const Color(0xFF311B92) : Colors.grey[300]!),
-          )).toList(),
-        ),
-        SizedBox(height: 16.h),
-      ],
-    );
-  }
+  Widget _buildBottomAction(bool isLoading) {
+    final buttonText = _isStudent
+        ? 'Crear cuenta'
+        : _currentStep == 2
+        ? 'Finalizar registro'
+        : 'Siguiente';
 
-  Widget _buildRadioOption(String title, bool current, Function(bool) onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
-        Row(
-          children: [
-            Radio<bool>(value: true, groupValue: current, onChanged: (v) => onChanged(v ?? false), activeColor: const Color(0xFF311B92)),
-            const Text('Sí'),
-            const SizedBox(width: 20),
-            Radio<bool>(value: false, groupValue: current, onChanged: (v) => onChanged(v ?? false), activeColor: const Color(0xFF311B92)),
-            const Text('No'),
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          24.w,
+          14.h,
+          24.w,
+          18.h,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color:
+              Colors.black.withOpacity(0.05),
+              blurRadius: 14.r,
+              offset: Offset(0, -4.h),
+            ),
           ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildBottomAction(bool isLoading) {
-    String buttonText = 'Siguiente';
-    if (_currentStep == 2) buttonText = _isStudent ? 'Crear cuenta y unirme' : 'Finalizar registro';
-    return Container(
-      padding: EdgeInsets.all(24.w),
-      child: ElevatedButton(
-        onPressed: isLoading ? null : _nextStep,
-        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF311B92), foregroundColor: Colors.white, minimumSize: Size.fromHeight(56.h), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r))),
-        child: isLoading ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(buttonText),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed:
+            isLoading ? null : _nextStep,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+              minimumSize: Size.fromHeight(57.h),
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                BorderRadius.circular(17.r),
+              ),
+              elevation: 0,
+            ),
+            child: isLoading
+                ? SizedBox(
+              width: 24.w,
+              height: 24.w,
+              child:
+              const CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2.5,
+              ),
+            )
+                : Text(
+              buttonText,
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildStepCircle({required IconData icon, required int step}) {
-    final bool done = _currentStep > step;
-    final bool active = _currentStep == step;
+  Widget _buildStepCircle({
+    required IconData icon,
+    required int step,
+  }) {
+    final done = _currentStep > step;
+    final active = _currentStep == step;
+
     return Container(
-      width: 36.w,
-      height: 36.w,
-      decoration: BoxDecoration(color: done ? const Color(0xFF311B92) : Colors.white, shape: BoxShape.circle, border: Border.all(color: active || done ? const Color(0xFF311B92) : Colors.grey[300]!, width: 2)),
-      child: Icon(done ? Icons.check : icon, size: 18.sp, color: done ? Colors.white : active ? const Color(0xFF311B92) : Colors.grey[300]),
+      width: 44.w,
+      height: 44.w,
+      decoration: BoxDecoration(
+        color:
+        done ? _primaryColor : Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: active || done
+              ? _primaryColor
+              : const Color(0xFFDDDEE3),
+          width: 2.2,
+        ),
+      ),
+      child: Icon(
+        done ? Icons.check_rounded : icon,
+        size: 22.sp,
+        color: done
+            ? Colors.white
+            : active
+            ? _primaryColor
+            : Colors.grey[350],
+      ),
     );
   }
 
-  Widget _buildStepLine({required int step}) {
-    return Expanded(child: Container(height: 2, color: _currentStep > step ? const Color(0xFF311B92) : Colors.grey[200]));
+  Widget _buildStepLine({
+    required bool completed,
+  }) {
+    return Expanded(
+      child: Container(
+        height: 2.5.h,
+        color: completed
+            ? _primaryColor
+            : const Color(0xFFE7E7EB),
+      ),
+    );
   }
 }

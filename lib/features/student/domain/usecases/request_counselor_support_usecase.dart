@@ -1,11 +1,11 @@
-import '../repositories/student_repository.dart';
+import '../../../counselor/domain/repositories/counselor_repository.dart';
 
 class RequestCounselorSupportUseCase {
-  final StudentRepository repository;
+  final CounselorRepository repository;
 
   RequestCounselorSupportUseCase(this.repository);
 
   Future<void> call(String message) {
-    return repository.requestCounselorSupport(message);
+    return repository.requestSupport(message);
   }
 }

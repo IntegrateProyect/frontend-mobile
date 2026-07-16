@@ -692,6 +692,20 @@ class API implements IApi {
   }
 
   @override
+  Future<Map<String, dynamic>> requestCounselorSupport(String token, String message) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/students/request-support',
+      token: token,
+      body: {
+        'message': message,
+      },
+    );
+
+    return _asMap(result);
+  }
+
+  @override
   Future<Map<String, dynamic>> scheduleAppointment(String token, Map<String, dynamic> data) async {
     final result = await _request(
       method: 'POST',
@@ -913,6 +927,17 @@ class API implements IApi {
       token: token,
     );
     return _asList(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> counselorScheduleAppointment(String token, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/counselors/appointments',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
   }
 
   // ==========================================================

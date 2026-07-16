@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../university/domain/entities/scholarship_entity.dart';
 import '../../../domain/entities/scholarship_entity.dart';
 
 class ScholarshipCard extends StatelessWidget {
@@ -17,7 +18,7 @@ class ScholarshipCard extends StatelessWidget {
       child: ListTile(
         title: Text(scholarship.title),
         subtitle: Text(scholarship.provider),
-        trailing: scholarship.amount != null 
+        trailing: scholarship.amount != null
           ? Text('\$${scholarship.amount!.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))
           : null,
         onTap: onTap,

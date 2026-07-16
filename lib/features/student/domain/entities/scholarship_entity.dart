@@ -1,15 +1,1 @@
-class ScholarshipEntity {
-  final String id;
-  final String title;
-  final String provider;
-  final String description;
-  final double? amount;
-
-  ScholarshipEntity({
-    required this.id,
-    required this.title,
-    required this.provider,
-    required this.description,
-    this.amount,
-  });
-}
+// OBSOLETE: Use lib/features/university/domain/entities/scholarship_entity.dart instead

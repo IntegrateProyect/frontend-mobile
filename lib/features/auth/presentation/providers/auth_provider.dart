@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/user_entity.dart';
@@ -41,19 +42,51 @@ class AuthProvider extends ChangeNotifier {
         _mediaService = mediaService;
 
   UserEntity? get user => _user;
+
   bool get isLoading => _isLoading;
+
   String? get errorMessage => _errorMessage;
+
+  String _cleanError(Object error) {
+    return error
+        .toString()
+        .replaceFirst('Exception: ', '')
+        .trim();
+  }
+
+  String _normalizeError(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ü', 'u')
+        .replaceAll('ñ', 'n')
+        .trim();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
 
   String? _validateName(String name) {
     final value = name.trim();
 
-    if (value.isEmpty) return 'El nombre completo es obligatorio';
+    if (value.isEmpty) {
+      return 'El nombre completo es obligatorio';
+    }
 
     if (value.length < 3) {
       return 'El nombre debe tener mínimo 3 letras';
     }
 
-    final nameRegex = RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-\']+$");
+    final nameRegex = RegExp(
+      r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-\']+$",
+    );
+
     if (!nameRegex.hasMatch(value)) {
       return 'El nombre contiene caracteres no permitidos';
     }
@@ -64,13 +97,15 @@ class AuthProvider extends ChangeNotifier {
   String? _validateEmail(String email) {
     final value = email.trim();
 
-    if (value.isEmpty) return 'El correo electrónico es obligatorio';
+    if (value.isEmpty) {
+      return 'El correo electrónico es obligatorio';
+    }
 
-    final regex = RegExp(
+    final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
     );
 
-    if (!regex.hasMatch(value)) {
+    if (!emailRegex.hasMatch(value)) {
       return 'Ingresa un correo electrónico válido. Ejemplo: usuario@correo.com';
     }
 
@@ -78,11 +113,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   String? _validatePassword(String password) {
-    final value = password.trim();
+    if (password.isEmpty) {
+      return 'La contraseña es obligatoria';
+    }
 
-    if (value.isEmpty) return 'La contraseña es obligatoria';
-
-    if (value.length < 8) {
+    if (password.length < 8) {
       return 'La contraseña debe tener mínimo 8 caracteres';
     }
 
@@ -100,7 +135,9 @@ class AuthProvider extends ChangeNotifier {
       'admin',
     ];
 
-    if (value.isEmpty) return 'Debes seleccionar un rol';
+    if (value.isEmpty) {
+      return 'Debes seleccionar un rol';
+    }
 
     if (!validRoles.contains(value)) {
       return 'El rol seleccionado no es válido';
@@ -109,7 +146,9 @@ class AuthProvider extends ChangeNotifier {
     return null;
   }
 
-  String? _validateStudentProfile(Map<String, dynamic>? profile) {
+  String? _validateStudentProfile(
+      Map<String, dynamic>? profile,
+      ) {
     if (profile == null) {
       return 'Faltan los datos del perfil vocacional';
     }
@@ -124,7 +163,8 @@ class AuthProvider extends ChangeNotifier {
       return 'Selecciona al menos una materia que te gusta';
     }
 
-    if (subjectsDisliked is! List || subjectsDisliked.isEmpty) {
+    if (subjectsDisliked is! List ||
+        subjectsDisliked.isEmpty) {
       return 'Selecciona al menos una materia que no te gusta';
     }
 
@@ -148,43 +188,54 @@ class AuthProvider extends ChangeNotifier {
   String? _validateGroupCode(String? accessCode) {
     final value = accessCode?.trim() ?? '';
 
-    if (value.isEmpty) return 'El código del grupo es obligatorio';
+    if (value.isEmpty) {
+      return 'Ingresa el código del grupo';
+    }
 
     if (value.length < 4) {
       return 'El código del grupo debe tener mínimo 4 caracteres';
     }
 
     if (!RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(value)) {
-      return 'El código del grupo solo puede tener letras, números, guion o guion bajo';
+      return 'El código solo puede tener letras, números, guion o guion bajo';
     }
 
     return null;
   }
 
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(
+      String email,
+      String password,
+      ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       final normalizedEmail = email.trim().toLowerCase();
-      final normalizedPassword = password.trim();
 
-      final emailError = _validateEmail(normalizedEmail);
-      if (emailError != null) throw Exception(emailError);
+      final emailError = _validateEmail(
+        normalizedEmail,
+      );
 
-      if (normalizedPassword.isEmpty) {
-        throw Exception('La contraseña es obligatoria');
+      if (emailError != null) {
+        throw Exception(emailError);
+      }
+
+      if (password.isEmpty) {
+        throw Exception(
+          'La contraseña es obligatoria',
+        );
       }
 
       _user = await _loginUseCase(
         normalizedEmail,
-        normalizedPassword,
+        password,
       );
 
       return true;
-    } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+    } catch (error) {
+      _errorMessage = _cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -208,38 +259,60 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final normalizedEmail = email.trim().toLowerCase();
-      final normalizedPassword = password.trim();
+      final normalizedEmail =
+      email.trim().toLowerCase();
+
       final normalizedName = name.trim();
-      final normalizedRole = role.trim().toLowerCase();
 
-      final nameError = _validateName(normalizedName);
-      if (nameError != null) throw Exception(nameError);
+      final normalizedRole =
+      role.trim().toLowerCase();
 
-      final emailError = _validateEmail(normalizedEmail);
-      if (emailError != null) throw Exception(emailError);
+      final nameError = _validateName(
+        normalizedName,
+      );
 
-      final passwordError = _validatePassword(normalizedPassword);
-      if (passwordError != null) throw Exception(passwordError);
+      if (nameError != null) {
+        throw Exception(nameError);
+      }
 
-      final roleError = _validateRole(normalizedRole);
-      if (roleError != null) throw Exception(roleError);
+      final emailError = _validateEmail(
+        normalizedEmail,
+      );
+
+      if (emailError != null) {
+        throw Exception(emailError);
+      }
+
+      final passwordError = _validatePassword(
+        password,
+      );
+
+      if (passwordError != null) {
+        throw Exception(passwordError);
+      }
+
+      final roleError = _validateRole(
+        normalizedRole,
+      );
+
+      if (roleError != null) {
+        throw Exception(roleError);
+      }
 
       if (!privacyAccepted) {
-        throw Exception('Debe aceptar el aviso de privacidad para poder registrarse.');
+        throw Exception(
+          'Debes aceptar el aviso de privacidad para poder registrarte.',
+        );
       }
 
-      if (normalizedRole == 'estudiante') {
-        final profileError = _validateStudentProfile(studentProfile);
-        if (profileError != null) throw Exception(profileError);
-
-        final groupError = _validateGroupCode(accessCode);
-        if (groupError != null) throw Exception(groupError);
-      }
-
+      /*
+       * Solamente crea la cuenta.
+       * El perfil vocacional del estudiante se crea
+       * después de iniciar sesión.
+       */
       _user = await _registerUseCase(
         email: normalizedEmail,
-        password: normalizedPassword,
+        password: password,
         name: normalizedName,
         role: normalizedRole,
         privacyAccepted: privacyAccepted,
@@ -250,30 +323,39 @@ class AuthProvider extends ChangeNotifier {
       final token = await _userService.getToken();
 
       if (token == null || token.isEmpty) {
-        throw Exception('No se encontró token después del registro');
+        throw Exception(
+          'No se encontró el token después del registro',
+        );
       }
 
-      if (normalizedRole == 'estudiante') {
-        await _api.createStudentProfile(token, studentProfile!);
-        final code = accessCode!.trim();
-        await _api.joinGroup(token, code);
-        await _api.getStudentProfile(token);
-      }
-
+      /*
+       * El flujo del orientador se conserva.
+       */
       if (normalizedRole == 'orientador') {
         if (additionalData == null) {
-          throw Exception('Faltan datos del orientador');
+          throw Exception(
+            'Faltan datos del orientador',
+          );
         }
 
-        if (additionalData['group'] != null) {
-          await _api.createGroup(token, additionalData['group']);
+        final group = additionalData['group'];
+
+        if (group != null) {
+          await _api.createGroup(
+            token,
+            group,
+          );
         }
       }
 
       return true;
-    } catch (e) {
-      debugPrint('XXX Error register seguro: $e');
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+    } catch (error) {
+      debugPrint(
+        'Error durante el registro: $error',
+      );
+
+      _errorMessage = _cleanError(error);
+
       return false;
     } finally {
       _isLoading = false;
@@ -281,16 +363,203 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateAvatar(Uint8List imageBytes) async {
+  /*
+   * Comprueba si el alumno tiene perfil vocacional.
+   *
+   * true:
+   *   Ya tiene perfil y puede entrar al Home.
+   *
+   * false:
+   *   Todavía no tiene perfil y debe ir a
+   *   StudentProfileSetupScreen.
+   *
+   * null:
+   *   Ocurrió un error real de conexión o sesión.
+   */
+  Future<bool?> studentProfileExists() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _user = await _updateAvatarUseCase(imageBytes);
+      final token = await _userService.getToken();
+
+      if (token == null || token.isEmpty) {
+        throw Exception(
+          'No se encontró una sesión activa',
+        );
+      }
+
+      await _api.getStudentProfile(token);
+
       return true;
-    } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+    } catch (error) {
+      final cleanError = _cleanError(error);
+
+      final normalizedError = _normalizeError(
+        cleanError,
+      );
+
+      debugPrint(
+        'Comprobación de perfil vocacional: $cleanError',
+      );
+
+      /*
+       * Esta condición reconoce exactamente mensajes como:
+       *
+       * "No se encontró el perfil vocacional para el usuario..."
+       */
+      final profileNotFound =
+          normalizedError.contains('404') ||
+              normalizedError.contains(
+                'perfil vocacional no encontrado',
+              ) ||
+              normalizedError.contains(
+                'no se encontro el perfil vocacional',
+              ) ||
+              normalizedError.contains(
+                'no existe el perfil vocacional',
+              ) ||
+              normalizedError.contains(
+                'student profile not found',
+              ) ||
+              normalizedError.contains(
+                'vocational profile not found',
+              ) ||
+              (
+                  normalizedError.contains('perfil') &&
+                      normalizedError.contains('no se encontro')
+              ) ||
+              (
+                  normalizedError.contains('perfil') &&
+                      normalizedError.contains('no encontrado')
+              );
+
+      if (profileNotFound) {
+        /*
+         * No es un error.
+         * El alumno simplemente debe completar su perfil.
+         */
+        _errorMessage = null;
+        return false;
+      }
+
+      /*
+       * Cualquier otro mensaje sí representa un error real.
+       */
+      _errorMessage = cleanError;
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> createStudentVocationalProfile(
+      Map<String, dynamic> profile,
+      ) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final validationError =
+      _validateStudentProfile(profile);
+
+      if (validationError != null) {
+        throw Exception(validationError);
+      }
+
+      final token = await _userService.getToken();
+
+      if (token == null || token.isEmpty) {
+        throw Exception(
+          'La sesión expiró. Inicia sesión nuevamente.',
+        );
+      }
+
+      await _api.createStudentProfile(
+        token,
+        profile,
+      );
+
+      return true;
+    } catch (error) {
+      debugPrint(
+        'Error creando perfil vocacional: $error',
+      );
+
+      _errorMessage = _cleanError(error);
+
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> joinStudentGroup(
+      String accessCode,
+      ) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final normalizedCode =
+      accessCode.trim();
+
+      final codeError = _validateGroupCode(
+        normalizedCode,
+      );
+
+      if (codeError != null) {
+        throw Exception(codeError);
+      }
+
+      final token = await _userService.getToken();
+
+      if (token == null || token.isEmpty) {
+        throw Exception(
+          'La sesión expiró. Inicia sesión nuevamente.',
+        );
+      }
+
+      await _api.joinGroup(
+        token,
+        normalizedCode,
+      );
+
+      return true;
+    } catch (error) {
+      debugPrint(
+        'Error al unirse al grupo: $error',
+      );
+
+      _errorMessage = _cleanError(error);
+
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateAvatar(
+      Uint8List imageBytes,
+      ) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _user = await _updateAvatarUseCase(
+        imageBytes,
+      );
+
+      return true;
+    } catch (error) {
+      _errorMessage = _cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -299,26 +568,37 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> updateAvatarFromGallery() async {
-    final bytes = await _mediaService.pickImageFromGallery();
-    if (bytes == null) return false;
-    return await updateAvatar(bytes);
+    final bytes =
+    await _mediaService.pickImageFromGallery();
+
+    if (bytes == null) {
+      return false;
+    }
+
+    return updateAvatar(bytes);
   }
 
   Future<bool> updateAvatarFromCamera() async {
-    final bytes = await _mediaService.takePhoto();
-    if (bytes == null) return false;
-    return await updateAvatar(bytes);
+    final bytes =
+    await _mediaService.takePhoto();
+
+    if (bytes == null) {
+      return false;
+    }
+
+    return updateAvatar(bytes);
   }
 
   Future<void> logout() async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
       await _logoutUseCase();
       _user = null;
-    } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+    } catch (error) {
+      _errorMessage = _cleanError(error);
     } finally {
       _isLoading = false;
       notifyListeners();
