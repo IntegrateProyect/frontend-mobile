@@ -7,5 +7,6 @@ class ManageStoriesUseCase {
   ManageStoriesUseCase(this.repository);
 
   Future<List<SuccessStoryEntity>> getStories() => repository.getSuccessStories();
-  Future<void> shareStory(SuccessStoryEntity story) => repository.shareSuccessStory(story);
+  
+  Future<void> shareStory(String content) => repository.shareStory(content);
 }

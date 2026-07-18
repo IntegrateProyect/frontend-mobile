@@ -1,42 +1,74 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/alumni_profile_entity.dart';
 import '../../domain/entities/success_story_entity.dart';
-import '../../domain/usecases/get_alumni_profile_usecase.dart';
-import '../../domain/usecases/manage_stories_usecase.dart';
+import '../../domain/repositories/alumni_repository.dart';
 
 class AlumniProvider extends ChangeNotifier {
-  final GetAlumniProfileUseCase _getProfileUseCase;
-  final ManageStoriesUseCase _manageStoriesUseCase;
+  final AlumniRepository repository;
+
+  AlumniProvider({required this.repository});
 
   AlumniProfileEntity? _profile;
   List<SuccessStoryEntity> _stories = [];
   bool _isLoading = false;
-
-  AlumniProvider({
-    required this._getProfileUseCase,
-    required ManageStoriesUseCase manageStoriesUseCase,
-  })  : _manageStoriesUseCase = manageStoriesUseCase;
+  String? _errorMessage;
 
   AlumniProfileEntity? get profile => _profile;
   List<SuccessStoryEntity> get stories => _stories;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
-  Future<void> fetchProfile() async {
+  Future<void> loadAlumniData() async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
+
     try {
-      _profile = await _getProfileUseCase();
+      final results = await Future.wait([
+        repository.getProfile().catchError((e) => throw e),
+        repository.getSuccessStories(),
+      ]);
+
+      _profile = results[0] as AlumniProfileEntity;
+      _stories = results[1] as List<SuccessStoryEntity>;
+    } catch (e) {
+      final message = e.toString();
+      if (message.contains('profile not found')) {
+        _errorMessage = 'PROFILE_NOT_FOUND';
+      } else {
+        _errorMessage = message.replaceAll('Exception: ', '');
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> fetchStories() async {
+  Future<bool> updateProfile(AlumniProfileEntity profile) async {
     _isLoading = true;
     notifyListeners();
     try {
-      _stories = await _manageStoriesUseCase.getStories();
+      await repository.updateProfile(profile);
+      _profile = profile;
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> shareStory(String content) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await repository.shareStory(content);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();

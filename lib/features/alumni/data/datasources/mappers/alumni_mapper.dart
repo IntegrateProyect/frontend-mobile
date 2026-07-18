@@ -6,14 +6,11 @@ import '../models/success_story_model.dart';
 class AlumniMapper {
   static AlumniProfileEntity toProfileEntity(AlumniProfileModel model) {
     return AlumniProfileEntity(
-      id: model.id,
       name: model.name,
       email: model.email,
-      career: model.career,
-      university: model.university,
-      currentJob: model.currentJob,
-      bio: model.bio,
-      profileImageUrl: model.profileImageUrl,
+      graduationYear: model.graduationYear,
+      degree: model.degree,
+      company: model.company,
     );
   }
 
@@ -21,9 +18,9 @@ class AlumniMapper {
     return SuccessStoryEntity(
       id: model.id,
       alumniName: model.alumniName,
-      title: model.title,
+      career: model.career,
+      graduationYear: model.graduationYear,
       story: model.story,
-      imageUrl: model.imageUrl,
       createdAt: model.createdAt,
     );
   }
@@ -32,9 +29,9 @@ class AlumniMapper {
     return SuccessStoryModel(
       id: entity.id,
       alumniName: entity.alumniName,
-      title: entity.title,
+      career: entity.career,
+      graduationYear: entity.graduationYear,
       story: entity.story,
-      imageUrl: entity.imageUrl,
       createdAt: entity.createdAt,
     );
   }

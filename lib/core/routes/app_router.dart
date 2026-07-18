@@ -59,6 +59,9 @@ import '../../features/counselor/presentation/screens/group_students_screen.dart
 
 import '../../features/admin/presentation/screens/admin_home_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_home_screen.dart';
+import '../../features/alumni/presentation/screens/success_stories_screen.dart';
+import '../../features/alumni/presentation/screens/alumni_profile_form_screen.dart';
+import '../../features/alumni/presentation/screens/write_story_screen.dart';
 import '../../features/university/presentation/screens/university_home_screen.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -116,10 +119,6 @@ final GoRouter appRouter = GoRouter(
     // ESTUDIANTE
     // =========================================================
 
-    /*
-     * Esta pantalla aparece después del login solamente
-     * cuando el estudiante todavía no tiene perfil vocacional.
-     */
     GoRoute(
       path: AppRoutes.studentProfileSetup.path,
       builder: (context, state) {
@@ -127,10 +126,6 @@ final GoRouter appRouter = GoRouter(
       },
     ),
 
-    /*
-     * Home normal del estudiante.
-     * Solo entra aquí si ya tiene perfil vocacional.
-     */
     GoRoute(
       path: AppRoutes.home.path,
       builder: (context, state) {
@@ -294,6 +289,27 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.alumniHome.path,
       builder: (context, state) {
         return const AlumniHomeScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.successStories.path,
+      builder: (context, state) {
+        return const SuccessStoriesScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.alumniProfileForm.path,
+      builder: (context, state) {
+        return const AlumniProfileFormScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.writeStory.path,
+      builder: (context, state) {
+        return const WriteStoryScreen();
       },
     ),
 

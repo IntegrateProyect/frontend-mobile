@@ -54,6 +54,12 @@ abstract class IApi {
   Future<List<dynamic>> getCounselorAppointments(String token);
   Future<Map<String, dynamic>> counselorScheduleAppointment(String token, Map<String, dynamic> data);
 
+  // --- 🎓 SERVICIO DE ALUMNI (EGRESADOS) ---
+  Future<Map<String, dynamic>> getAlumniProfile(String token);
+  Future<Map<String, dynamic>> updateAlumniProfile(String token, Map<String, dynamic> data);
+  Future<List<dynamic>> getSuccessStories(String token);
+  Future<Map<String, dynamic>> shareSuccessStory(String token, Map<String, dynamic> data);
+
   // --- 💬 SERVICIO DE CHAT ---
   Future<Map<String, dynamic>> getChatHistory(String token, String partnerId, {int limit = 50, int offset = 0});
   Future<Map<String, dynamic>> getChatContacts(String token);
