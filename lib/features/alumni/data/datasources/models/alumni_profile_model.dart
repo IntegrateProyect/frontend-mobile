@@ -2,39 +2,32 @@ import '../../../domain/entities/alumni_profile_entity.dart';
 
 class AlumniProfileModel extends AlumniProfileEntity {
   AlumniProfileModel({
-    required super.id,
     required super.name,
     required super.email,
-    required super.career,
-    required super.university,
-    required super.currentJob,
-    super.bio,
-    super.profileImageUrl,
+    required super.graduationYear,
+    required super.degree,
+    required super.company,
   });
 
   factory AlumniProfileModel.fromJson(Map<String, dynamic> json) {
     return AlumniProfileModel(
-      id: json['id'] ?? '',
       name: json['name'] ?? '',
       email: json['email'] ?? '',
-      career: json['career'] ?? '',
-      university: json['university'] ?? '',
-      currentJob: json['currentJob'] ?? '',
-      bio: json['bio'],
-      profileImageUrl: json['profileImageUrl'],
+      graduationYear: json['graduationYear'] is int
+          ? json['graduationYear']
+          : int.tryParse(json['graduationYear']?.toString() ?? '0') ?? 0,
+      degree: json['degree'] ?? '',
+      company: json['company'] ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'name': name,
       'email': email,
-      'career': career,
-      'university': university,
-      'currentJob': currentJob,
-      'bio': bio,
-      'profileImageUrl': profileImageUrl,
+      'graduationYear': graduationYear,
+      'degree': degree,
+      'company': company,
     };
   }
 }

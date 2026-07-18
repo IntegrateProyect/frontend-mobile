@@ -941,6 +941,52 @@ class API implements IApi {
   }
 
   // ==========================================================
+  // SERVICIO DE ALUMNI (EGRESADOS)
+  // ==========================================================
+
+  @override
+  Future<Map<String, dynamic>> getAlumniProfile(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/alumni/profile',
+      token: token,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateAlumniProfile(String token, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/alumni/profile',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<List<dynamic>> getSuccessStories(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/alumni/stories',
+      token: token,
+    );
+    return _asList(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> shareSuccessStory(String token, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/alumni/stories',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  // ==========================================================
   // CHAT
   // ==========================================================
 

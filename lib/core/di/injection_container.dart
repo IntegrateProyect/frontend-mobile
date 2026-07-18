@@ -64,6 +64,17 @@ import '../../features/student/presentation/providers/student_home_provider.dart
 import '../../features/student/presentation/providers/student_profile_provider.dart';
 import '../../features/student/presentation/providers/student_results_provider.dart';
 
+// ALUMNI
+import '../../features/alumni/data/repositories/alumni_repository_impl.dart';
+import '../../features/alumni/domain/repositories/alumni_repository.dart';
+import '../../features/alumni/domain/usecases/get_alumni_profile_usecase.dart';
+import '../../features/alumni/domain/usecases/update_alumni_profile_usecase.dart';
+import '../../features/alumni/domain/usecases/manage_stories_usecase.dart';
+import '../../features/alumni/presentation/providers/alumni_home_provider.dart';
+import '../../features/alumni/presentation/providers/success_stories_provider.dart';
+import '../../features/alumni/presentation/providers/alumni_profile_form_provider.dart';
+import '../../features/alumni/presentation/providers/write_story_provider.dart';
+
 // VOCATIONAL GAMES
 import '../../features/vocational_games/data/repositories/vocational_games_repository_impl.dart';
 import '../../features/vocational_games/domain/repositories/vocational_games_repository.dart';
@@ -210,7 +221,6 @@ Future<void> init() async {
   sl.registerLazySingleton<UpdateStudentProfileUseCase>(() => UpdateStudentProfileUseCase(sl<StudentRepository>()));
   sl.registerLazySingleton<GetVocationalResultsUseCase>(() => GetVocationalResultsUseCase(sl<StudentRepository>()));
 
-  // Casos de uso del estudiante que dependen de repositorios de otros módulos
   sl.registerLazySingleton<GetStudentAppointmentsUseCase>(() => GetStudentAppointmentsUseCase(sl<CounselorRepository>()));
   sl.registerLazySingleton<ScheduleAppointmentUseCase>(() => ScheduleAppointmentUseCase(sl<CounselorRepository>()));
 
@@ -225,6 +235,31 @@ Future<void> init() async {
   ));
   sl.registerFactory<StudentProfileProvider>(() => StudentProfileProvider(getProfileUseCase: sl<GetStudentProfileUseCase>(), updateProfileUseCase: sl<UpdateStudentProfileUseCase>()));
   sl.registerFactory<StudentResultsProvider>(() => StudentResultsProvider(getResultsUseCase: sl<GetVocationalResultsUseCase>()));
+
+  // ==========================================================
+  // ALUMNI
+  // ==========================================================
+  sl.registerLazySingleton<AlumniRepository>(() => AlumniRepositoryImpl(api: sl<IApi>(), userService: sl<UserService>()));
+  
+  sl.registerLazySingleton<GetAlumniProfileUseCase>(() => GetAlumniProfileUseCase(sl<AlumniRepository>()));
+  sl.registerLazySingleton<UpdateAlumniProfileUseCase>(() => UpdateAlumniProfileUseCase(sl<AlumniRepository>()));
+  sl.registerLazySingleton<ManageStoriesUseCase>(() => ManageStoriesUseCase(sl<AlumniRepository>()));
+
+  sl.registerFactory<AlumniHomeProvider>(() => AlumniHomeProvider(
+    getProfileUseCase: sl<GetAlumniProfileUseCase>(),
+    manageStoriesUseCase: sl<ManageStoriesUseCase>(),
+  ));
+  sl.registerFactory<SuccessStoriesProvider>(() => SuccessStoriesProvider(
+    manageStoriesUseCase: sl<ManageStoriesUseCase>(),
+  ));
+  sl.registerFactory<AlumniProfileFormProvider>(() => AlumniProfileFormProvider(
+    getProfileUseCase: sl<GetAlumniProfileUseCase>(),
+    updateProfileUseCase: sl<UpdateAlumniProfileUseCase>(),
+  ));
+  sl.registerFactory<WriteStoryProvider>(() => WriteStoryProvider(
+    getProfileUseCase: sl<GetAlumniProfileUseCase>(),
+    manageStoriesUseCase: sl<ManageStoriesUseCase>(),
+  ));
 
   // ==========================================================
   // CHAT

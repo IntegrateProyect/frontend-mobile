@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../domain/entities/success_story_entity.dart';
 
-class SuccessStoryCard extends StatelessWidget {
-  final SuccessStoryEntity story;
+class AlumniStoryCard extends StatelessWidget {
+  final Map<String, String> story;
   final VoidCallback? onTap;
 
-  const SuccessStoryCard({
+  const AlumniStoryCard({
     super.key,
     required this.story,
     this.onTap,
@@ -56,7 +55,9 @@ class SuccessStoryCard extends StatelessWidget {
                         ),
                         child: Center(
                           child: Text(
-                            story.alumniName.isNotEmpty ? story.alumniName[0].toUpperCase() : '?',
+                            story['name'] != null && story['name']!.isNotEmpty 
+                                ? story['name']![0].toUpperCase() 
+                                : '?',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -71,7 +72,7 @@ class SuccessStoryCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              story.alumniName,
+                              story['name'] ?? 'Egresado',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16.sp,
@@ -79,7 +80,7 @@ class SuccessStoryCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '${story.career} • Clase ${story.graduationYear}',
+                              '${story['major'] ?? ''} • Clase ${story['year'] ?? ''}',
                               style: TextStyle(
                                 color: Colors.grey[500],
                                 fontSize: 12.sp,
@@ -89,15 +90,15 @@ class SuccessStoryCard extends StatelessWidget {
                         ),
                       ),
                       Icon(
-                        Icons.format_quote_rounded,
-                        color: primaryColor.withOpacity(0.1),
+                        Icons.format_quote_rounded, 
+                        color: primaryColor.withOpacity(0.1), 
                         size: 40.sp,
                       ),
                     ],
                   ),
                   SizedBox(height: 16.h),
                   Text(
-                    'Historia de Éxito',
+                    story['title'] ?? 'Historia de Éxito',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15.sp,
@@ -106,13 +107,13 @@ class SuccessStoryCard extends StatelessWidget {
                   ),
                   SizedBox(height: 8.h),
                   Text(
-                    story.story,
+                    story['story'] ?? '',
                     style: TextStyle(
                       color: Colors.grey[700],
                       fontSize: 13.sp,
                       height: 1.5,
                     ),
-                    maxLines: 4,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],

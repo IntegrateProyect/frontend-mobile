@@ -4,9 +4,9 @@ class SuccessStoryModel extends SuccessStoryEntity {
   SuccessStoryModel({
     required super.id,
     required super.alumniName,
-    required super.title,
+    required super.career,
+    required super.graduationYear,
     required super.story,
-    super.imageUrl,
     required super.createdAt,
   });
 
@@ -14,10 +14,12 @@ class SuccessStoryModel extends SuccessStoryEntity {
     return SuccessStoryModel(
       id: json['id'] ?? '',
       alumniName: json['alumniName'] ?? '',
-      title: json['title'] ?? '',
+      career: json['career'] ?? '',
+      graduationYear: json['graduationYear'] is int
+          ? json['graduationYear']
+          : int.tryParse(json['graduationYear']?.toString() ?? '0') ?? 0,
       story: json['story'] ?? '',
-      imageUrl: json['imageUrl'],
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
     );
   }
 
@@ -25,9 +27,9 @@ class SuccessStoryModel extends SuccessStoryEntity {
     return {
       'id': id,
       'alumniName': alumniName,
-      'title': title,
+      'career': career,
+      'graduationYear': graduationYear,
       'story': story,
-      'imageUrl': imageUrl,
       'createdAt': createdAt.toIso8601String(),
     };
   }
