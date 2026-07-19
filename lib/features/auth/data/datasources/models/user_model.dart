@@ -8,6 +8,8 @@ class UserModel extends UserEntity {
     super.photoUrl,
     super.avatarUrl,
     super.role,
+    super.verificationStatus,
+    super.universityName,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -42,7 +44,7 @@ class UserModel extends UserEntity {
       if (lastName != null) lastName,
     ].join(' ').trim();
 
-    final String? resolvedName = _firstNonEmpty([
+    final String resolvedName = _firstNonEmpty([
       data['name'],
       data['fullName'],
       data['full_name'],
@@ -54,7 +56,7 @@ class UserModel extends UserEntity {
       profile?['full_name'],
       profile?['nombreCompleto'],
       composedName,
-    ]);
+    ]) ?? '';
 
     return UserModel(
       id: _firstNonEmpty([
@@ -91,6 +93,14 @@ class UserModel extends UserEntity {
             data['type'] ??
             data['userRole'],
       ),
+      verificationStatus: _firstNonEmpty([
+        data['verificationStatus'],
+        data['verification_status'],
+      ]),
+      universityName: _firstNonEmpty([
+        data['universityName'],
+        data['university_name'],
+      ]),
     );
   }
 
@@ -102,6 +112,8 @@ class UserModel extends UserEntity {
       'photoUrl': photoUrl,
       'avatarUrl': avatarUrl,
       'roleName': role,
+      'verificationStatus': verificationStatus,
+      'universityName': universityName,
     };
   }
 

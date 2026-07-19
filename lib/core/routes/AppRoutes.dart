@@ -42,6 +42,9 @@ enum AppRoutes {
   // University
   universityHome('/university-home'),
   manageCareers('/manage-careers'),
+  universityVerification('/university-verification'),
+  manageEvents('/manage-events'),
+  manageAnnouncements('/manage-announcements'),
 
   // Alumni
   alumniHome('/alumni-home'),

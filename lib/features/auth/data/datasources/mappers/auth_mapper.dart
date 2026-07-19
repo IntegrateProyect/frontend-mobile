@@ -10,6 +10,8 @@ class AuthMapper {
       photoUrl: model.photoUrl,
       avatarUrl: model.avatarUrl,
       role: model.role,
+      verificationStatus: model.verificationStatus,
+      universityName: model.universityName,
     );
   }
 
@@ -21,6 +23,8 @@ class AuthMapper {
       photoUrl: entity.photoUrl,
       avatarUrl: entity.avatarUrl,
       role: entity.role,
+      verificationStatus: entity.verificationStatus,
+      universityName: entity.universityName,
     );
   }
 }

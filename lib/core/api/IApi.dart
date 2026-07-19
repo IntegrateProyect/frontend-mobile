@@ -74,4 +74,23 @@ abstract class IApi {
   Future<void> sendAnswer(String token, String gameId, Map<String, dynamic> data);
   Future<Map<String, dynamic>> finishGame(String gameId, String token, String sessionId);
   Future<List<dynamic>> getGameResults(String token);
+
+  // --- 🎓 SERVICIO DE UNIVERSIDADES (REPRESENTANTE) ---
+  Future<List<dynamic>> getCatalogCareers(String token);
+  Future<Map<String, dynamic>> claimUniversity(String token, {required String cct, required String rfc});
+  Future<List<dynamic>> getUniversityCareers(String token);
+  Future<Map<String, dynamic>> addUniversityCareer(String token, Map<String, dynamic> data);
+  Future<void> updateUniversityCareer(String token, String careerId, Map<String, dynamic> data);
+  Future<void> deleteUniversityCareer(String token, String careerId);
+  Future<Map<String, dynamic>> getEventPresignedUrl(String token, {required String contentType});
+  Future<List<dynamic>> getUniversityEvents(String token);
+  Future<Map<String, dynamic>> createUniversityEvent(String token, Map<String, dynamic> data);
+  Future<Map<String, dynamic>> updateUniversityEvent(String token, String eventId, Map<String, dynamic> data);
+  Future<void> deleteUniversityEvent(String token, String eventId);
+
+  // Anuncios / Convocatorias
+  Future<List<dynamic>> getUniversityAnnouncements(String token);
+  Future<Map<String, dynamic>> createUniversityAnnouncement(String token, Map<String, dynamic> data);
+  Future<Map<String, dynamic>> updateUniversityAnnouncement(String token, String announcementId, Map<String, dynamic> data);
+  Future<void> deleteUniversityAnnouncement(String token, String announcementId);
 }

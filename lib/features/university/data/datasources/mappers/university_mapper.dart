@@ -20,8 +20,14 @@ class UniversityMapper {
       id: model.id,
       name: model.name,
       description: model.description,
-      duration: model.duration,
       cost: model.cost,
+      location: model.location,
+      modality: model.modality,
+      scholarshipAvailable: model.scholarshipAvailable,
+      admissionDates: model.admissionDates,
+      latitude: model.latitude,
+      longitude: model.longitude,
+      duration: model.duration,
     );
   }
 
@@ -30,8 +36,14 @@ class UniversityMapper {
       id: entity.id,
       name: entity.name,
       description: entity.description,
-      duration: entity.duration,
       cost: entity.cost,
+      location: entity.location,
+      modality: entity.modality,
+      scholarshipAvailable: entity.scholarshipAvailable,
+      admissionDates: entity.admissionDates,
+      latitude: entity.latitude,
+      longitude: entity.longitude,
+      duration: entity.duration,
     );
   }
 }

@@ -89,6 +89,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return _normalizedRole == 'estudiante';
   }
 
+  bool get _isSingleStepRole {
+    return _normalizedRole == 'estudiante' ||
+        _normalizedRole == 'universidad' ||
+        _normalizedRole == 'alumni' ||
+        _normalizedRole == 'egresado';
+  }
+
+  String get _roleTitle {
+    if (_normalizedRole == 'estudiante') return 'Registro Estudiante';
+    if (_normalizedRole == 'orientador') return 'Registro Orientador';
+    if (_normalizedRole == 'universidad') return 'Registro Universidad';
+    if (_normalizedRole == 'alumni') return 'Registro Egresado';
+    return 'Registro';
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -351,7 +366,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       name: _nameController.text.trim(),
-      role: 'estudiante',
+      role: _normalizedRole,
       privacyAccepted: _acceptTerms,
       profileImage: _profileImage,
       studentProfile: null,
@@ -426,7 +441,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _nextStep() async {
     FocusScope.of(context).unfocus();
 
-    if (_isStudent) {
+    if (_isSingleStepRole) {
       await _registerStudentAccount();
       return;
     }
@@ -775,9 +790,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         title: Text(
-          _isStudent
-              ? 'Registro Estudiante'
-              : 'Registro Orientador',
+          _roleTitle,
           style: TextStyle(
             color: Colors.black,
             fontSize: 20.sp,
@@ -795,7 +808,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
            * En el estudiante no aparece ningún icono
            * encima de la fotografía.
            */
-          if (!_isStudent)
+          if (!_isSingleStepRole)
             _buildCounselorProgressHeader(),
 
           Expanded(
@@ -806,7 +819,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   .onDrag,
               padding: EdgeInsets.fromLTRB(
                 24.w,
-                _isStudent ? 30.h : 10.h,
+                _isSingleStepRole ? 30.h : 10.h,
                 24.w,
                 30.h,
               ),
@@ -855,7 +868,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildCurrentContent() {
-    if (_isStudent || _currentStep == 0) {
+    if (_isSingleStepRole || _currentStep == 0) {
       return _buildAccountStep();
     }
 
@@ -1193,7 +1206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildBottomAction(bool isLoading) {
-    final buttonText = _isStudent
+    final buttonText = _isSingleStepRole
         ? 'Crear cuenta'
         : _currentStep == 2
         ? 'Finalizar registro'
