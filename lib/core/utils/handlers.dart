@@ -17,7 +17,17 @@ Map<String, String> getHeaders([String? token]) {
 
 dynamic processResponse(http.Response response) {
   final body = response.body;
-  final dynamic json = body.isNotEmpty ? jsonDecode(body) : null;
+  dynamic json;
+  
+  try {
+    json = body.isNotEmpty ? jsonDecode(body) : null;
+  } catch (e) {
+    // Si no es JSON, guardamos el cuerpo como texto
+    if (kDebugMode) {
+      print('XXX Error al decodificar JSON: $e');
+      print('Cuerpo recibido: $body');
+    }
+  }
 
   if (response.statusCode >= 200 && response.statusCode < 300) {
     return json;
@@ -29,9 +39,13 @@ dynamic processResponse(http.Response response) {
       print('Body: $body');
     }
     
-    final message = json != null && json['message'] != null 
-        ? json['message'] 
-        : (json != null && json['error'] != null ? json['error'] : 'Error: ${response.statusCode}');
+    String message;
+    if (json != null && json is Map) {
+      message = json['message'] ?? json['error'] ?? 'Error: ${response.statusCode}';
+    } else {
+      // Si no es JSON o no tiene campos de error, usamos el body directamente
+      message = body.isNotEmpty ? body : 'Error: ${response.statusCode}';
+    }
         
     throw Exception(message);
   }

@@ -1,4 +1,3 @@
-
 import '../../../domain/entities/university_entity.dart';
 
 class UniversityModel extends UniversityEntity {
@@ -10,6 +9,9 @@ class UniversityModel extends UniversityEntity {
     super.availableCareers,
     super.representativeUserId,
     super.isRegistered,
+    super.latitude,
+    super.longitude,
+    super.duration,
   });
 
   factory UniversityModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,9 @@ class UniversityModel extends UniversityEntity {
           : [],
       representativeUserId: json['representativeUserId']?.toString(),
       isRegistered: json['isRegistered'] == true,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      duration: json['duration']?.toString(),
     );
   }
 
@@ -35,6 +40,9 @@ class UniversityModel extends UniversityEntity {
       'availableCareers': availableCareers,
       'representativeUserId': representativeUserId,
       'isRegistered': isRegistered,
+      'latitude': latitude,
+      'longitude': longitude,
+      'duration': duration,
     };
   }
 }

@@ -162,9 +162,16 @@ class _LoginScreenState extends State<LoginScreen> {
      */
     if (_isUniversityRole(role)) {
       if (mounted) {
-        context.go(
-          AppRoutes.universityHome.path,
-        );
+        final verificationStatus = authProvider.user?.verificationStatus;
+        if (verificationStatus == 'VERIFIED') {
+          context.go(
+            AppRoutes.universityHome.path,
+          );
+        } else {
+          context.go(
+            AppRoutes.universityVerification.path,
+          );
+        }
       }
 
       return;

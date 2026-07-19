@@ -6,6 +6,9 @@ class UniversityEntity {
   final List<String> availableCareers;
   final String? representativeUserId;
   final bool isRegistered;
+  final double? latitude;
+  final double? longitude;
+  final String? duration;
 
   const UniversityEntity({
     required this.id,
@@ -15,5 +18,8 @@ class UniversityEntity {
     this.availableCareers = const [],
     this.representativeUserId,
     this.isRegistered = false,
+    this.latitude,
+    this.longitude,
+    this.duration,
   });
 }

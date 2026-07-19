@@ -1226,4 +1226,168 @@ class API implements IApi {
 
     return mappedResult;
   }
+
+  // ==========================================================
+  // SERVICIO DE UNIVERSIDADES (REPRESENTANTE)
+  // ==========================================================
+
+  @override
+  Future<List<dynamic>> getCatalogCareers(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/catalog/careers',
+      token: token,
+    );
+    return _asList(result, keys: const ['data']);
+  }
+
+  @override
+  Future<Map<String, dynamic>> claimUniversity(String token, {required String cct, required String rfc}) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/auth/universities/claim',
+      token: token,
+      body: {
+        'cct': cct,
+        'rfc': rfc,
+      },
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<List<dynamic>> getUniversityCareers(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/catalog/universities/careers',
+      token: token,
+    );
+    return _asList(result, keys: const ['data']);
+  }
+
+  @override
+  Future<Map<String, dynamic>> addUniversityCareer(String token, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/catalog/universities/careers',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<void> updateUniversityCareer(String token, String careerId, Map<String, dynamic> data) async {
+    await _request(
+      method: 'PUT',
+      path: '/catalog/universities/careers/$careerId',
+      token: token,
+      body: data,
+    );
+  }
+
+  @override
+  Future<void> deleteUniversityCareer(String token, String careerId) async {
+    await _request(
+      method: 'DELETE',
+      path: '/catalog/universities/careers/$careerId',
+      token: token,
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> getEventPresignedUrl(String token, {required String contentType}) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/catalog/universities/events/presigned-url',
+      token: token,
+      body: {
+        'contentType': contentType,
+      },
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<List<dynamic>> getUniversityEvents(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/catalog/universities/events',
+      token: token,
+    );
+    return _asList(result, keys: const ['data']);
+  }
+
+  @override
+  Future<Map<String, dynamic>> createUniversityEvent(String token, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/catalog/universities/events',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateUniversityEvent(String token, String eventId, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'PUT',
+      path: '/catalog/universities/events/$eventId',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<void> deleteUniversityEvent(String token, String eventId) async {
+    await _request(
+      method: 'DELETE',
+      path: '/catalog/universities/events/$eventId',
+      token: token,
+    );
+  }
+
+  // --- 📢 ANUNCIOS / CONVOCATORIAS ---
+  @override
+  Future<List<dynamic>> getUniversityAnnouncements(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/catalog/universities/announcements',
+      token: token,
+    );
+    return _asList(result, keys: const ['data']);
+  }
+
+  @override
+  Future<Map<String, dynamic>> createUniversityAnnouncement(String token, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/catalog/universities/announcements',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateUniversityAnnouncement(String token, String announcementId, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'PUT',
+      path: '/catalog/universities/announcements/$announcementId',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<void> deleteUniversityAnnouncement(String token, String announcementId) async {
+    await _request(
+      method: 'DELETE',
+      path: '/catalog/universities/announcements/$announcementId',
+      token: token,
+    );
+  }
 }

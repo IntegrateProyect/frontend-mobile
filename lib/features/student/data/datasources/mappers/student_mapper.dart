@@ -68,6 +68,9 @@ class StudentMapper {
       availableCareers: model.availableCareers,
       isRegistered: model.isRegistered,
       representativeUserId: model.representativeUserId,
+      latitude: model.latitude,
+      longitude: model.longitude,
+      duration: model.duration,
     );
   }
 

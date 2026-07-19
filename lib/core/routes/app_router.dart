@@ -63,6 +63,10 @@ import '../../features/alumni/presentation/screens/success_stories_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_profile_form_screen.dart';
 import '../../features/alumni/presentation/screens/write_story_screen.dart';
 import '../../features/university/presentation/screens/university_home_screen.dart';
+import '../../features/university/presentation/screens/manage_careers_screen.dart';
+import '../../features/university/presentation/screens/university_verification_screen.dart';
+import '../../features/university/presentation/screens/manage_events_screen.dart';
+import '../../features/university/presentation/screens/manage_announcements_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.splash.path,
@@ -321,6 +325,34 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.universityHome.path,
       builder: (context, state) {
         return const UniversityHomeScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.manageCareers.path,
+      builder: (context, state) {
+        return const ManageCareersScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.universityVerification.path,
+      builder: (context, state) {
+        return const UniversityVerificationScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.manageEvents.path,
+      builder: (context, state) {
+        return const ManageEventsScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.manageAnnouncements.path,
+      builder: (context, state) {
+        return const ManageAnnouncementsScreen();
       },
     ),
   ],

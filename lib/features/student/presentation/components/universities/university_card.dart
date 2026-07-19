@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../university/domain/entities/university_entity.dart';
-import '../../../domain/entities/university_entity.dart';
 import '../common/student_ui_colors.dart';
 
 class UniversityCard extends StatelessWidget {
@@ -14,6 +14,18 @@ class UniversityCard extends StatelessWidget {
     required this.university,
     this.onTap,
   });
+
+  Future<void> _openMap() async {
+    if (university.latitude == null || university.longitude == null) return;
+    
+    final url = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${university.latitude},${university.longitude}'
+    );
+    
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,47 +108,115 @@ class UniversityCard extends StatelessWidget {
                       height: 1.25,
                     ),
                   ),
-                  SizedBox(height: 10.h),
-                  Container(
-                    padding:
-                    EdgeInsets.symmetric(
-                      horizontal: 10.w,
-                      vertical: 6.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusBackground,
-                      borderRadius:
-                      BorderRadius.circular(
-                        14.r,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize:
-                      MainAxisSize.min,
-                      children: [
-                        Icon(
-                          university.isRegistered
-                              ? Icons
-                              .verified_rounded
-                              : Icons
-                              .inventory_2_outlined,
-                          color: statusColor,
-                          size: 15.sp,
+                  SizedBox(height: 4.h),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 12.sp, color: Colors.grey[500]),
+                      SizedBox(width: 4.w),
+                      Expanded(
+                        child: Text(
+                          university.location,
+                          style: TextStyle(fontSize: 11.sp, color: Colors.grey[500]),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        SizedBox(width: 5.w),
-                        Flexible(
-                          child: Text(
-                            statusText,
-                            style: TextStyle(
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10.h),
+                  Wrap(
+                    spacing: 6.w,
+                    runSpacing: 6.h,
+                    children: [
+                      Container(
+                        padding:
+                        EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 6.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusBackground,
+                          borderRadius:
+                          BorderRadius.circular(
+                            14.r,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize:
+                          MainAxisSize.min,
+                          children: [
+                            Icon(
+                              university.isRegistered
+                                  ? Icons
+                                  .verified_rounded
+                                  : Icons
+                                  .inventory_2_outlined,
                               color: statusColor,
-                              fontSize: 10.sp,
-                              fontWeight:
-                              FontWeight.w800,
+                              size: 13.sp,
+                            ),
+                            SizedBox(width: 5.w),
+                            Text(
+                              statusText,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 9.sp,
+                                fontWeight:
+                                FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (university.duration != null && university.duration!.isNotEmpty)
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.timer_outlined, size: 13.sp, color: Colors.grey[600]),
+                              SizedBox(width: 5.w),
+                              Text(
+                                university.duration!,
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 9.sp,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (university.latitude != null && university.longitude != null)
+                        InkWell(
+                          onTap: _openMap,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              color: StudentUiColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(14.r),
+                              border: Border.all(color: StudentUiColors.primary.withOpacity(0.2)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.map_outlined, size: 13.sp, color: StudentUiColors.primary),
+                                SizedBox(width: 5.w),
+                                Text(
+                                  'Ver mapa',
+                                  style: TextStyle(
+                                    color: StudentUiColors.primary,
+                                    fontSize: 9.sp,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                 ],
               ),
