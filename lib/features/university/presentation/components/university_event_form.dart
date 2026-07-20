@@ -47,15 +47,23 @@ class UniversityEventForm extends StatelessWidget {
               _buildLabel('TÍTULO DEL EVENTO'),
               TextFormField(
                 controller: provider.titleController,
-                decoration: _inputStyle('Ej. Feria Vocacional 2024'),
-                validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                decoration: _inputStyle('Ej. Feria Vocacional 2026'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+              ),
+              SizedBox(height: 16.h),
+              _buildLabel('DESCRIPCIÓN DEL EVENTO'),
+              TextFormField(
+                controller: provider.descController,
+                maxLines: 3,
+                decoration: _inputStyle('Ej. Conoce las carreras de ingeniería y realiza tu registro...'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
               ),
               SizedBox(height: 16.h),
               _buildLabel('UBICACIÓN'),
               TextFormField(
                 controller: provider.locationController,
                 decoration: _inputStyle('Ej. Auditorio Principal'),
-                validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
               ),
               SizedBox(height: 16.h),
               Row(
@@ -97,9 +105,22 @@ class UniversityEventForm extends StatelessWidget {
     onTap: onTap,
     borderRadius: BorderRadius.circular(12.r),
     child: Container(
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 16.h),
       decoration: BoxDecoration(color: const Color(0xFFF8F9FE), borderRadius: BorderRadius.circular(12.r)),
-      child: Row(children: [Icon(icon, size: 18.sp, color: const Color(0xFF311B92)), SizedBox(width: 12.w), Text(label, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold))]),
+      child: Row(
+        children: [
+          Icon(icon, size: 18.sp, color: const Color(0xFF311B92)),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
     ),
   );
 

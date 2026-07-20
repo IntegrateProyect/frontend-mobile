@@ -4,6 +4,7 @@ import '../../domain/usecases/get_university_careers_usecase.dart';
 import '../../domain/usecases/add_university_career_usecase.dart';
 import '../../domain/usecases/delete_university_career_usecase.dart';
 import '../../domain/usecases/get_university_profile_usecase.dart';
+import '../../data/repositories/university_repository_impl.dart';
 
 class UniversityCareersProvider extends ChangeNotifier {
   final GetUniversityCareersUseCase _getCareersUseCase;
@@ -74,6 +75,45 @@ class UniversityCareersProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _addCareerUseCase(career);
+      await fetchCareers();
+    } catch (e) {
+      _errorMessage = _cleanError(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> createCustomCareer({
+    required String name,
+    required String categoryId,
+    required String description,
+    required String location,
+    required String modality,
+    required double costApprox,
+    required bool scholarshipAvailable,
+    required String admissionDates,
+    String? duration,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final repo = _getProfileUseCase.repository;
+      if (repo is UniversityRepositoryImpl) {
+        await repo.createCustomCareer({
+          'name': name,
+          'categoryId': categoryId,
+          'description': description,
+          'location': location,
+          'modality': modality,
+          'costApprox': costApprox,
+          'scholarshipAvailable': scholarshipAvailable,
+          'admissionDates': admissionDates,
+          'duration': duration ?? '8 Semestres',
+        });
+      }
       await fetchCareers();
     } catch (e) {
       _errorMessage = _cleanError(e);

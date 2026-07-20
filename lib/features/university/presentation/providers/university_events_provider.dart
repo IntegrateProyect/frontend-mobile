@@ -121,12 +121,16 @@ class UniversityEventsProvider extends ChangeNotifier {
         contentType = imageFile!.name.endsWith('.png') ? 'image/png' : 'image/jpeg';
       }
 
+      final now = DateTime.now();
+      final date = selectedDate ?? now.add(const Duration(days: 1));
+      final time = selectedTime ?? const TimeOfDay(hour: 10, minute: 0);
+
       final finalDateTime = DateTime(
-        selectedDate!.year,
-        selectedDate!.month,
-        selectedDate!.day,
-        selectedTime!.hour,
-        selectedTime!.minute,
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
       );
 
       String? imageUrl = existingImageUrl;

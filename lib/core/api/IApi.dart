@@ -77,6 +77,8 @@ abstract class IApi {
 
   // --- 🎓 SERVICIO DE UNIVERSIDADES (REPRESENTANTE) ---
   Future<List<dynamic>> getCatalogCareers(String token);
+  Future<List<dynamic>> getAvailableCatalogCareers(String token);
+  Future<Map<String, dynamic>> createCustomUniversityCareer(String token, Map<String, dynamic> data);
   Future<Map<String, dynamic>> claimUniversity(String token, {required String cct, required String rfc});
   Future<List<dynamic>> getUniversityCareers(String token);
   Future<Map<String, dynamic>> addUniversityCareer(String token, Map<String, dynamic> data);
