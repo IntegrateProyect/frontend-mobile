@@ -1390,4 +1390,46 @@ class API implements IApi {
       token: token,
     );
   }
+
+  // --- 🎓 GESTIÓN DE EGRESADOS (ALUMNI) ---
+  @override
+  Future<List<dynamic>> getUniversityAlumni(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/university/alumni',
+      token: token,
+    );
+    return _asList(result, keys: const ['data']);
+  }
+
+  @override
+  Future<Map<String, dynamic>> createUniversityAlumni(String token, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/university/alumni',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateUniversityAlumni(String token, String alumniId, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'PUT',
+      path: '/university/alumni/$alumniId',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<void> deleteUniversityAlumni(String token, String alumniId) async {
+    await _request(
+      method: 'DELETE',
+      path: '/university/alumni/$alumniId',
+      token: token,
+    );
+  }
 }

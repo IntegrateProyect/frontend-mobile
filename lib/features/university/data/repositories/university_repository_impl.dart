@@ -7,12 +7,14 @@ import '../../domain/entities/university_career_entity.dart';
 import '../../domain/entities/university_catalog_page_entity.dart';
 import '../../domain/entities/university_event_entity.dart';
 import '../../domain/entities/university_announcement_entity.dart';
+import '../../domain/entities/university_alumni_entity.dart';
 import '../../domain/repositories/university_repository.dart';
 import '../datasources/models/university_catalog_page_model.dart';
 import '../datasources/models/university_career_model.dart';
 import '../datasources/models/university_profile_model.dart';
 import '../datasources/models/university_event_model.dart';
 import '../datasources/models/university_announcement_model.dart';
+import '../models/university_alumni_model.dart';
 
 class UniversityRepositoryImpl implements UniversityRepository {
   final IApi api;
@@ -218,5 +220,35 @@ class UniversityRepositoryImpl implements UniversityRepository {
     final token = await userService.getToken();
     if (token == null) throw Exception('Sesión no válida');
     await api.deleteUniversityAnnouncement(token, announcementId);
+  }
+
+  // --- GESTIÓN DE EGRESADOS (ALUMNI) ---
+  @override
+  Future<List<UniversityAlumniEntity>> getAlumni() async {
+    final token = await userService.getToken();
+    if (token == null) throw Exception('Sesión no válida');
+    final list = await api.getUniversityAlumni(token);
+    return list.map((item) => UniversityAlumniModel.fromJson(Map<String, dynamic>.from(item))).toList();
+  }
+
+  @override
+  Future<void> createAlumni(Map<String, dynamic> alumniData) async {
+    final token = await userService.getToken();
+    if (token == null) throw Exception('Sesión no válida');
+    await api.createUniversityAlumni(token, alumniData);
+  }
+
+  @override
+  Future<void> updateAlumni(String alumniId, Map<String, dynamic> alumniData) async {
+    final token = await userService.getToken();
+    if (token == null) throw Exception('Sesión no válida');
+    await api.updateUniversityAlumni(token, alumniId, alumniData);
+  }
+
+  @override
+  Future<void> deleteAlumni(String alumniId) async {
+    final token = await userService.getToken();
+    if (token == null) throw Exception('Sesión no válida');
+    await api.deleteUniversityAlumni(token, alumniId);
   }
 }

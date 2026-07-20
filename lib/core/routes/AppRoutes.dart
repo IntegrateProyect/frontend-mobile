@@ -45,6 +45,7 @@ enum AppRoutes {
   universityVerification('/university-verification'),
   manageEvents('/manage-events'),
   manageAnnouncements('/manage-announcements'),
+  manageAlumni('/manage-alumni'),
 
   // Alumni
   alumniHome('/alumni-home'),

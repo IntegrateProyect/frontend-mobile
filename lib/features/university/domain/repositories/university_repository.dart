@@ -4,6 +4,7 @@ import '../entities/university_career_entity.dart';
 import '../entities/university_catalog_page_entity.dart';
 import '../entities/university_event_entity.dart';
 import '../entities/university_announcement_entity.dart';
+import '../entities/university_alumni_entity.dart';
 
 abstract class UniversityRepository {
   Future<UniversityProfileEntity> getProfile();
@@ -33,4 +34,10 @@ abstract class UniversityRepository {
   Future<void> createAnnouncement(UniversityAnnouncementEntity announcement);
   Future<void> updateAnnouncement(UniversityAnnouncementEntity announcement);
   Future<void> deleteAnnouncement(String announcementId);
+
+  // Gestión de Egresados (Alumni)
+  Future<List<UniversityAlumniEntity>> getAlumni();
+  Future<void> createAlumni(Map<String, dynamic> alumniData);
+  Future<void> updateAlumni(String alumniId, Map<String, dynamic> alumniData);
+  Future<void> deleteAlumni(String alumniId);
 }

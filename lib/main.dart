@@ -15,7 +15,11 @@ import 'features/student/presentation/providers/student_profile_provider.dart';
 import 'features/student/presentation/providers/student_results_provider.dart';
 import 'features/student/presentation/providers/universities_provider.dart';
 import 'features/university/presentation/providers/universities_provider.dart';
-import 'features/university/presentation/providers/university_provider.dart';
+import 'features/university/presentation/providers/university_profile_provider.dart';
+import 'features/university/presentation/providers/university_careers_provider.dart';
+import 'features/university/presentation/providers/university_events_provider.dart';
+import 'features/university/presentation/providers/university_announcements_provider.dart';
+import 'features/university/presentation/providers/university_alumni_provider.dart';
 import 'features/vocational_games/presentation/providers/games_provider.dart';
 
 Future<void> main() async {
@@ -57,8 +61,21 @@ Future<void> main() async {
         ChangeNotifierProvider<UniversitiesProvider>(
           create: (_) => di.sl<UniversitiesProvider>(),
         ),
-        ChangeNotifierProvider<UniversityProvider>(
-          create: (_) => di.sl<UniversityProvider>(),
+        // University Providers
+        ChangeNotifierProvider<UniversityProfileProvider>(
+          create: (_) => di.sl<UniversityProfileProvider>(),
+        ),
+        ChangeNotifierProvider<UniversityCareersProvider>(
+          create: (_) => di.sl<UniversityCareersProvider>(),
+        ),
+        ChangeNotifierProvider<UniversityEventsProvider>(
+          create: (_) => di.sl<UniversityEventsProvider>(),
+        ),
+        ChangeNotifierProvider<UniversityAnnouncementsProvider>(
+          create: (_) => di.sl<UniversityAnnouncementsProvider>(),
+        ),
+        ChangeNotifierProvider<UniversityAlumniProvider>(
+          create: (_) => di.sl<UniversityAlumniProvider>(),
         ),
         ChangeNotifierProvider<GamesProvider>(
           create: (_) => di.sl<GamesProvider>(),

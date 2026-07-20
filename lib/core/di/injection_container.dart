@@ -47,9 +47,28 @@ import '../../features/admin/presentation/providers/admin_provider.dart';
 import '../../features/university/data/repositories/university_repository_impl.dart';
 import '../../features/university/domain/repositories/university_repository.dart';
 import '../../features/university/domain/usecases/get_university_profile_usecase.dart';
-import '../../features/university/domain/usecases/manage_careers_usecase.dart';
+import '../../features/university/domain/usecases/get_university_careers_usecase.dart';
+import '../../features/university/domain/usecases/add_university_career_usecase.dart';
+import '../../features/university/domain/usecases/delete_university_career_usecase.dart';
+import '../../features/university/domain/usecases/get_university_events_usecase.dart';
+import '../../features/university/domain/usecases/create_university_event_usecase.dart';
+import '../../features/university/domain/usecases/update_university_event_usecase.dart';
+import '../../features/university/domain/usecases/delete_university_event_usecase.dart';
+import '../../features/university/domain/usecases/upload_event_image_usecase.dart';
+import '../../features/university/domain/usecases/get_university_announcements_usecase.dart';
+import '../../features/university/domain/usecases/create_university_announcement_usecase.dart';
+import '../../features/university/domain/usecases/update_university_announcement_usecase.dart';
+import '../../features/university/domain/usecases/delete_university_announcement_usecase.dart';
+import '../../features/university/domain/usecases/get_university_alumni_usecase.dart';
+import '../../features/university/domain/usecases/create_university_alumni_usecase.dart';
+import '../../features/university/domain/usecases/update_university_alumni_usecase.dart';
+import '../../features/university/domain/usecases/delete_university_alumni_usecase.dart';
 import '../../features/university/domain/usecases/get_compatible_universities_usecase.dart' as uni_usecase;
-import '../../features/university/presentation/providers/university_provider.dart';
+import '../../features/university/presentation/providers/university_profile_provider.dart';
+import '../../features/university/presentation/providers/university_careers_provider.dart';
+import '../../features/university/presentation/providers/university_events_provider.dart';
+import '../../features/university/presentation/providers/university_announcements_provider.dart';
+import '../../features/university/presentation/providers/university_alumni_provider.dart';
 import '../../features/university/presentation/providers/universities_provider.dart';
 
 // STUDENT
@@ -182,13 +201,55 @@ Future<void> init() async {
   // UNIVERSITY
   // ==========================================================
   sl.registerLazySingleton<UniversityRepository>(() => UniversityRepositoryImpl(api: sl<IApi>(), userService: sl<UserService>()));
+  
+  // UseCases
   sl.registerLazySingleton<GetUniversityProfileUseCase>(() => GetUniversityProfileUseCase(sl<UniversityRepository>()));
-  sl.registerLazySingleton<ManageCareersUseCase>(() => ManageCareersUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<GetUniversityCareersUseCase>(() => GetUniversityCareersUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<AddUniversityCareerUseCase>(() => AddUniversityCareerUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<DeleteUniversityCareerUseCase>(() => DeleteUniversityCareerUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<GetUniversityEventsUseCase>(() => GetUniversityEventsUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<CreateUniversityEventUseCase>(() => CreateUniversityEventUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<UpdateUniversityEventUseCase>(() => UpdateUniversityEventUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<DeleteUniversityEventUseCase>(() => DeleteUniversityEventUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<UploadEventImageUseCase>(() => UploadEventImageUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<GetUniversityAnnouncementsUseCase>(() => GetUniversityAnnouncementsUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<CreateUniversityAnnouncementUseCase>(() => CreateUniversityAnnouncementUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<UpdateUniversityAnnouncementUseCase>(() => UpdateUniversityAnnouncementUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<DeleteUniversityAnnouncementUseCase>(() => DeleteUniversityAnnouncementUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<GetUniversityAlumniUseCase>(() => GetUniversityAlumniUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<CreateUniversityAlumniUseCase>(() => CreateUniversityAlumniUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<UpdateUniversityAlumniUseCase>(() => UpdateUniversityAlumniUseCase(sl<UniversityRepository>()));
+  sl.registerLazySingleton<DeleteUniversityAlumniUseCase>(() => DeleteUniversityAlumniUseCase(sl<UniversityRepository>()));
   sl.registerLazySingleton<uni_usecase.GetCompatibleUniversitiesUseCase>(() => uni_usecase.GetCompatibleUniversitiesUseCase(sl<UniversityRepository>()));
 
-  sl.registerFactory<UniversityProvider>(() => UniversityProvider(
+  // Providers
+  sl.registerFactory<UniversityProfileProvider>(() => UniversityProfileProvider(
     getProfileUseCase: sl<GetUniversityProfileUseCase>(),
-    manageCareersUseCase: sl<ManageCareersUseCase>(),
+  ));
+  sl.registerFactory<UniversityCareersProvider>(() => UniversityCareersProvider(
+    getCareersUseCase: sl<GetUniversityCareersUseCase>(),
+    addCareerUseCase: sl<AddUniversityCareerUseCase>(),
+    deleteCareerUseCase: sl<DeleteUniversityCareerUseCase>(),
+    getProfileUseCase: sl<GetUniversityProfileUseCase>(),
+  ));
+  sl.registerFactory<UniversityEventsProvider>(() => UniversityEventsProvider(
+    getEventsUseCase: sl<GetUniversityEventsUseCase>(),
+    createEventUseCase: sl<CreateUniversityEventUseCase>(),
+    updateEventUseCase: sl<UpdateUniversityEventUseCase>(),
+    deleteEventUseCase: sl<DeleteUniversityEventUseCase>(),
+    uploadImageUseCase: sl<UploadEventImageUseCase>(),
+  ));
+  sl.registerFactory<UniversityAnnouncementsProvider>(() => UniversityAnnouncementsProvider(
+    getAnnouncementsUseCase: sl<GetUniversityAnnouncementsUseCase>(),
+    createAnnouncementUseCase: sl<CreateUniversityAnnouncementUseCase>(),
+    updateAnnouncementUseCase: sl<UpdateUniversityAnnouncementUseCase>(),
+    deleteAnnouncementUseCase: sl<DeleteUniversityAnnouncementUseCase>(),
+  ));
+  sl.registerFactory<UniversityAlumniProvider>(() => UniversityAlumniProvider(
+    getAlumniUseCase: sl<GetUniversityAlumniUseCase>(),
+    createAlumniUseCase: sl<CreateUniversityAlumniUseCase>(),
+    updateAlumniUseCase: sl<UpdateUniversityAlumniUseCase>(),
+    deleteAlumniUseCase: sl<DeleteUniversityAlumniUseCase>(),
   ));
   sl.registerFactory<UniversitiesProvider>(() => UniversitiesProvider(
     getCompatibleUniversitiesUseCase: sl<uni_usecase.GetCompatibleUniversitiesUseCase>(),

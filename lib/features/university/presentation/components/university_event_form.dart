@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../domain/entities/university_event_entity.dart';
-import '../providers/university_provider.dart';
+import '../providers/university_events_provider.dart';
 
 class UniversityEventForm extends StatelessWidget {
   final UniversityEventEntity? event;
@@ -19,9 +19,9 @@ class UniversityEventForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<UniversityProvider>();
-    final dateLabel = provider.eventSelectedDate == null ? 'Seleccionar Día' : DateFormat('dd/MM/yyyy').format(provider.eventSelectedDate!);
-    final timeLabel = provider.eventSelectedTime == null ? 'Seleccionar Hora' : provider.eventSelectedTime!.format(context);
+    final provider = context.watch<UniversityEventsProvider>();
+    final dateLabel = provider.selectedDate == null ? 'Seleccionar Día' : DateFormat('dd/MM/yyyy').format(provider.selectedDate!);
+    final timeLabel = provider.selectedTime == null ? 'Seleccionar Hora' : provider.selectedTime!.format(context);
     
     const primaryColor = Color(0xFF311B92);
     const accentColor = Color(0xFF1D1B4B);
@@ -46,14 +46,14 @@ class UniversityEventForm extends StatelessWidget {
               SizedBox(height: 24.h),
               _buildLabel('TÍTULO DEL EVENTO'),
               TextFormField(
-                controller: provider.eventTitleController,
+                controller: provider.titleController,
                 decoration: _inputStyle('Ej. Feria Vocacional 2024'),
                 validator: (v) => v!.isEmpty ? 'Requerido' : null,
               ),
               SizedBox(height: 16.h),
               _buildLabel('UBICACIÓN'),
               TextFormField(
-                controller: provider.eventLocationController,
+                controller: provider.locationController,
                 decoration: _inputStyle('Ej. Auditorio Principal'),
                 validator: (v) => v!.isEmpty ? 'Requerido' : null,
               ),
@@ -103,7 +103,7 @@ class UniversityEventForm extends StatelessWidget {
     ),
   );
 
-  Widget _buildImagePicker(UniversityProvider provider) => InkWell(
+  Widget _buildImagePicker(UniversityEventsProvider provider) => InkWell(
     onTap: () async {
       final picker = ImagePicker();
       final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
@@ -113,44 +113,44 @@ class UniversityEventForm extends StatelessWidget {
     child: Container(
       height: 120.h, width: double.infinity,
       decoration: BoxDecoration(color: const Color(0xFFF8F9FE), borderRadius: BorderRadius.circular(16.r), border: Border.all(color: const Color(0xFFE5E7EB))),
-      child: provider.eventImageFile != null 
-        ? ClipRRect(borderRadius: BorderRadius.circular(16.r), child: Image.file(File(provider.eventImageFile!.path), fit: BoxFit.cover))
+      child: provider.imageFile != null 
+        ? ClipRRect(borderRadius: BorderRadius.circular(16.r), child: Image.file(File(provider.imageFile!.path), fit: BoxFit.cover))
         : (event?.imageUrl != null && event!.imageUrl!.isNotEmpty)
           ? ClipRRect(borderRadius: BorderRadius.circular(16.r), child: Image.network(event!.imageUrl!, fit: BoxFit.cover))
           : Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_photo_alternate_outlined, color: Colors.grey[400], size: 32.sp), SizedBox(height: 8.h), Text('Subir Imagen', style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]))])),
     ),
   );
 
-  Widget _buildSubmitButton(BuildContext context, UniversityProvider provider, GlobalKey<FormState> formKey) => SizedBox(
+  Widget _buildSubmitButton(BuildContext context, UniversityEventsProvider provider, GlobalKey<FormState> formKey) => SizedBox(
     width: double.infinity, height: 56.h,
     child: ElevatedButton(
       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF311B92), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)), elevation: 0),
-      onPressed: provider.isSubmittingEvent ? null : () async {
+      onPressed: provider.isSubmitting ? null : () async {
         if (formKey.currentState!.validate()) {
-          await provider.submitEventForm(id: event?.id, existingImageUrl: event?.imageUrl);
+          await provider.submitForm(id: event?.id, existingImageUrl: event?.imageUrl);
           onSuccess();
         }
       },
-      child: provider.isSubmittingEvent 
+      child: provider.isSubmitting 
         ? const CircularProgressIndicator(color: Colors.white) 
         : const Text('Publicar Evento', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
     ),
   );
 
-  Future<void> _selectDate(BuildContext context, UniversityProvider provider) async {
+  Future<void> _selectDate(BuildContext context, UniversityEventsProvider provider) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: provider.eventSelectedDate ?? DateTime.now().add(const Duration(days: 1)),
+      initialDate: provider.selectedDate ?? DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) provider.setEventDate(picked);
   }
 
-  Future<void> _selectTime(BuildContext context, UniversityProvider provider) async {
+  Future<void> _selectTime(BuildContext context, UniversityEventsProvider provider) async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: provider.eventSelectedTime ?? const TimeOfDay(hour: 9, minute: 0),
+      initialTime: provider.selectedTime ?? const TimeOfDay(hour: 9, minute: 0),
     );
     if (picked != null) provider.setEventTime(picked);
   }
