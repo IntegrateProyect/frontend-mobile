@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import '../providers/university_provider.dart';
+import '../providers/university_careers_provider.dart';
 import '../components/university_career_card.dart';
 import '../components/university_career_form.dart';
 import '../components/university_bottom_navigation_bar.dart';
@@ -21,12 +21,14 @@ class _ManageCareersScreenState extends State<ManageCareersScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      context.read<UniversityProvider>().fetchCareers();
+      if (mounted) {
+        context.read<UniversityCareersProvider>().fetchCareers();
+      }
     });
   }
 
   void _showAddCareerDialog(BuildContext context) async {
-    final provider = context.read<UniversityProvider>();
+    final provider = context.read<UniversityCareersProvider>();
     
     showDialog(
       context: context,
@@ -60,7 +62,7 @@ class _ManageCareersScreenState extends State<ManageCareersScreen> {
   }
  
   void _deleteCareer(BuildContext context, String careerId) async {
-    final provider = context.read<UniversityProvider>();
+    final provider = context.read<UniversityCareersProvider>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -85,7 +87,7 @@ class _ManageCareersScreenState extends State<ManageCareersScreen> {
  
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<UniversityProvider>();
+    final provider = context.watch<UniversityCareersProvider>();
  
     if (provider.errorMessage != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -108,7 +110,7 @@ class _ManageCareersScreenState extends State<ManageCareersScreen> {
         elevation: 0.5,
         centerTitle: true,
         title: Text('Oferta Académica', style: TextStyle(color: _accentColor, fontSize: 18.sp, fontWeight: FontWeight.w900)),
-        automaticallyImplyLeading: false, // Quitamos el botón de atrás ya que tenemos navegación por footer
+        automaticallyImplyLeading: false, 
       ),
       body: provider.isLoading && provider.careers.isEmpty
           ? const Center(child: CircularProgressIndicator(color: _primaryColor))
@@ -127,7 +129,7 @@ class _ManageCareersScreenState extends State<ManageCareersScreen> {
                   ),
                 ),
       floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 10.h), // Ajuste para no tapar el footer
+        padding: EdgeInsets.only(bottom: 10.h), 
         child: FloatingActionButton.extended(
           backgroundColor: _primaryColor,
           onPressed: () => _showAddCareerDialog(context),
@@ -139,7 +141,7 @@ class _ManageCareersScreenState extends State<ManageCareersScreen> {
     );
   }
 
-  Widget _buildEmptyState(UniversityProvider provider) {
+  Widget _buildEmptyState(UniversityCareersProvider provider) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

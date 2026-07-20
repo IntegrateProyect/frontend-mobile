@@ -67,6 +67,7 @@ import '../../features/university/presentation/screens/manage_careers_screen.dar
 import '../../features/university/presentation/screens/university_verification_screen.dart';
 import '../../features/university/presentation/screens/manage_events_screen.dart';
 import '../../features/university/presentation/screens/manage_announcements_screen.dart';
+import '../../features/university/presentation/screens/manage_alumni_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.splash.path,
@@ -353,6 +354,13 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.manageAnnouncements.path,
       builder: (context, state) {
         return const ManageAnnouncementsScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.manageAlumni.path,
+      builder: (context, state) {
+        return const ManageAlumniScreen();
       },
     ),
   ],

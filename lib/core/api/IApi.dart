@@ -93,4 +93,10 @@ abstract class IApi {
   Future<Map<String, dynamic>> createUniversityAnnouncement(String token, Map<String, dynamic> data);
   Future<Map<String, dynamic>> updateUniversityAnnouncement(String token, String announcementId, Map<String, dynamic> data);
   Future<void> deleteUniversityAnnouncement(String token, String announcementId);
+
+  // Gestión de Egresados (Alumni)
+  Future<List<dynamic>> getUniversityAlumni(String token);
+  Future<Map<String, dynamic>> createUniversityAlumni(String token, Map<String, dynamic> data);
+  Future<Map<String, dynamic>> updateUniversityAlumni(String token, String alumniId, Map<String, dynamic> data);
+  Future<void> deleteUniversityAlumni(String token, String alumniId);
 }

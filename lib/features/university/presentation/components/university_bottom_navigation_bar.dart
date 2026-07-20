@@ -34,6 +34,11 @@ class UniversityBottomNavigationBar extends StatelessWidget {
       icon: Icons.campaign_rounded,
       path: AppRoutes.manageAnnouncements.path,
     ),
+    _NavigationItem(
+      label: 'Egresados',
+      icon: Icons.people_alt_rounded,
+      path: AppRoutes.manageAlumni.path,
+    ),
   ];
 
   @override
@@ -52,11 +57,11 @@ class UniversityBottomNavigationBar extends StatelessWidget {
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         elevation: 0,
-        currentIndex: currentIndex,
+        currentIndex: currentIndex < 0 ? 0 : currentIndex,
         selectedItemColor: _primaryColor,
         unselectedItemColor: Colors.grey[400],
-        selectedFontSize: 11.sp,
-        unselectedFontSize: 11.sp,
+        selectedFontSize: 10.sp,
+        unselectedFontSize: 10.sp,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
         onTap: (index) => _navigate(context, index),
@@ -64,7 +69,7 @@ class UniversityBottomNavigationBar extends StatelessWidget {
           return BottomNavigationBarItem(
             icon: Padding(
               padding: EdgeInsets.only(bottom: 4.h),
-              child: Icon(destination.icon, size: 24.sp),
+              child: Icon(destination.icon, size: 22.sp),
             ),
             label: destination.label,
           );
@@ -79,7 +84,6 @@ class UniversityBottomNavigationBar extends StatelessWidget {
 
     if (currentPath == destination.path) return;
 
-    // Usamos go para que la navegación sea a nivel de raíz del rol
     context.go(destination.path);
   }
 }

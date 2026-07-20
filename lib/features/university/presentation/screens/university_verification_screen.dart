@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
-import '../providers/university_provider.dart';
+import '../providers/university_profile_provider.dart';
 import '../components/verification_form.dart';
 import '../components/verification_pending_view.dart';
 
@@ -12,11 +12,11 @@ class UniversityVerificationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final univProvider = context.watch<UniversityProvider>();
+    final profileProvider = context.watch<UniversityProfileProvider>();
     final user = authProvider.user;
     final status = user?.verificationStatus ?? 'UNVERIFIED';
 
-    final bool isLoading = authProvider.isLoading || univProvider.isLoading;
+    final bool isLoading = authProvider.isLoading || profileProvider.isLoading;
 
     return Scaffold(
       body: Container(
@@ -65,11 +65,11 @@ class UniversityVerificationScreen extends StatelessWidget {
   }
 
   void _submitClaim(BuildContext context, String cct, String rfc) async {
-    final provider = context.read<UniversityProvider>();
+    final profileProvider = context.read<UniversityProfileProvider>();
     final authProvider = context.read<AuthProvider>();
 
     try {
-      final res = await provider.claimUniversity(
+      final res = await profileProvider.claimUniversity(
         cct.trim().toUpperCase(),
         rfc.trim().toUpperCase(),
       );
@@ -116,7 +116,8 @@ class UniversityVerificationScreen extends StatelessWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al refrescar: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(
+            content: Text('Error al refrescar: $e'), backgroundColor: Colors.redAccent),
         );
       }
     }

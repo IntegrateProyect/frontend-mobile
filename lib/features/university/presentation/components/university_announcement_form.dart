@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/university_announcement_entity.dart';
-import '../providers/university_provider.dart';
+import '../providers/university_announcements_provider.dart';
 
 class UniversityAnnouncementForm extends StatelessWidget {
   final UniversityAnnouncementEntity? announcement;
@@ -16,8 +16,7 @@ class UniversityAnnouncementForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos watch para reaccionar al estado de carga y controladores del provider
-    final provider = context.watch<UniversityProvider>();
+    final provider = context.watch<UniversityAnnouncementsProvider>();
     const Color primaryColor = Color(0xFF311B92);
     const Color accentColor = Color(0xFF1D1B4B);
 
@@ -57,7 +56,7 @@ class UniversityAnnouncementForm extends StatelessWidget {
               SizedBox(height: 24.h),
               _buildFieldLabel('TÍTULO'),
               TextFormField(
-                controller: provider.annTitleController,
+                controller: provider.titleController,
                 decoration: _inputDecoration('Ej. Beca de Excelencia 2024'),
                 validator: (v) =>
                     v == null || v.trim().isEmpty ? 'Ingresa un título' : null,
@@ -65,7 +64,7 @@ class UniversityAnnouncementForm extends StatelessWidget {
               SizedBox(height: 16.h),
               _buildFieldLabel('CONTENIDO'),
               TextFormField(
-                controller: provider.annDescController,
+                controller: provider.descController,
                 maxLines: 4,
                 decoration: _inputDecoration('Escribe los detalles aquí...'),
                 validator: (v) =>
@@ -74,7 +73,7 @@ class UniversityAnnouncementForm extends StatelessWidget {
               SizedBox(height: 16.h),
               _buildFieldLabel('CATEGORÍA'),
               DropdownButtonFormField<String>(
-                value: provider.annSelectedCategory,
+                value: provider.selectedCategory,
                 decoration: _inputDecoration(''),
                 items: categories.map((c) {
                   return DropdownMenuItem<String>(
@@ -83,7 +82,7 @@ class UniversityAnnouncementForm extends StatelessWidget {
                   );
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) provider.setAnnCategory(val);
+                  if (val != null) provider.setCategory(val);
                 },
               ),
               SizedBox(height: 32.h),
@@ -91,10 +90,9 @@ class UniversityAnnouncementForm extends StatelessWidget {
                 width: double.infinity,
                 height: 56.h,
                 child: ElevatedButton(
-                  onPressed: provider.isSubmittingAnn ? null : () async {
+                  onPressed: provider.isSubmitting ? null : () async {
                     if (formKey.currentState!.validate()) {
-                      // Llamamos al método unificado del provider
-                      await provider.submitAnnForm(id: announcement?.id);
+                      await provider.submitForm(id: announcement?.id);
                       onSuccess();
                     }
                   },
@@ -106,7 +104,7 @@ class UniversityAnnouncementForm extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16.r),
                     ),
                   ),
-                  child: provider.isSubmittingAnn
+                  child: provider.isSubmitting
                       ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
                           announcement == null

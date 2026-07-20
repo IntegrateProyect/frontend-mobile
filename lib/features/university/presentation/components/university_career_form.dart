@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../domain/entities/university_career_entity.dart';
-import '../providers/university_provider.dart';
+import '../providers/university_careers_provider.dart';
 
 class UniversityCareerForm extends StatefulWidget {
-  final UniversityProvider provider;
+  final UniversityCareersProvider provider;
 
   const UniversityCareerForm({super.key, required this.provider});
 
@@ -127,7 +127,7 @@ class _UniversityCareerFormState extends State<UniversityCareerForm> {
                       children: [
                         _buildLabel('MODALIDAD'),
                         DropdownButtonFormField<String>(
-                          initialValue: _modality,
+                          value: _modality,
                           decoration: _inputStyle(''),
                           items: const [
                             DropdownMenuItem(value: 'Presencial', child: Text('Presencial')),

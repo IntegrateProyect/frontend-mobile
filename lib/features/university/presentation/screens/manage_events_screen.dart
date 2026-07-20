@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/university_event_entity.dart';
-import '../providers/university_provider.dart';
+import '../providers/university_events_provider.dart';
+import '../providers/university_careers_provider.dart';
 import '../components/university_event_card.dart';
 import '../components/university_event_form.dart';
 import '../components/university_empty_state.dart';
@@ -23,14 +24,15 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      final provider = context.read<UniversityProvider>();
-      provider.fetchEvents();
-      provider.fetchCareers();
+      if (mounted) {
+        context.read<UniversityEventsProvider>().fetchEvents();
+        context.read<UniversityCareersProvider>().fetchCareers();
+      }
     });
   }
 
   void _showEventFormDialog(BuildContext context, {UniversityEventEntity? event}) {
-    context.read<UniversityProvider>().resetEventForm(event: event);
+    context.read<UniversityEventsProvider>().resetForm(event: event);
 
     showModalBottomSheet(
       context: context,
@@ -66,7 +68,7 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
   }
 
   void _deleteEvent(BuildContext context, String eventId) async {
-    final provider = context.read<UniversityProvider>();
+    final provider = context.read<UniversityEventsProvider>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -93,34 +95,13 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
     );
 
     if (confirm == true) {
-      try {
-        await provider.deleteEvent(eventId);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Evento eliminado correctamente'),
-              backgroundColor: Colors.black87,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error al eliminar: $e'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
+      await provider.deleteEvent(eventId);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<UniversityProvider>();
+    final provider = context.watch<UniversityEventsProvider>();
 
     if (provider.errorMessage != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -186,7 +167,7 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
     );
   }
 
-  Widget _buildEmptyState(UniversityProvider provider) {
+  Widget _buildEmptyState(UniversityEventsProvider provider) {
     if (provider.errorMessage != null) {
       return Center(
         child: Column(

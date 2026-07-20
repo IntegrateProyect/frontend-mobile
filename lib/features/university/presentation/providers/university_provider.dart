@@ -5,18 +5,29 @@ import '../../domain/entities/university_profile_entity.dart';
 import '../../domain/entities/university_career_entity.dart';
 import '../../domain/entities/university_event_entity.dart';
 import '../../domain/entities/university_announcement_entity.dart';
+import '../../domain/entities/university_alumni_entity.dart';
 import '../../domain/usecases/get_university_profile_usecase.dart';
 import '../../domain/usecases/manage_careers_usecase.dart';
+import '../../domain/usecases/get_university_alumni_usecase.dart';
+import '../../domain/usecases/create_university_alumni_usecase.dart';
+import '../../domain/usecases/update_university_alumni_usecase.dart';
+import '../../domain/usecases/delete_university_alumni_usecase.dart';
 
 class UniversityProvider extends ChangeNotifier {
   final GetUniversityProfileUseCase _getProfileUseCase;
   final ManageCareersUseCase _manageCareersUseCase;
+  final GetUniversityAlumniUseCase _getAlumniUseCase;
+  final CreateUniversityAlumniUseCase _createAlumniUseCase;
+  final UpdateUniversityAlumniUseCase _updateAlumniUseCase;
+  final DeleteUniversityAlumniUseCase _deleteAlumniUseCase;
 
   UniversityProfileEntity? _profile;
   List<UniversityCareerEntity> _careers = [];
   List<UniversityCareerEntity> _catalogCareers = [];
   List<UniversityEventEntity> _events = [];
   List<UniversityAnnouncementEntity> _announcements = [];
+  List<UniversityAlumniEntity> _alumni = [];
+  
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -36,17 +47,38 @@ class UniversityProvider extends ChangeNotifier {
   XFile? eventImageFile;
   bool isSubmittingEvent = false;
 
+  // --- Form State: Alumni ---
+  final alumniNameController = TextEditingController();
+  final alumniEmailController = TextEditingController();
+  final alumniPasswordController = TextEditingController();
+  final alumniJobController = TextEditingController();
+  final alumniCompanyController = TextEditingController();
+  final alumniGraduationYearController = TextEditingController();
+  final alumniExperienceController = TextEditingController();
+  final alumniLinkedinController = TextEditingController();
+  String? alumniSelectedCareerId;
+  bool isSubmittingAlumni = false;
+
   UniversityProvider({
     required GetUniversityProfileUseCase getProfileUseCase,
     required ManageCareersUseCase manageCareersUseCase,
+    required GetUniversityAlumniUseCase getAlumniUseCase,
+    required CreateUniversityAlumniUseCase createAlumniUseCase,
+    required UpdateUniversityAlumniUseCase updateAlumniUseCase,
+    required DeleteUniversityAlumniUseCase deleteAlumniUseCase,
   })  : _getProfileUseCase = getProfileUseCase,
-        _manageCareersUseCase = manageCareersUseCase;
+        _manageCareersUseCase = manageCareersUseCase,
+        _getAlumniUseCase = getAlumniUseCase,
+        _createAlumniUseCase = createAlumniUseCase,
+        _updateAlumniUseCase = updateAlumniUseCase,
+        _deleteAlumniUseCase = deleteAlumniUseCase;
 
   UniversityProfileEntity? get profile => _profile;
   List<UniversityCareerEntity> get careers => _careers;
   List<UniversityCareerEntity> get catalogCareers => _catalogCareers;
   List<UniversityEventEntity> get events => _events;
   List<UniversityAnnouncementEntity> get announcements => _announcements;
+  List<UniversityAlumniEntity> get alumni => _alumni;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -66,6 +98,14 @@ class UniversityProvider extends ChangeNotifier {
     eventTitleController.dispose();
     eventDescController.dispose();
     eventLocationController.dispose();
+    alumniNameController.dispose();
+    alumniEmailController.dispose();
+    alumniPasswordController.dispose();
+    alumniJobController.dispose();
+    alumniCompanyController.dispose();
+    alumniGraduationYearController.dispose();
+    alumniExperienceController.dispose();
+    alumniLinkedinController.dispose();
     super.dispose();
   }
 
@@ -221,6 +261,98 @@ class UniversityProvider extends ChangeNotifier {
       _errorMessage = _cleanError(e);
     } finally {
       isSubmittingEvent = false;
+      notifyListeners();
+    }
+  }
+
+  // --- ALUMNI LOGIC ---
+  void setAlumniCareerId(String? careerId) {
+    alumniSelectedCareerId = careerId;
+    notifyListeners();
+  }
+
+  void resetAlumniForm({UniversityAlumniEntity? alumni}) {
+    if (alumni != null) {
+      alumniNameController.text = alumni.name;
+      alumniEmailController.text = alumni.email;
+      alumniPasswordController.clear();
+      alumniJobController.text = alumni.currentJob;
+      alumniCompanyController.text = alumni.company;
+      alumniGraduationYearController.text = alumni.graduationYear.toString();
+      alumniExperienceController.text = alumni.experienceSummary ?? '';
+      alumniLinkedinController.text = alumni.linkedinUrl ?? '';
+      alumniSelectedCareerId = alumni.careerId;
+    } else {
+      alumniNameController.clear();
+      alumniEmailController.clear();
+      alumniPasswordController.clear();
+      alumniJobController.clear();
+      alumniCompanyController.clear();
+      alumniGraduationYearController.clear();
+      alumniExperienceController.clear();
+      alumniLinkedinController.clear();
+      alumniSelectedCareerId = null;
+    }
+    isSubmittingAlumni = false;
+    notifyListeners();
+  }
+
+  Future<void> submitAlumniForm({String? id}) async {
+    isSubmittingAlumni = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final data = {
+        'name': alumniNameController.text.trim(),
+        'email': alumniEmailController.text.trim(),
+        'careerId': alumniSelectedCareerId,
+        'graduationYear': int.tryParse(alumniGraduationYearController.text.trim()) ?? 0,
+        'currentJob': alumniJobController.text.trim(),
+        'company': alumniCompanyController.text.trim(),
+        'experienceSummary': alumniExperienceController.text.trim(),
+        'linkedinUrl': alumniLinkedinController.text.trim(),
+      };
+
+      if (id == null) {
+        data['password'] = alumniPasswordController.text.trim();
+        await _createAlumniUseCase(data);
+      } else {
+        await _updateAlumniUseCase(id, data);
+      }
+      await fetchAlumni();
+    } catch (e) {
+      _errorMessage = _cleanError(e);
+    } finally {
+      isSubmittingAlumni = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchAlumni() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _alumni = await _getAlumniUseCase();
+    } catch (e) {
+      _errorMessage = _cleanError(e);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteAlumni(String alumniId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _deleteAlumniUseCase(alumniId);
+      await fetchAlumni();
+    } catch (e) {
+      _errorMessage = _cleanError(e);
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }

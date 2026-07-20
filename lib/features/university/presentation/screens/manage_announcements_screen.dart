@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import '../providers/university_provider.dart';
+import '../providers/university_announcements_provider.dart';
 import '../components/university_announcement_card.dart';
 import '../components/university_announcement_form.dart';
 import '../components/university_bottom_navigation_bar.dart';
@@ -21,11 +21,15 @@ class _ManageAnnouncementsScreenState extends State<ManageAnnouncementsScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      context.read<UniversityProvider>().fetchAnnouncements();
+      if (mounted) {
+        context.read<UniversityAnnouncementsProvider>().fetchAnnouncements();
+      }
     });
   }
 
   void _showFormDialog(BuildContext context, {dynamic announcement}) {
+    context.read<UniversityAnnouncementsProvider>().resetForm(announcement: announcement);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -64,7 +68,7 @@ class _ManageAnnouncementsScreenState extends State<ManageAnnouncementsScreen> {
   }
 
   void _deleteAnnouncement(BuildContext context, String id) async {
-    final provider = context.read<UniversityProvider>();
+    final provider = context.read<UniversityAnnouncementsProvider>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -97,9 +101,8 @@ class _ManageAnnouncementsScreenState extends State<ManageAnnouncementsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<UniversityProvider>();
+    final provider = context.watch<UniversityAnnouncementsProvider>();
 
-    // Manejo de errores (Rate Limit, etc)
     if (provider.errorMessage != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -164,7 +167,7 @@ class _ManageAnnouncementsScreenState extends State<ManageAnnouncementsScreen> {
     );
   }
 
-  Widget _buildEmptyState(UniversityProvider provider) {
+  Widget _buildEmptyState(UniversityAnnouncementsProvider provider) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
