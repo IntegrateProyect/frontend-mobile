@@ -1242,6 +1242,27 @@ class API implements IApi {
   }
 
   @override
+  Future<List<dynamic>> getAvailableCatalogCareers(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/catalog/universities/available-careers',
+      token: token,
+    );
+    return _asList(result, keys: const ['data']);
+  }
+
+  @override
+  Future<Map<String, dynamic>> createCustomUniversityCareer(String token, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/catalog/universities/careers/custom',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
   Future<Map<String, dynamic>> claimUniversity(String token, {required String cct, required String rfc}) async {
     final result = await _request(
       method: 'POST',

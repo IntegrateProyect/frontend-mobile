@@ -85,8 +85,15 @@ class UniversityRepositoryImpl implements UniversityRepository {
     final token = await userService.getToken();
     if (token == null) throw Exception('Sesión no válida');
 
-    final list = await api.getCatalogCareers(token);
+    final list = await api.getAvailableCatalogCareers(token);
     return list.map((item) => UniversityCareerModel.fromJson(Map<String, dynamic>.from(item))).toList();
+  }
+
+  Future<void> createCustomCareer(Map<String, dynamic> data) async {
+    final token = await userService.getToken();
+    if (token == null) throw Exception('Sesión no válida');
+
+    await api.createCustomUniversityCareer(token, data);
   }
 
   @override
