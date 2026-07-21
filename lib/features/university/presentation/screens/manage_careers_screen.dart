@@ -27,38 +27,21 @@ class _ManageCareersScreenState extends State<ManageCareersScreen> {
     });
   }
 
-  void _showAddCareerDialog(BuildContext context) async {
+  void _showAddCareerDialog(BuildContext context) {
     final provider = context.read<UniversityCareersProvider>();
-    
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogCtx) => const Center(child: CircularProgressIndicator(color: _primaryColor)),
-    );
-    
-    await provider.fetchCatalogCareers();
-    
-    if (context.mounted) {
-      Navigator.pop(context); // Cerrar loading
- 
-      if (provider.errorMessage != null) {
-        return;
-      }
- 
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (sheetCtx) => Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
-          ),
-          padding: EdgeInsets.only(bottom: MediaQuery.of(sheetCtx).viewInsets.bottom),
-          child: UniversityCareerForm(provider: provider),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
         ),
-      );
-    }
+        padding: EdgeInsets.only(bottom: MediaQuery.of(sheetCtx).viewInsets.bottom),
+        child: UniversityCareerForm(provider: provider),
+      ),
+    );
   }
  
   void _deleteCareer(BuildContext context, String careerId) async {
