@@ -5,6 +5,8 @@ import '../providers/university_careers_provider.dart';
 import '../components/university_career_card.dart';
 import '../components/university_career_form.dart';
 import '../components/university_bottom_navigation_bar.dart';
+import '../components/university_empty_state.dart';
+import '../components/university_premium_fab.dart';
 
 class ManageCareersScreen extends StatefulWidget {
   const ManageCareersScreen({super.key});
@@ -72,25 +74,11 @@ class _ManageCareersScreenState extends State<ManageCareersScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<UniversityCareersProvider>();
  
-    if (provider.errorMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(provider.errorMessage!),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-        provider.clearError();
-      });
-    }
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
         centerTitle: true,
         title: Text('Oferta Académica', style: TextStyle(color: _accentColor, fontSize: 18.sp, fontWeight: FontWeight.w900)),
         automaticallyImplyLeading: false, 
@@ -98,12 +86,12 @@ class _ManageCareersScreenState extends State<ManageCareersScreen> {
       body: provider.isLoading && provider.careers.isEmpty
           ? const Center(child: CircularProgressIndicator(color: _primaryColor))
           : provider.careers.isEmpty
-              ? _buildEmptyState(provider)
+              ? _buildEmptyState(context)
               : RefreshIndicator(
                   onRefresh: () => provider.fetchCareers(),
                   color: _primaryColor,
                   child: ListView.builder(
-                    padding: EdgeInsets.all(24.w),
+                    padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 80.h),
                     itemCount: provider.careers.length,
                     itemBuilder: (context, index) => UniversityCareerCard(
                       career: provider.careers[index],
@@ -111,48 +99,20 @@ class _ManageCareersScreenState extends State<ManageCareersScreen> {
                     ),
                   ),
                 ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 10.h), 
-        child: FloatingActionButton.extended(
-          backgroundColor: _primaryColor,
-          onPressed: () => _showAddCareerDialog(context),
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: Text('Agregar Carrera', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.sp)),
-        ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: UniversityPremiumFab(
+        label: 'Vincular Carrera',
+        onPressed: () => _showAddCareerDialog(context),
       ),
       bottomNavigationBar: const UniversityBottomNavigationBar(currentIndex: 1),
     );
   }
 
-  Widget _buildEmptyState(UniversityCareersProvider provider) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(24.w),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: Icon(
-              provider.errorMessage != null ? Icons.error_outline : Icons.school_outlined, 
-              size: 64.r, 
-              color: provider.errorMessage != null ? Colors.redAccent.withOpacity(0.3) : Colors.grey[300]
-            ),
-          ),
-          SizedBox(height: 24.h),
-          Text(
-            provider.errorMessage != null ? 'Error de carga' : 'Sin oferta registrada', 
-            style: TextStyle(fontSize: 18.sp, color: _accentColor, fontWeight: FontWeight.w900)
-          ),
-          if (provider.errorMessage != null) ...[
-            SizedBox(height: 12.h),
-            TextButton.icon(
-              onPressed: () => provider.fetchCareers(),
-              icon: const Icon(Icons.refresh, color: _primaryColor),
-              label: const Text('Reintentar', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
-            )
-          ]
-        ],
-      ),
+  Widget _buildEmptyState(BuildContext context) {
+    return UniversityEmptyState(
+      title: 'Sin carreras registradas aún',
+      imagePath: 'assets/images/oferta_academica.png',
+      fallbackIcon: Icons.school_rounded,
     );
   }
 }

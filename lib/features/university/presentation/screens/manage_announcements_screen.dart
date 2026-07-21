@@ -5,6 +5,8 @@ import '../providers/university_announcements_provider.dart';
 import '../components/university_announcement_card.dart';
 import '../components/university_announcement_form.dart';
 import '../components/university_bottom_navigation_bar.dart';
+import '../components/university_empty_state.dart';
+import '../components/university_premium_fab.dart';
 
 class ManageAnnouncementsScreen extends StatefulWidget {
   const ManageAnnouncementsScreen({super.key});
@@ -103,45 +105,27 @@ class _ManageAnnouncementsScreenState extends State<ManageAnnouncementsScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<UniversityAnnouncementsProvider>();
 
-    if (provider.errorMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(provider.errorMessage!),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-        provider.clearError();
-      });
-    }
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
         centerTitle: true,
         title: Text(
           'Anuncios y Becas',
-          style: TextStyle(
-            color: _accentColor,
-            fontSize: 18.sp,
-            fontWeight: FontWeight.w900,
-          ),
+          style: TextStyle(color: _accentColor, fontSize: 18.sp, fontWeight: FontWeight.w900),
         ),
         automaticallyImplyLeading: false,
       ),
       body: provider.isLoading && provider.announcements.isEmpty
           ? const Center(child: CircularProgressIndicator(color: _primaryColor))
           : provider.announcements.isEmpty
-              ? _buildEmptyState(provider)
+              ? _buildEmptyState(context)
               : RefreshIndicator(
                   color: _primaryColor,
                   onRefresh: () => provider.fetchAnnouncements(),
                   child: ListView.builder(
-                    padding: EdgeInsets.all(24.w),
+                    padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 80.h),
                     itemCount: provider.announcements.length,
                     itemBuilder: (context, index) {
                       final item = provider.announcements[index];
@@ -153,60 +137,20 @@ class _ManageAnnouncementsScreenState extends State<ManageAnnouncementsScreen> {
                     },
                   ),
                 ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 10.h),
-        child: FloatingActionButton.extended(
-          backgroundColor: _primaryColor,
-          onPressed: () => _showFormDialog(context),
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: Text('Nuevo Anuncio', 
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.sp)),
-        ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: UniversityPremiumFab(
+        label: 'Nuevo Anuncio',
+        onPressed: () => _showFormDialog(context),
       ),
       bottomNavigationBar: const UniversityBottomNavigationBar(currentIndex: 3),
     );
   }
 
-  Widget _buildEmptyState(UniversityAnnouncementsProvider provider) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(24.w),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              provider.errorMessage != null ? Icons.error_outline : Icons.campaign_outlined, 
-              size: 64.r, 
-              color: provider.errorMessage != null ? Colors.redAccent.withOpacity(0.3) : Colors.grey[300]
-            ),
-          ),
-          SizedBox(height: 24.h),
-          Text(
-            provider.errorMessage != null ? 'Error de conexión' : 'Sin comunicados',
-            style: TextStyle(fontSize: 18.sp, color: _accentColor, fontWeight: FontWeight.w900),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            provider.errorMessage != null 
-                ? 'No se pudieron cargar los datos. Intenta más tarde.' 
-                : 'Informa a los alumnos sobre becas e inscripciones.',
-            style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
-            textAlign: TextAlign.center,
-          ),
-          if (provider.errorMessage != null) ...[
-            SizedBox(height: 20.h),
-            TextButton.icon(
-              onPressed: () => provider.fetchAnnouncements(),
-              icon: const Icon(Icons.refresh, color: _primaryColor),
-              label: const Text('Reintentar', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
-            )
-          ]
-        ],
-      ),
+  Widget _buildEmptyState(BuildContext context) {
+    return UniversityEmptyState(
+      title: 'Sin comunicados activos aún',
+      imagePath: 'assets/images/anuncios_becas.png',
+      fallbackIcon: Icons.campaign_rounded,
     );
   }
 }
