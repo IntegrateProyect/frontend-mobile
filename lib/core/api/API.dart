@@ -706,6 +706,17 @@ class API implements IApi {
   }
 
   @override
+  Future<Map<String, dynamic>> getStudentCounselor(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/students/counselor',
+      token: token,
+    );
+
+    return _asMap(result);
+  }
+
+  @override
   Future<Map<String, dynamic>> scheduleAppointment(String token, Map<String, dynamic> data) async {
     final result = await _request(
       method: 'POST',
