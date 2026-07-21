@@ -2,59 +2,58 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class UniversityEmptyState extends StatelessWidget {
-  final IconData icon;
   final String title;
-  final String description;
+  final String? description;
+  final String imagePath;
+  final IconData fallbackIcon;
 
   const UniversityEmptyState({
     super.key,
-    required this.icon,
     required this.title,
-    required this.description,
+    this.description,
+    required this.imagePath,
+    this.fallbackIcon = Icons.school_rounded,
   });
 
   @override
   Widget build(BuildContext context) {
-    const Color accentColor = Color(0xFF1D1B4B);
+    const Color primaryColor = Color(0xFF311B92);
 
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 40.w),
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+      child: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              padding: EdgeInsets.all(32.w),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+            // Imagen vectorizada Line-Art ampliada
+            SizedBox(
+              height: 170.h,
+              width: 170.w,
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    fallbackIcon,
+                    size: 64.sp,
+                    color: primaryColor.withOpacity(0.8),
+                  );
+                },
               ),
-              child: Icon(icon, size: 64.sp, color: Colors.grey[300]),
             ),
-            SizedBox(height: 32.h),
+            SizedBox(height: 16.h),
+
+            // Texto gris simple y directo
             Text(
-              title,
+              description ?? title,
               style: TextStyle(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w900,
-                color: accentColor,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              description,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: Colors.grey[500],
-                height: 1.5,
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
               ),
               textAlign: TextAlign.center,
             ),

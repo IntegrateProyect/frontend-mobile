@@ -8,6 +8,7 @@ import '../components/university_event_card.dart';
 import '../components/university_event_form.dart';
 import '../components/university_empty_state.dart';
 import '../components/university_bottom_navigation_bar.dart';
+import '../components/university_premium_fab.dart';
 
 class ManageEventsScreen extends StatefulWidget {
   const ManageEventsScreen({super.key});
@@ -74,20 +75,12 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: const Text('¿Eliminar Evento?', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Esta acción no se puede deshacer y el evento dejará de ser visible para los estudiantes.'),
+        content: const Text('Esta acción no se puede deshacer y el evento dejará de ser visible.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancelar', style: TextStyle(color: Colors.grey[600])),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
             child: const Text('Eliminar'),
           ),
         ],
@@ -103,91 +96,46 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<UniversityEventsProvider>();
 
-    if (provider.errorMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(provider.errorMessage!),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-        provider.clearError();
-      });
-    }
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
         centerTitle: true,
-        title: Text(
-          'Calendario de Eventos',
-          style: TextStyle(
-            color: _accentColor,
-            fontSize: 18.sp,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+        title: Text('Calendario de Eventos', style: TextStyle(color: _accentColor, fontSize: 18.sp, fontWeight: FontWeight.w900)),
         automaticallyImplyLeading: false,
       ),
       body: provider.isLoading && provider.events.isEmpty
           ? const Center(child: CircularProgressIndicator(color: _primaryColor))
           : provider.events.isEmpty
-              ? _buildEmptyState(provider)
+              ? _buildEmptyState(context)
               : RefreshIndicator(
                   color: _primaryColor,
                   onRefresh: () => provider.fetchEvents(),
                   child: ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+                    padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 80.h),
                     itemCount: provider.events.length,
-                    itemBuilder: (context, index) {
-                      final event = provider.events[index];
-                      return UniversityEventCard(
-                        event: event,
-                        onEdit: () => _showEventFormDialog(context, event: event),
-                        onDelete: () => _deleteEvent(context, event.id),
-                      );
-                    },
+                    itemBuilder: (context, index) => UniversityEventCard(
+                      event: provider.events[index],
+                      onEdit: () => _showEventFormDialog(context, event: provider.events[index]),
+                      onDelete: () => _deleteEvent(context, provider.events[index].id),
+                    ),
                   ),
                 ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 10.h),
-        child: FloatingActionButton.extended(
-          backgroundColor: _primaryColor,
-          onPressed: () => _showEventFormDialog(context),
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: Text('Crear Evento', 
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.sp)),
-        ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: UniversityPremiumFab(
+        label: 'Publicar Evento',
+        onPressed: () => _showEventFormDialog(context),
       ),
       bottomNavigationBar: const UniversityBottomNavigationBar(currentIndex: 2),
     );
   }
 
-  Widget _buildEmptyState(UniversityEventsProvider provider) {
-    if (provider.errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64.r, color: Colors.redAccent.withOpacity(0.3)),
-            SizedBox(height: 16.h),
-            const Text('Error al cargar eventos', style: TextStyle(fontWeight: FontWeight.bold)),
-            TextButton(
-              onPressed: () => provider.fetchEvents(),
-              child: const Text('Reintentar'),
-            )
-          ],
-        ),
-      );
-    }
-    return const UniversityEmptyState(
-      icon: Icons.event_busy_rounded,
-      title: 'Sin eventos programados',
-      description: 'Organiza ferias vocacionales o charlas informativas para atraer nuevos talentos.',
+  Widget _buildEmptyState(BuildContext context) {
+    return UniversityEmptyState(
+      title: 'No hay eventos agendados aún',
+      imagePath: 'assets/images/eventos_universitarios.png',
+      fallbackIcon: Icons.calendar_month_rounded,
     );
   }
 }

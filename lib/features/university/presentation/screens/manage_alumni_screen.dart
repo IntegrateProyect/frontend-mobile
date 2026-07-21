@@ -6,6 +6,8 @@ import '../providers/university_careers_provider.dart';
 import '../components/university_alumni_card.dart';
 import '../components/university_alumni_form.dart';
 import '../components/university_bottom_navigation_bar.dart';
+import '../components/university_empty_state.dart';
+import '../components/university_premium_fab.dart';
 
 class ManageAlumniScreen extends StatefulWidget {
   const ManageAlumniScreen({super.key});
@@ -108,7 +110,7 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
         centerTitle: true,
         title: Text('Gestión de Egresados', 
           style: TextStyle(color: _accentColor, fontSize: 18.sp, fontWeight: FontWeight.w900)),
@@ -121,11 +123,12 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
             child: alumniProvider.isLoading && alumniProvider.alumni.isEmpty
                 ? const Center(child: CircularProgressIndicator(color: _primaryColor))
                 : filteredAlumni.isEmpty
-                    ? _buildEmptyState()
+                    ? _buildEmptyState(context)
                     : RefreshIndicator(
                         onRefresh: () => alumniProvider.fetchAlumni(),
+                        color: _primaryColor,
                         child: ListView.builder(
-                          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
+                          padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 80.h),
                           itemCount: filteredAlumni.length,
                           itemBuilder: (context, index) => UniversityAlumniCard(
                             alumni: filteredAlumni[index],
@@ -137,13 +140,10 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
           ),
         ],
       ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 10.h),
-        child: FloatingActionButton(
-          backgroundColor: _primaryColor,
-          onPressed: () => _showAlumniForm(context),
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: UniversityPremiumFab(
+        label: 'Registrar Egresado',
+        onPressed: () => _showAlumniForm(context),
       ),
       bottomNavigationBar: const UniversityBottomNavigationBar(currentIndex: 4),
     );
@@ -152,28 +152,28 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
   Widget _buildFilters(UniversityCareersProvider provider) {
     return Container(
       color: Colors.white,
-      padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 16.h),
+      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 16.h),
       child: Column(
         children: [
           TextField(
             onChanged: (val) => setState(() => _searchQuery = val),
             decoration: InputDecoration(
-              hintText: 'Buscar por nombre, puesto o empresa...',
+              hintText: 'Buscar por nombre, puesto...',
               prefixIcon: const Icon(Icons.search, size: 20),
               filled: true,
               fillColor: const Color(0xFFF8F9FE),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14.r), borderSide: BorderSide.none),
               contentPadding: EdgeInsets.zero,
             ),
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 10.h),
           DropdownButtonFormField<String>(
             value: _selectedCareerId,
             hint: const Text('Filtrar por Carrera'),
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFFF8F9FE),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14.r), borderSide: BorderSide.none),
               contentPadding: EdgeInsets.symmetric(horizontal: 16.w),
             ),
             items: [
@@ -187,23 +187,11 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.people_outline_rounded, size: 80.sp, color: Colors.grey[300]),
-          SizedBox(height: 16.h),
-          Text('No se encontraron egresados', 
-            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.grey[600])),
-          SizedBox(height: 24.h),
-          ElevatedButton(
-            onPressed: () => _showAlumniForm(context),
-            style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white),
-            child: const Text('Registrar Primer Egresado'),
-          ),
-        ],
-      ),
+  Widget _buildEmptyState(BuildContext context) {
+    return UniversityEmptyState(
+      title: 'No hay egresados registrados aún',
+      imagePath: 'assets/images/egresados.png',
+      fallbackIcon: Icons.people_alt_rounded,
     );
   }
 }

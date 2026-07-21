@@ -19,9 +19,11 @@ class _UniversityCareerFormState extends State<UniversityCareerForm> {
   final _locationController = TextEditingController(text: 'Tuxtla Gutiérrez, Chiapas');
   final _costController = TextEditingController();
   final _datesController = TextEditingController(text: 'Mayo - Junio 2026');
+  final _durationController = TextEditingController(text: '8 Semestres');
   
   String _selectedCategoryId = '31cc2380-6bc8-4df0-88cb-cfff09a74e43'; // CÁLCULO E INGENIERÍA
   String _modality = 'Presencial';
+  String _periodicity = 'Semestral';
   bool _scholarshipAvailable = true;
 
   static const Map<String, String> _categories = {
@@ -43,6 +45,7 @@ class _UniversityCareerFormState extends State<UniversityCareerForm> {
     _locationController.dispose();
     _costController.dispose();
     _datesController.dispose();
+    _durationController.dispose();
     super.dispose();
   }
 
@@ -57,10 +60,11 @@ class _UniversityCareerFormState extends State<UniversityCareerForm> {
         categoryId: _selectedCategoryId,
         description: _descController.text.trim(),
         location: _locationController.text.trim(),
-        modality: _modality,
+        modality: '$_modality ($_periodicity)',
         costApprox: cost,
         scholarshipAvailable: _scholarshipAvailable,
         admissionDates: _datesController.text.trim(),
+        duration: _durationController.text.trim(),
       );
 
       if (mounted) {
@@ -180,12 +184,53 @@ class _UniversityCareerFormState extends State<UniversityCareerForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildLabel('COSTO SEMESTRE'),
+                        _buildLabel('PERIODICIDAD'),
+                        DropdownButtonFormField<String>(
+                          value: _periodicity,
+                          isExpanded: true,
+                          decoration: _inputStyle(''),
+                          items: const [
+                            DropdownMenuItem(value: 'Semestral', child: Text('Semestral')),
+                            DropdownMenuItem(value: 'Cuatrimestral', child: Text('Cuatrimestral')),
+                            DropdownMenuItem(value: 'Trimestral', child: Text('Trimestral')),
+                            DropdownMenuItem(value: 'Anual', child: Text('Anual')),
+                            DropdownMenuItem(value: 'Mensual', child: Text('Mensual')),
+                          ],
+                          onChanged: (v) => setState(() => _periodicity = v!),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16.h),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel('COSTO / COLEGIATURA'),
                         TextFormField(
                           controller: _costController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: _inputStyle(r'$ Ex. 4500'),
                           validator: (v) => (v == null || double.tryParse(v) == null) ? 'Inválido' : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 16.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel('DURACIÓN DEL PLAN'),
+                        TextFormField(
+                          controller: _durationController,
+                          decoration: _inputStyle('Ej. 9 Cuatrimestres'),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
                         ),
                       ],
                     ),
