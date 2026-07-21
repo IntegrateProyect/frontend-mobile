@@ -5,5 +5,5 @@ abstract class AlumniRepository {
   Future<AlumniProfileEntity> getProfile();
   Future<void> updateProfile(AlumniProfileEntity profile);
   Future<List<SuccessStoryEntity>> getSuccessStories();
-  Future<void> shareStory(String storyContent);
+  Future<void> shareStory({required String title, required String content});
 }

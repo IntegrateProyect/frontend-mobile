@@ -53,10 +53,13 @@ class AlumniRepositoryImpl implements AlumniRepository {
   }
 
   @override
-  Future<void> shareStory(String storyContent) async {
+  Future<void> shareStory({required String title, required String content}) async {
     final token = await userService.getToken();
     if (token == null) throw Exception('No session found');
 
-    await api.shareSuccessStory(token, {'story': storyContent});
+    await api.shareSuccessStory(token, {
+      'title': title,
+      'content': content,
+    });
   }
 }

@@ -60,11 +60,11 @@ class AlumniProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> shareStory(String content) async {
+  Future<bool> shareStory(String content, {String title = 'Mi Historia de Éxito'}) async {
     _isLoading = true;
     notifyListeners();
     try {
-      await repository.shareStory(content);
+      await repository.shareStory(title: title, content: content);
       return true;
     } catch (e) {
       _errorMessage = e.toString();

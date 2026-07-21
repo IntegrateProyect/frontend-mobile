@@ -20,6 +20,11 @@ import 'features/university/presentation/providers/university_careers_provider.d
 import 'features/university/presentation/providers/university_events_provider.dart';
 import 'features/university/presentation/providers/university_announcements_provider.dart';
 import 'features/university/presentation/providers/university_alumni_provider.dart';
+import 'features/alumni/presentation/providers/alumni_home_provider.dart';
+import 'features/alumni/presentation/providers/alumni_provider.dart';
+import 'features/alumni/presentation/providers/success_stories_provider.dart';
+import 'features/alumni/presentation/providers/alumni_profile_form_provider.dart';
+import 'features/alumni/presentation/providers/write_story_provider.dart';
 import 'features/vocational_games/presentation/providers/games_provider.dart';
 
 Future<void> main() async {
@@ -76,6 +81,22 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<UniversityAlumniProvider>(
           create: (_) => di.sl<UniversityAlumniProvider>(),
+        ),
+        // Alumni Providers
+        ChangeNotifierProvider<AlumniHomeProvider>(
+          create: (_) => di.sl<AlumniHomeProvider>(),
+        ),
+        ChangeNotifierProvider<AlumniProvider>(
+          create: (_) => di.sl<AlumniProvider>(),
+        ),
+        ChangeNotifierProvider<SuccessStoriesProvider>(
+          create: (_) => di.sl<SuccessStoriesProvider>(),
+        ),
+        ChangeNotifierProvider<AlumniProfileFormProvider>(
+          create: (_) => di.sl<AlumniProfileFormProvider>(),
+        ),
+        ChangeNotifierProvider<WriteStoryProvider>(
+          create: (_) => di.sl<WriteStoryProvider>(),
         ),
         ChangeNotifierProvider<GamesProvider>(
           create: (_) => di.sl<GamesProvider>(),

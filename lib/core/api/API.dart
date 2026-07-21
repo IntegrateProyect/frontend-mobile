@@ -986,6 +986,36 @@ class API implements IApi {
     return _asMap(result);
   }
 
+  @override
+  Future<List<dynamic>> getPendingSuccessStories(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/university/stories/pending',
+      token: token,
+    );
+    return _asList(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> approveSuccessStory(String token, String storyId) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/university/stories/$storyId/approve',
+      token: token,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> rejectSuccessStory(String token, String storyId) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/university/stories/$storyId/reject',
+      token: token,
+    );
+    return _asMap(result);
+  }
+
   // ==========================================================
   // CHAT
   // ==========================================================

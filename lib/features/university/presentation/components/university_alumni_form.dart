@@ -166,7 +166,18 @@ class _UniversityAlumniFormState extends State<UniversityAlumniForm> {
                   onPressed: alumniProvider.isSubmitting ? null : () async {
                     if (_formKey.currentState!.validate()) {
                       await alumniProvider.submitForm(id: widget.alumni?.id);
-                      widget.onSuccess();
+                      if (mounted) {
+                        if (alumniProvider.errorMessage != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(alumniProvider.errorMessage!),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        } else {
+                          widget.onSuccess();
+                        }
+                      }
                     }
                   },
                   child: alumniProvider.isSubmitting
