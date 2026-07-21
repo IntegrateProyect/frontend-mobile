@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../data/datasources/mappers/game_mapper.dart';
+
 import '../../domain/entities/game_entity.dart';
 import '../../domain/entities/game_question_entity.dart';
-import '../../domain/entities/vocational_mini_game_entity.dart'; // Usamos las entidades del dominio
+import '../../domain/entities/vocational_mini_game_entity.dart';
+
+import '../../domain/usecases/finish_game_usecase.dart';
 import '../../domain/usecases/get_available_games_usecase.dart';
 import '../../domain/usecases/get_game_questions_usecase.dart';
-import '../../domain/usecases/start_game_usecase.dart';
 import '../../domain/usecases/send_game_answer_usecase.dart';
-import '../../domain/usecases/finish_game_usecase.dart';
+import '../../domain/usecases/start_game_usecase.dart';
 
 class GamesProvider extends ChangeNotifier {
   final GetAvailableGamesUseCase _getGamesUseCase;
@@ -29,201 +32,846 @@ class GamesProvider extends ChangeNotifier {
         _sendAnswerUseCase = sendAnswerUseCase,
         _finishGameUseCase = finishGameUseCase;
 
+  static const Duration _cacheDuration =
+  Duration(minutes: 5);
+
+  static const Duration _rateLimitDuration =
+  Duration(minutes: 15);
+
   List<GameEntity> _games = [];
   List<GameQuestionEntity> _questions = [];
   List<VocationalMiniGameEntity> _miniGames = [];
+
   bool _isLoading = false;
   bool _isLoadingQuestions = false;
-  String? _sessionId;
-  String? _errorMessage;
-  GameEntity? _activeGame;
-  int _savedIndex = 0;
-  final Map<String, MiniGameStatus> _miniGameStatus = {};
 
-  List<GameEntity> get games => _games;
-  List<GameQuestionEntity> get questions => _questions;
-  List<VocationalMiniGameEntity> get miniGames => _miniGames;
+  String? _sessionId;
+  String? _activeSessionStatusKey;
+  String? _errorMessage;
+
+  GameEntity? _activeGame;
+
+  int _savedIndex = 0;
+
+  DateTime? _lastFetchAt;
+  DateTime? _rateLimitBlockedUntil;
+
+  final Map<String, MiniGameStatus> _miniGameStatus = {};
+  final Map<String, int> _savedIndexes = {};
+
+  List<GameEntity> get games =>
+      List<GameEntity>.unmodifiable(_games);
+
+  List<GameQuestionEntity> get questions =>
+      List<GameQuestionEntity>.unmodifiable(
+        _questions,
+      );
+
+  List<VocationalMiniGameEntity> get miniGames =>
+      List<VocationalMiniGameEntity>.unmodifiable(
+        _miniGames,
+      );
+
   bool get isLoading => _isLoading;
-  bool get isLoadingQuestions => _isLoadingQuestions;
+
+  bool get isLoadingQuestions =>
+      _isLoadingQuestions;
+
   String? get errorMessage => _errorMessage;
+
   GameEntity? get activeGame => _activeGame;
+
   int get savedIndex => _savedIndex;
 
-  MiniGameStatus getMiniGameStatus(String miniGameKey) => 
-      _miniGameStatus[miniGameKey] ?? MiniGameStatus.notStarted;
+  String? get sessionId => _sessionId;
 
-  double getMiniGameProgress(String key, int total) {
-    if (total == 0) return 0.0;
-    if (getMiniGameStatus(key) == MiniGameStatus.completed) return 1.0;
-    return 0.0;
+  bool get isRateLimited {
+    final blockedUntil = _rateLimitBlockedUntil;
+
+    if (blockedUntil == null) {
+      return false;
+    }
+
+    return DateTime.now().isBefore(
+      blockedUntil,
+    );
   }
 
-  Future<void> fetchGames() async {
-    if (_isLoading) return;
+  int get rateLimitMinutesRemaining {
+    final blockedUntil = _rateLimitBlockedUntil;
+
+    if (blockedUntil == null) {
+      return 0;
+    }
+
+    final remaining = blockedUntil.difference(
+      DateTime.now(),
+    );
+
+    if (remaining.isNegative) {
+      return 0;
+    }
+
+    final minutes =
+    (remaining.inSeconds / 60).ceil();
+
+    return minutes < 1 ? 1 : minutes;
+  }
+
+  MiniGameStatus getMiniGameStatus(
+      String miniGameKey,
+      ) {
+    return _miniGameStatus[miniGameKey] ??
+        MiniGameStatus.notStarted;
+  }
+
+  double getMiniGameProgress(
+      String key,
+      int total,
+      ) {
+    if (total <= 0) {
+      return 0;
+    }
+
+    final status = getMiniGameStatus(key);
+
+    if (status == MiniGameStatus.completed) {
+      return 1;
+    }
+
+    final currentIndex =
+        _savedIndexes[key] ?? 0;
+
+    return (currentIndex / total)
+        .clamp(0.0, 1.0)
+        .toDouble();
+  }
+
+  /// Carga los juegos y las preguntas desde el backend.
+  ///
+  /// force = false:
+  /// reutiliza los datos durante cinco minutos.
+  ///
+  /// force = true:
+  /// intenta actualizar los datos, excepto cuando el
+  /// servidor haya aplicado el límite de solicitudes.
+  Future<void> fetchGames({
+    bool force = false,
+  }) async {
+    if (_isLoading || _isLoadingQuestions) {
+      return;
+    }
+
+    final now = DateTime.now();
+
+    _clearExpiredRateLimit(now);
+
+    if (isRateLimited) {
+      _errorMessage = _buildRateLimitMessage();
+
+      notifyListeners();
+      return;
+    }
+
+    final hasFreshCache =
+        _miniGames.isNotEmpty &&
+            _lastFetchAt != null &&
+            now.difference(_lastFetchAt!) <
+                _cacheDuration;
+
+    if (!force && hasFreshCache) {
+      await refreshLocalStatuses();
+      return;
+    }
+
     _isLoading = true;
     _errorMessage = null;
+
     notifyListeners();
 
     try {
-      _games = await _getGamesUseCase();
-      if (_games.isNotEmpty) {
-        await _prepareMiniGamesInternal(_games.first);
+      final loadedGames =
+      await _getGamesUseCase();
+
+      if (loadedGames.isEmpty) {
+        _games = [];
+        _questions = [];
+        _miniGames = [];
+        _activeGame = null;
+
+        _errorMessage =
+        'No hay juegos disponibles actualmente.';
+
+        return;
       }
-    } catch (e) {
-      _errorMessage = 'Error al cargar juegos';
+
+      _games = List<GameEntity>.from(
+        loadedGames,
+      );
+
+      await _prepareMiniGamesInternal(
+        _games.first,
+      );
+
+      if (_miniGames.isNotEmpty) {
+        _lastFetchAt = DateTime.now();
+        _rateLimitBlockedUntil = null;
+        _errorMessage = null;
+      }
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Error al cargar los juegos: $error',
+      );
+
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+
+      if (_isRateLimitError(error)) {
+        _activateRateLimit();
+
+        _errorMessage = _buildRateLimitMessage();
+      } else {
+        _errorMessage =
+        'No fue posible cargar los minijuegos. '
+            'Revisa tu conexión e inténtalo nuevamente.';
+      }
+
+      /*
+       * Si ya había juegos cargados, no se eliminan.
+       * Esto permite seguir mostrando la información
+       * guardada aunque falle una actualización.
+       */
+      if (_miniGames.isEmpty) {
+        _questions = [];
+        _activeGame = null;
+      }
     } finally {
       _isLoading = false;
+
       notifyListeners();
     }
   }
 
-  Future<void> _prepareMiniGamesInternal(GameEntity game) async {
+  Future<void> _prepareMiniGamesInternal(
+      GameEntity game,
+      ) async {
     _isLoadingQuestions = true;
     _activeGame = game;
+    _errorMessage = null;
+
     notifyListeners();
 
     try {
-      final allQuestions = await _getQuestionsUseCase(game.id);
-      final grouped = <VocationalCategory, List<GameQuestionEntity>>{};
+      final allQuestions =
+      await _getQuestionsUseCase(game.id);
 
-      for (final q in allQuestions) {
-        final cat = _detectCategory(q.text);
-        grouped.putIfAbsent(cat, () => []).add(q);
+      debugPrint(
+        'Preguntas recibidas para el juego '
+            '${game.id}: ${allQuestions.length}',
+      );
+
+      if (allQuestions.isEmpty) {
+        _questions = [];
+        _miniGames = [];
+
+        _errorMessage =
+        'El juego no tiene preguntas disponibles.';
+
+        return;
       }
 
-      _miniGames = grouped.entries.map((e) => VocationalMiniGameEntity(
-        category: e.key,
-        title: _categoryTitle(e.key),
-        description: _categoryDescription(e.key),
-        questions: e.value,
-      )).toList();
-      
-      _miniGames.sort((a, b) => a.title.compareTo(b.title));
+      _questions =
+      List<GameQuestionEntity>.from(
+        allQuestions,
+      );
+
+      final preparedMiniGames =
+      GameMapper.groupQuestions(
+        allQuestions,
+      );
+
+      /*
+       * Solo se muestran los minijuegos que
+       * tengan al menos una pregunta.
+       */
+      _miniGames = preparedMiniGames
+          .where(
+            (miniGame) =>
+        miniGame.questions.isNotEmpty,
+      )
+          .toList();
+
+      if (_miniGames.isEmpty) {
+        _errorMessage =
+        'No fue posible clasificar las preguntas recibidas.';
+
+        return;
+      }
+
       await _loadAllStatusInternal();
-    } catch (e) {
-      debugPrint('Error preparing mini games: $e');
+
+      _errorMessage = null;
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Error al preparar los minijuegos: $error',
+      );
+
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+
+      _questions = [];
+      _miniGames = [];
+
+      /*
+       * Se vuelve a lanzar el error para que
+       * fetchGames pueda detectar un error 429.
+       */
+      rethrow;
     } finally {
       _isLoadingQuestions = false;
+
       notifyListeners();
     }
   }
 
   Future<void> _loadAllStatusInternal() async {
-    final prefs = await SharedPreferences.getInstance();
-    for (final mg in _miniGames) {
-      final key = mg.statusKey;
-      if (prefs.getBool('game_completed_$key') ?? false) {
-        _miniGameStatus[key] = MiniGameStatus.completed;
-      } else if ((prefs.getString('game_session_$key') ?? '').isNotEmpty) {
-        _miniGameStatus[key] = MiniGameStatus.inProgress;
+    final preferences =
+    await SharedPreferences.getInstance();
+
+    _miniGameStatus.clear();
+    _savedIndexes.clear();
+
+    for (final miniGame in _miniGames) {
+      final key = miniGame.statusKey;
+
+      final isCompleted =
+          preferences.getBool(
+            'game_completed_$key',
+          ) ??
+              false;
+
+      final savedSession =
+          preferences.getString(
+            'game_session_$key',
+          ) ??
+              '';
+
+      final savedQuestionIndex =
+          preferences.getInt(
+            'game_index_$key',
+          ) ??
+              0;
+
+      final safeIndex =
+      savedQuestionIndex < 0
+          ? 0
+          : savedQuestionIndex;
+
+      _savedIndexes[key] = safeIndex;
+
+      if (isCompleted) {
+        _miniGameStatus[key] =
+            MiniGameStatus.completed;
+      } else if (savedSession.isNotEmpty ||
+          safeIndex > 0) {
+        _miniGameStatus[key] =
+            MiniGameStatus.inProgress;
       } else {
-        _miniGameStatus[key] = MiniGameStatus.notStarted;
+        _miniGameStatus[key] =
+            MiniGameStatus.notStarted;
       }
     }
   }
 
-  Future<void> startSessionIfNeeded(String gameId, {required String statusKey}) async {
-    if (_sessionId != null) return;
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('game_session_$statusKey');
-    
-    if (saved != null && saved.isNotEmpty) {
-      _sessionId = saved;
-      _savedIndex = prefs.getInt('game_index_$statusKey') ?? 0;
-    } else {
-      final res = await _startGameUseCase(gameId);
-      _sessionId = res['sessionId']?.toString() ?? res['id']?.toString();
-      if (_sessionId != null) {
-        await prefs.setString('game_session_$statusKey', _sessionId!);
-      }
+  /// Actualiza los estados utilizando SharedPreferences.
+  ///
+  /// Este método no llama al backend.
+  Future<void> refreshLocalStatuses() async {
+    if (_miniGames.isEmpty) {
+      return;
+    }
+
+    await _loadAllStatusInternal();
+
+    notifyListeners();
+  }
+
+  Future<void> selectMiniGame(
+      VocationalMiniGameEntity miniGame,
+      ) async {
+    final preferences =
+    await SharedPreferences.getInstance();
+
+    _questions =
+    List<GameQuestionEntity>.from(
+      miniGame.questions,
+    );
+
+    final savedQuestionIndex =
+        preferences.getInt(
+          'game_index_${miniGame.statusKey}',
+        ) ??
+            0;
+
+    if (_questions.isEmpty) {
       _savedIndex = 0;
+    } else if (savedQuestionIndex < 0 ||
+        savedQuestionIndex >=
+            _questions.length) {
+      _savedIndex = 0;
+
+      await preferences.setInt(
+        'game_index_${miniGame.statusKey}',
+        0,
+      );
+    } else {
+      _savedIndex = savedQuestionIndex;
     }
+
+    _savedIndexes[miniGame.statusKey] =
+        _savedIndex;
+
+    _errorMessage = null;
+
     notifyListeners();
   }
 
-  Future<void> selectMiniGame(VocationalMiniGameEntity miniGame) async {
-    _questions = miniGame.questions;
-    final prefs = await SharedPreferences.getInstance();
-    _savedIndex = prefs.getInt('game_index_${miniGame.statusKey}') ?? 0;
-    notifyListeners();
+  Future<void> startSessionIfNeeded(
+      String gameId, {
+        required String statusKey,
+      }) async {
+    if (_sessionId != null &&
+        _sessionId!.isNotEmpty &&
+        _activeSessionStatusKey == statusKey) {
+      return;
+    }
+
+    final preferences =
+    await SharedPreferences.getInstance();
+
+    /*
+     * Limpiar únicamente la sesión que está en
+     * memoria cuando se abre otro minijuego.
+     *
+     * La sesión anterior sigue guardada en
+     * SharedPreferences.
+     */
+    if (_activeSessionStatusKey != statusKey) {
+      _sessionId = null;
+    }
+
+    final savedSession =
+    preferences.getString(
+      'game_session_$statusKey',
+    );
+
+    final savedQuestionIndex =
+        preferences.getInt(
+          'game_index_$statusKey',
+        ) ??
+            0;
+
+    try {
+      if (savedSession != null &&
+          savedSession.isNotEmpty) {
+        _sessionId = savedSession;
+
+        if (_questions.isEmpty) {
+          _savedIndex = 0;
+        } else if (savedQuestionIndex < 0 ||
+            savedQuestionIndex >=
+                _questions.length) {
+          _savedIndex = 0;
+        } else {
+          _savedIndex = savedQuestionIndex;
+        }
+      } else {
+        final response =
+        await _startGameUseCase(gameId);
+
+        final newSessionId =
+        _extractSessionId(response);
+
+        if (newSessionId.isEmpty) {
+          throw StateError(
+            'El backend no devolvió un sessionId.',
+          );
+        }
+
+        _sessionId = newSessionId;
+        _savedIndex = 0;
+
+        await preferences.setString(
+          'game_session_$statusKey',
+          newSessionId,
+        );
+
+        await preferences.setInt(
+          'game_index_$statusKey',
+          0,
+        );
+      }
+
+      _activeSessionStatusKey = statusKey;
+
+      _savedIndexes[statusKey] =
+          _savedIndex;
+
+      if (getMiniGameStatus(statusKey) !=
+          MiniGameStatus.completed) {
+        _miniGameStatus[statusKey] =
+            MiniGameStatus.inProgress;
+      }
+
+      _errorMessage = null;
+
+      notifyListeners();
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Error al iniciar la sesión: $error',
+      );
+
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+
+      _sessionId = null;
+      _activeSessionStatusKey = null;
+
+      if (_isRateLimitError(error)) {
+        _activateRateLimit();
+
+        _errorMessage = _buildRateLimitMessage();
+      } else {
+        _errorMessage =
+        'No fue posible iniciar el minijuego.';
+      }
+
+      notifyListeners();
+
+      rethrow;
+    }
   }
 
-  Future<void> saveProgress({required String gameId, required int currentIndex}) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('game_index_$gameId', currentIndex);
-    _miniGameStatus[gameId] = MiniGameStatus.inProgress;
+  String _extractSessionId(
+      Map<String, dynamic> response,
+      ) {
+    final dynamic responseData =
+    response['data'];
+
+    if (responseData is Map) {
+      final map =
+      Map<String, dynamic>.from(
+        responseData,
+      );
+
+      final nestedId =
+          map['sessionId'] ??
+              map['session_id'] ??
+              map['id'];
+
+      if (nestedId != null &&
+          nestedId.toString().isNotEmpty) {
+        return nestedId.toString();
+      }
+    }
+
+    final directId =
+        response['sessionId'] ??
+            response['session_id'] ??
+            response['id'];
+
+    return directId?.toString() ?? '';
+  }
+
+  Future<void> saveProgress({
+    required String gameId,
+    required int currentIndex,
+  }) async {
+    /*
+     * En este método gameId representa el
+     * statusKey del minijuego.
+     */
+    final statusKey = gameId;
+
+    final preferences =
+    await SharedPreferences.getInstance();
+
+    final safeIndex =
+    currentIndex < 0
+        ? 0
+        : currentIndex;
+
+    await preferences.setInt(
+      'game_index_$statusKey',
+      safeIndex,
+    );
+
+    _savedIndex = safeIndex;
+    _savedIndexes[statusKey] =
+        safeIndex;
+
+    if (getMiniGameStatus(statusKey) !=
+        MiniGameStatus.completed) {
+      _miniGameStatus[statusKey] =
+          MiniGameStatus.inProgress;
+    }
+
     notifyListeners();
   }
 
   Future<void> sendAnswer({
-    required String gameId, 
-    required String questionId, 
+    required String gameId,
+    required String questionId,
     required String optionId,
-    required String answer, 
+    required String answer,
     required Map<String, dynamic> weights,
-    required int currentIndex, 
+    required int currentIndex,
     required String progressKey,
     Map<String, dynamic>? interactionData,
   }) async {
-    await _sendAnswerUseCase(gameId, {
-      'sessionId': _sessionId,
-      'questionId': questionId,
-      'selectedOptionId': optionId,
-      'rawData': {
-        'answerText': answer, 
-        'weights': weights,
-        if (interactionData != null) ...interactionData,
-      },
-    });
-    await saveProgress(gameId: progressKey, currentIndex: currentIndex);
+    if (_sessionId == null ||
+        _sessionId!.isEmpty) {
+      _errorMessage =
+      'No existe una sesión activa.';
+
+      notifyListeners();
+
+      throw StateError(
+        'No existe una sesión activa.',
+      );
+    }
+
+    try {
+      await _sendAnswerUseCase(
+        gameId,
+        <String, dynamic>{
+          'sessionId': _sessionId,
+          'questionId': questionId,
+          'selectedOptionId': optionId,
+          'rawData': <String, dynamic>{
+            'answerText': answer,
+            'weights': weights,
+            if (interactionData != null)
+              ...interactionData,
+          },
+        },
+      );
+
+      await saveProgress(
+        gameId: progressKey,
+        currentIndex: currentIndex,
+      );
+
+      _errorMessage = null;
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Error al enviar respuesta: $error',
+      );
+
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+
+      if (_isRateLimitError(error)) {
+        _activateRateLimit();
+
+        _errorMessage = _buildRateLimitMessage();
+      } else {
+        _errorMessage =
+        'No fue posible guardar la respuesta.';
+      }
+
+      notifyListeners();
+
+      rethrow;
+    }
   }
 
-  Future<Map<String, dynamic>> finishGame(String gameId, {required String statusKey}) async {
-    final res = await _finishGameUseCase(gameId, _sessionId!);
-    final data = res['data'] ?? res;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('game_session_$statusKey');
-    await prefs.remove('game_index_$statusKey');
-    await prefs.setBool('game_completed_$statusKey', true);
-    
-    _sessionId = null;
-    _miniGameStatus[statusKey] = MiniGameStatus.completed;
-    
+  Future<Map<String, dynamic>> finishGame(
+      String gameId, {
+        required String statusKey,
+      }) async {
+    final currentSessionId = _sessionId;
+
+    if (currentSessionId == null ||
+        currentSessionId.isEmpty) {
+      _errorMessage =
+      'No existe una sesión para finalizar.';
+
+      notifyListeners();
+
+      throw StateError(
+        'No existe una sesión para finalizar.',
+      );
+    }
+
+    try {
+      final response =
+      await _finishGameUseCase(
+        gameId,
+        currentSessionId,
+      );
+
+      final dynamic responseData =
+          response['data'] ?? response;
+
+      final preferences =
+      await SharedPreferences.getInstance();
+
+      await preferences.remove(
+        'game_session_$statusKey',
+      );
+
+      await preferences.remove(
+        'game_index_$statusKey',
+      );
+
+      await preferences.setBool(
+        'game_completed_$statusKey',
+        true,
+      );
+
+      _sessionId = null;
+      _activeSessionStatusKey = null;
+      _savedIndex = 0;
+
+      _savedIndexes[statusKey] = 0;
+
+      _miniGameStatus[statusKey] =
+          MiniGameStatus.completed;
+
+      _errorMessage = null;
+
+      notifyListeners();
+
+      if (responseData is Map) {
+        return Map<String, dynamic>.from(
+          responseData,
+        );
+      }
+
+      return <String, dynamic>{};
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Error al finalizar el juego: $error',
+      );
+
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+
+      if (_isRateLimitError(error)) {
+        _activateRateLimit();
+
+        _errorMessage = _buildRateLimitMessage();
+      } else {
+        _errorMessage =
+        'No fue posible finalizar el minijuego.';
+      }
+
+      notifyListeners();
+
+      rethrow;
+    }
+  }
+
+  Future<void> resetMiniGameProgress(
+      String statusKey,
+      ) async {
+    final preferences =
+    await SharedPreferences.getInstance();
+
+    await preferences.remove(
+      'game_session_$statusKey',
+    );
+
+    await preferences.remove(
+      'game_index_$statusKey',
+    );
+
+    await preferences.remove(
+      'game_completed_$statusKey',
+    );
+
+    if (_activeSessionStatusKey == statusKey) {
+      _sessionId = null;
+      _activeSessionStatusKey = null;
+    }
+
+    _savedIndexes[statusKey] = 0;
+
+    _miniGameStatus[statusKey] =
+        MiniGameStatus.notStarted;
+
+    _savedIndex = 0;
+    _errorMessage = null;
+
     notifyListeners();
-    return data is Map ? Map<String, dynamic>.from(data) : {};
+  }
+
+  bool _isRateLimitError(Object error) {
+    final errorText =
+    error.toString().toLowerCase();
+
+    return errorText.contains(
+      'too many requests',
+    ) ||
+        errorText.contains('429') ||
+        errorText.contains('rate limit') ||
+        errorText.contains(
+          'demasiadas solicitudes',
+        );
+  }
+
+  void _activateRateLimit() {
+    _rateLimitBlockedUntil =
+        DateTime.now().add(
+          _rateLimitDuration,
+        );
+  }
+
+  void _clearExpiredRateLimit(
+      DateTime now,
+      ) {
+    final blockedUntil =
+        _rateLimitBlockedUntil;
+
+    if (blockedUntil == null) {
+      return;
+    }
+
+    if (!now.isBefore(blockedUntil)) {
+      _rateLimitBlockedUntil = null;
+    }
+  }
+
+  String _buildRateLimitMessage() {
+    final minutes = rateLimitMinutesRemaining;
+
+    if (minutes <= 1) {
+      return 'El servidor está recibiendo demasiadas '
+          'solicitudes. Espera aproximadamente un minuto '
+          'antes de intentarlo nuevamente.';
+    }
+
+    return 'El servidor está recibiendo demasiadas '
+        'solicitudes. Intenta nuevamente en aproximadamente '
+        '$minutes minutos.';
   }
 
   void clearQuestions() {
     _questions = [];
+    _savedIndex = 0;
+
     notifyListeners();
   }
 
-  VocationalCategory _detectCategory(String raw) {
-    final t = raw.toLowerCase();
-    if (t.contains('calcular') || t.contains('logica')) return VocationalCategory.calculo;
-    if (t.contains('musica') || t.contains('ritmo')) return VocationalCategory.musical;
-    if (t.contains('pintar') || t.contains('arte')) return VocationalCategory.artistico;
-    if (t.contains('reparar') || t.contains('maquina')) return VocationalCategory.mecanico;
-    if (t.contains('ayudar') || t.contains('social')) return VocationalCategory.social;
-    if (t.contains('escribir') || t.contains('leer')) return VocationalCategory.literario;
-    if (t.contains('convencer') || t.contains('lider')) return VocationalCategory.persuasivo;
-    if (t.contains('plantas') || t.contains('bio')) return VocationalCategory.biologico;
-    return VocationalCategory.fisico;
-  }
+  void clearError() {
+    _errorMessage = null;
 
-  String _categoryTitle(VocationalCategory c) {
-    switch (c) {
-      case VocationalCategory.calculo: return 'Lógica y Cálculo';
-      case VocationalCategory.fisico: return 'Ciencia Física';
-      case VocationalCategory.biologico: return 'Biología y Salud';
-      case VocationalCategory.mecanico: return 'Mecánica';
-      case VocationalCategory.social: return 'Servicio Social';
-      case VocationalCategory.literario: return 'Lectura y Escritura';
-      case VocationalCategory.persuasivo: return 'Liderazgo';
-      case VocationalCategory.artistico: return 'Arte y Diseño';
-      case VocationalCategory.musical: return 'Música';
-    }
+    notifyListeners();
   }
-
-  String _categoryDescription(VocationalCategory c) => 'Retos de tipo ${c.name}.';
 }
