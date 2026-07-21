@@ -32,6 +32,7 @@ abstract class IApi {
   Future<Map<String, dynamic>> joinGroup(String token, String accessCode);
   Future<List<dynamic>> getStudentGroups(String token);
   Future<Map<String, dynamic>> requestCounselorSupport(String token, String message);
+  Future<Map<String, dynamic>> getStudentCounselor(String token);
 
   // --- 📅 CITAS (STUDENT) ---
   Future<Map<String, dynamic>> scheduleAppointment(String token, Map<String, dynamic> data);
