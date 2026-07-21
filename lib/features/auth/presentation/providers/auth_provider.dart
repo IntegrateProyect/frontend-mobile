@@ -79,16 +79,18 @@ class AuthProvider extends ChangeNotifier {
       return 'El nombre completo es obligatorio';
     }
 
-    if (value.length < 3) {
+    final lettersCount = value.replaceAll(' ', '').length;
+
+    if (lettersCount < 3) {
       return 'El nombre debe tener mínimo 3 letras';
     }
 
     final nameRegex = RegExp(
-      r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-\']+$",
+      r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]+$',
     );
 
     if (!nameRegex.hasMatch(value)) {
-      return 'El nombre contiene caracteres no permitidos';
+      return 'El nombre solamente puede contener letras y espacios';
     }
 
     return null;

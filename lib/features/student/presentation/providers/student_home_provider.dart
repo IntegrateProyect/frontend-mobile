@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import '../../../../core/api/IApi.dart';
 import '../../../../core/utils/UserService.dart';
 
-import '../../../counselor/domain/entities/appointment_entity.dart';
 import '../../../vocational_games/domain/usecases/get_available_games_usecase.dart';
 
+import '../../domain/entities/student_counselor_entity.dart';
 import '../../domain/entities/student_profile_entity.dart';
 import '../../domain/entities/vocational_result_entity.dart';
-import '../../domain/usecases/get_student_appointments_usecase.dart';
+
+import '../../../counselor/domain/entities/appointment_entity.dart';
+
 import '../../domain/usecases/get_student_profile_usecase.dart';
 import '../../domain/usecases/get_vocational_results_usecase.dart';
+import '../../domain/usecases/get_student_appointments_usecase.dart';
 import '../../domain/usecases/schedule_appointment_usecase.dart';
 
 class StudentHomeProvider extends ChangeNotifier {
@@ -39,64 +42,72 @@ class StudentHomeProvider extends ChangeNotifier {
         _api = api;
 
   StudentProfileEntity? _profile;
+  StudentCounselorEntity? _counselor;
 
   List<VocationalResultEntity> _results = [];
   List<dynamic> _availableGames = [];
   List<dynamic> _studentGroups = [];
   List<AppointmentEntity> _appointments = [];
 
-  String? _sessionUserName;
-  String? _sessionUserEmail;
-
   bool _isLoading = false;
   String? _errorMessage;
 
   StudentProfileEntity? get profile => _profile;
 
-  List<VocationalResultEntity> get results {
-    return List.unmodifiable(_results);
-  }
+  StudentCounselorEntity? get counselor => _counselor;
 
-  List<dynamic> get availableGames {
-    return List.unmodifiable(_availableGames);
-  }
+  List<VocationalResultEntity> get results =>
+      List.unmodifiable(_results);
 
-  List<dynamic> get studentGroups {
-    return List.unmodifiable(_studentGroups);
-  }
+  List<dynamic> get availableGames =>
+      List.unmodifiable(_availableGames);
 
-  List<AppointmentEntity> get appointments {
-    return List.unmodifiable(_appointments);
-  }
+  List<dynamic> get studentGroups =>
+      List.unmodifiable(_studentGroups);
+
+  List<AppointmentEntity> get appointments =>
+      List.unmodifiable(_appointments);
 
   bool get isLoading => _isLoading;
 
   String? get errorMessage => _errorMessage;
 
-  bool get hasGroup {
-    final profileGroup = _profile?.groupName?.trim() ?? '';
+  bool get hasGroup => _studentGroups.isNotEmpty;
 
-    return currentGroup != null || profileGroup.isNotEmpty;
-  }
+  bool get hasCounselor {
+    final counselorName = _counselor?.name.trim() ?? '';
 
-  String get studentDisplayName {
-    return _resolveStudentName(
-      remoteName: _profile?.name,
-      localName: _sessionUserName,
-      email: _profile?.email ?? _sessionUserEmail,
-    );
+    return counselorName.isNotEmpty &&
+        !_isInvalidValue(counselorName) &&
+        counselorName.toLowerCase() != 'por asignar';
   }
 
   String get firstName {
-    final String displayName = studentDisplayName.trim();
+    final fullName = _profile?.name.trim() ?? '';
 
-    if (displayName.isEmpty) {
+    if (fullName.isEmpty || _isGenericName(fullName)) {
+      final email = _profile?.email.trim();
+
+      if (email != null && email.isNotEmpty) {
+        return email.split('@').first;
+      }
+
       return 'Estudiante';
     }
 
-    return displayName
-        .split(RegExp(r'\s+'))
-        .first;
+    final firstPart = fullName.split(RegExp(r'\s+')).first;
+
+    if (_isGenericName(firstPart)) {
+      final email = _profile?.email.trim();
+
+      if (email != null && email.isNotEmpty) {
+        return email.split('@').first;
+      }
+
+      return 'Estudiante';
+    }
+
+    return firstPart;
   }
 
   Map<String, dynamic>? get currentGroup {
@@ -104,93 +115,127 @@ class StudentHomeProvider extends ChangeNotifier {
       return null;
     }
 
-    return _unwrapGroup(
-      _studentGroups.first,
-    );
+    final dynamic firstGroup = _studentGroups.first;
+
+    if (firstGroup is Map<String, dynamic>) {
+      return firstGroup;
+    }
+
+    if (firstGroup is Map) {
+      return Map<String, dynamic>.from(firstGroup);
+    }
+
+    return null;
   }
 
   String get currentGroupName {
     final group = currentGroup;
 
-    final String? name = _firstNonEmpty([
-      group?['name'],
-      group?['groupName'],
-      group?['group_name'],
-      group?['title'],
-      _profile?.groupName,
-    ]);
+    if (group == null) {
+      return _cleanProfileGroupName();
+    }
 
-    return name ?? 'Sin grupo asignado';
+    final possibleNames = [
+      group['name'],
+      group['groupName'],
+      group['group_name'],
+      group['nombre'],
+    ];
+
+    for (final value in possibleNames) {
+      final text = _cleanOptionalValue(value);
+
+      if (text != null) {
+        return text;
+      }
+    }
+
+    return _cleanProfileGroupName();
   }
 
   String get currentGroupCode {
     final group = currentGroup;
 
-    return _firstNonEmpty([
-      group?['accessCode'],
-      group?['access_code'],
-      group?['groupCode'],
-      group?['group_code'],
-      group?['code'],
+    if (group == null) {
+      final profileCode = _cleanOptionalValue(
+        _profile?.groupCode,
+      );
+
+      return profileCode ?? 'Sin código';
+    }
+
+    final possibleCodes = [
+      group['accessCode'],
+      group['access_code'],
+      group['code'],
+      group['groupCode'],
+    ];
+
+    for (final value in possibleCodes) {
+      final text = _cleanOptionalValue(value);
+
+      if (text != null) {
+        return text;
+      }
+    }
+
+    final profileCode = _cleanOptionalValue(
       _profile?.groupCode,
-    ]) ??
-        'Sin código';
+    );
+
+    return profileCode ?? 'Sin código';
   }
 
+  /// Primero utiliza GET /students/counselor.
+  /// Si el endpoint no devuelve información, busca al orientador
+  /// dentro de la información del grupo.
   String? get currentCounselorName {
+    final endpointCounselorName = _cleanOptionalValue(
+      _counselor?.name,
+    );
+
+    if (endpointCounselorName != null &&
+        endpointCounselorName.toLowerCase() != 'por asignar') {
+      return endpointCounselorName;
+    }
+
+    return _getCounselorNameFromGroup();
+  }
+
+  String? get currentCounselorEmail {
+    final email = _cleanOptionalValue(
+      _counselor?.email,
+    );
+
+    if (email != null) {
+      return email;
+    }
+
     final group = currentGroup;
 
     if (group == null) {
       return null;
     }
 
-    // Cuando el nombre viene directamente en el grupo.
-    final String? directName = _firstValidPersonName([
-      group['counselorName'],
-      group['counselor_name'],
-      group['counselorFullName'],
-      group['counselor_full_name'],
-      group['orientadorName'],
-      group['orientador_name'],
-      group['advisorName'],
-      group['advisor_name'],
-      group['tutorName'],
-      group['tutor_name'],
-    ]);
+    final counselorData = group['counselor'];
 
-    if (directName != null) {
-      return directName;
-    }
-
-    // Cuando el orientador viene como un objeto anidado.
-    const nestedKeys = [
-      'counselor',
-      'orientador',
-      'advisor',
-      'tutor',
-      'teacher',
-      'counselorProfile',
-      'counselor_profile',
-      'orientadorProfile',
-      'orientador_profile',
-      'counselorUser',
-      'counselor_user',
-    ];
-
-    for (final key in nestedKeys) {
-      final String? name = _extractPersonName(
-        group[key],
+    if (counselorData is Map) {
+      return _cleanOptionalValue(
+        counselorData['email'],
       );
-
-      if (name != null) {
-        return name;
-      }
     }
 
-    return null;
+    return _cleanOptionalValue(
+      group['counselorEmail'] ??
+          group['counselor_email'],
+    );
   }
 
   Future<void> loadHomeData() async {
+    if (_isLoading) {
+      return;
+    }
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -198,122 +243,65 @@ class StudentHomeProvider extends ChangeNotifier {
     try {
       await _loadLocalUser();
 
-      final StudentProfileEntity? remoteProfile =
-      await _loadProfileSafely();
+      final loadedProfile = await _loadProfileSafely();
 
-      if (remoteProfile != null) {
-        final String resolvedName = _resolveStudentName(
-          remoteName: remoteProfile.name,
-          localName: _sessionUserName ?? _profile?.name,
-          email: remoteProfile.email.isNotEmpty
-              ? remoteProfile.email
-              : _sessionUserEmail,
-        );
-
-        final String resolvedEmail =
-        remoteProfile.email.trim().isNotEmpty
-            ? remoteProfile.email.trim()
-            : (_sessionUserEmail ??
-            _profile?.email ??
-            '');
-
-        _profile = remoteProfile.copyWith(
-          name: resolvedName,
-          email: resolvedEmail,
-        );
+      if (loadedProfile != null) {
+        _profile = loadedProfile;
       }
 
       _studentGroups = await _loadGroupsSafely();
+
+      // Nuevo: obtiene el orientador directamente del endpoint.
+      _counselor = await _loadCounselorSafely();
+
       _results = await _loadResultsSafely();
       _availableGames = await _loadGamesSafely();
       _appointments = await _loadAppointmentsSafely();
-
+    } catch (error, stackTrace) {
       debugPrint(
-        'Nombre del estudiante detectado: $studentDisplayName',
+        'Error cargando inicio del estudiante: $error',
       );
 
-      debugPrint(
-        'Grupo actual detectado: $currentGroup',
-      );
-
-      debugPrint(
-        'Orientador detectado: $currentCounselorName',
-      );
-    } catch (error) {
-      debugPrint(
-        'Error en StudentHomeProvider: $error',
+      debugPrintStack(
+        stackTrace: stackTrace,
       );
 
       _errorMessage =
-      'No se pudo cargar la información del estudiante.';
+      'No fue posible cargar toda la información del inicio.';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<bool> joinGroupByCode(
-      String accessCode,
-      ) async {
-    final String code = accessCode.trim();
-
-    if (code.isEmpty) {
-      _errorMessage = 'Ingresa el código del grupo.';
-      notifyListeners();
-
-      return false;
-    }
-
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      final String? token =
-      await _userService.getToken();
-
-      if (token == null || token.isEmpty) {
-        throw Exception('No hay sesión activa');
-      }
-
-      await _api.joinGroup(token, code);
-
-      _studentGroups =
-      await _api.getStudentGroups(token);
-
-      return true;
-    } catch (error) {
-      final String message = error.toString();
-
-      if (message.contains('Ya eres miembro')) {
-        final String? token =
-        await _userService.getToken();
-
-        if (token != null && token.isNotEmpty) {
-          _studentGroups =
-          await _api.getStudentGroups(token);
-        }
-
-        return true;
-      }
-
-      _errorMessage = message.replaceAll(
-        'Exception: ',
-        '',
-      );
-
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+  Future<void> refreshHomeData() async {
+    await loadHomeData();
   }
 
   Future<bool> scheduleAppointment(
       DateTime date,
       String motive,
       ) async {
+    final cleanMotive = motive.trim();
+
     if (_profile == null) {
+      _errorMessage =
+      'No se encontró la información del estudiante.';
+      notifyListeners();
+      return false;
+    }
+
+    if (!date.isAfter(DateTime.now())) {
+      _errorMessage =
+      'La fecha de la cita debe ser una fecha futura.';
+      notifyListeners();
+      return false;
+    }
+
+    if (cleanMotive.isEmpty) {
+      _errorMessage =
+      'Debes escribir el motivo de la cita.';
+      notifyListeners();
       return false;
     }
 
@@ -325,17 +313,16 @@ class StudentHomeProvider extends ChangeNotifier {
       await _scheduleAppointmentUseCase(
         _profile!.id,
         date,
-        motive,
+        cleanMotive,
       );
 
-      _appointments =
-      await _loadAppointmentsSafely();
+      _appointments = await _loadAppointmentsSafely();
 
       return true;
     } catch (error) {
       _errorMessage = error
           .toString()
-          .replaceAll('Exception: ', '');
+          .replaceFirst('Exception: ', '');
 
       return false;
     } finally {
@@ -344,74 +331,89 @@ class StudentHomeProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadLocalUser() async {
+  Future<StudentProfileEntity?> _loadProfileSafely() async {
     try {
-      final user = await _userService.getUser();
+      final profile = await _getProfileUseCase();
 
-      if (user == null) {
-        return;
-      }
+      if (profile.name.trim().isEmpty ||
+          _isGenericName(profile.name)) {
+        final emailName = profile.email
+            .trim()
+            .split('@')
+            .first;
 
-      _sessionUserName = user.name?.trim();
-      _sessionUserEmail = user.email.trim();
-
-      if (_profile == null) {
-        _profile = StudentProfileEntity(
-          id: user.id,
-          name: _resolveStudentName(
-            remoteName: null,
-            localName: user.name,
-            email: user.email,
-          ),
-          email: user.email,
-          profileImageUrl:
-          user.avatarUrl ?? user.photoUrl,
+        return profile.copyWith(
+          name: emailName.isEmpty
+              ? 'Estudiante'
+              : emailName,
         );
       }
-    } catch (error) {
-      debugPrint(
-        'Usuario local no cargado: $error',
-      );
-    }
-  }
 
-  Future<StudentProfileEntity?>
-  _loadProfileSafely() async {
-    try {
-      return await _getProfileUseCase();
+      return profile;
     } catch (error) {
       debugPrint(
-        'Perfil remoto no cargado: $error',
+        'No se pudo cargar el perfil: $error',
       );
 
       return null;
     }
   }
 
-  Future<List<dynamic>>
-  _loadGroupsSafely() async {
+  Future<List<dynamic>> _loadGroupsSafely() async {
     try {
-      final String? token =
-      await _userService.getToken();
+      final token = await _userService.getToken();
 
-      if (token == null || token.isEmpty) {
+      if (token == null || token.trim().isEmpty) {
         return [];
       }
 
-      final groups =
-      await _api.getStudentGroups(token);
-
-      debugPrint(
-        'Respuesta de grupos del estudiante: $groups',
+      return await _api.getStudentGroups(
+        token.trim(),
       );
-
-      return groups;
     } catch (error) {
       debugPrint(
-        'Error cargando grupos: $error',
+        'No se pudieron cargar los grupos: $error',
       );
 
       return [];
+    }
+  }
+
+  Future<StudentCounselorEntity?>
+  _loadCounselorSafely() async {
+    try {
+      final token = await _userService.getToken();
+
+      if (token == null || token.trim().isEmpty) {
+        return null;
+      }
+
+      final response = await _api.getStudentCounselor(
+        token.trim(),
+      );
+
+      if (response.isEmpty) {
+        return null;
+      }
+
+      final counselor =
+      StudentCounselorEntity.fromJson(response);
+
+      if (counselor.id.isEmpty &&
+          counselor.name == 'Por asignar' &&
+          counselor.email.isEmpty) {
+        return null;
+      }
+
+      return counselor;
+    } catch (error) {
+      // El inicio sigue funcionando aunque todavía
+      // no exista un orientador asignado.
+      debugPrint(
+        'No se pudo cargar el orientador: $error',
+      );
+
+      return null;
     }
   }
 
@@ -420,15 +422,22 @@ class StudentHomeProvider extends ChangeNotifier {
     try {
       return await _getResultsUseCase();
     } catch (error) {
+      debugPrint(
+        'No se pudieron cargar los resultados: $error',
+      );
+
       return [];
     }
   }
 
-  Future<List<dynamic>>
-  _loadGamesSafely() async {
+  Future<List<dynamic>> _loadGamesSafely() async {
     try {
       return await _getGamesUseCase();
     } catch (error) {
+      debugPrint(
+        'No se pudieron cargar los juegos: $error',
+      );
+
       return [];
     }
   }
@@ -439,178 +448,69 @@ class StudentHomeProvider extends ChangeNotifier {
       return await _getAppointmentsUseCase();
     } catch (error) {
       debugPrint(
-        'Error cargando citas: $error',
+        'No se pudieron cargar las citas: $error',
       );
 
       return [];
     }
   }
 
-  String _resolveStudentName({
-    required String? remoteName,
-    required String? localName,
-    required String? email,
-  }) {
-    final String? validName =
-    _firstValidPersonName([
-      remoteName,
-      localName,
-    ]);
+  Future<void> _loadLocalUser() async {
+    try {
+      final user = await _userService.getUser();
 
-    if (validName != null) {
-      return validName;
+      if (user == null || _profile != null) {
+        return;
+      }
+
+      _profile = StudentProfileEntity(
+        id: user.id,
+        name: _cleanName(user.name),
+        email: user.email,
+      );
+    } catch (error) {
+      debugPrint(
+        'No se pudo cargar el usuario local: $error',
+      );
     }
-
-    return 'Estudiante';
   }
 
-  Map<String, dynamic>? _unwrapGroup(
-      dynamic value, {
-        int depth = 0,
-      }) {
-    if (depth > 3) {
+  String? _getCounselorNameFromGroup() {
+    final group = currentGroup;
+
+    if (group == null) {
       return null;
     }
 
-    if (value is! Map) {
-      return null;
-    }
+    final counselorData = group['counselor'];
 
-    final Map<String, dynamic> map =
-    Map<String, dynamic>.from(value);
+    if (counselorData is Map) {
+      final possibleNames = [
+        counselorData['name'],
+        counselorData['fullName'],
+        counselorData['nombre'],
+      ];
 
-    if (map['group'] is Map) {
-      return _unwrapGroup(
-        map['group'],
-        depth: depth + 1,
-      );
-    }
+      for (final value in possibleNames) {
+        final text = _cleanOptionalValue(value);
 
-    if (map['data'] is Map) {
-      final nestedData = Map<String, dynamic>.from(
-        map['data'] as Map,
-      );
-
-      if (nestedData['group'] is Map) {
-        return _unwrapGroup(
-          nestedData['group'],
-          depth: depth + 1,
-        );
+        if (text != null) {
+          return text;
+        }
       }
     }
 
-    return map;
-  }
-
-  String? _extractPersonName(
-      dynamic value, {
-        int depth = 0,
-      }) {
-    if (depth > 4 || value == null) {
-      return null;
-    }
-
-    if (value is String) {
-      return _isValidPersonName(value)
-          ? _cleanWhitespace(value)
-          : null;
-    }
-
-    if (value is! Map) {
-      return null;
-    }
-
-    final Map<String, dynamic> map =
-    Map<String, dynamic>.from(value);
-
-    final String? directName =
-    _firstValidPersonName([
-      map['name'],
-      map['fullName'],
-      map['full_name'],
-      map['displayName'],
-      map['display_name'],
-      map['nombre'],
-      map['nombreCompleto'],
-      map['nombre_completo'],
-    ]);
-
-    if (directName != null) {
-      return directName;
-    }
-
-    final String? firstName = _firstNonEmpty([
-      map['firstName'],
-      map['first_name'],
-      map['nombre'],
-    ]);
-
-    final String? lastName = _firstNonEmpty([
-      map['lastName'],
-      map['last_name'],
-      map['apellido'],
-      map['apellidos'],
-    ]);
-
-    final String composedName = [
-      if (firstName != null) firstName,
-      if (lastName != null) lastName,
-    ].join(' ').trim();
-
-    if (_isValidPersonName(composedName)) {
-      return _cleanWhitespace(composedName);
-    }
-
-    const nestedKeys = [
-      'user',
-      'profile',
-      'person',
-      'account',
-      'data',
-      'counselor',
-      'orientador',
+    final possibleGroupValues = [
+      group['counselorName'],
+      group['counselor_name'],
+      group['orientador'],
+      counselorData is String ? counselorData : null,
     ];
 
-    for (final key in nestedKeys) {
-      final String? nestedName =
-      _extractPersonName(
-        map[key],
-        depth: depth + 1,
-      );
+    for (final value in possibleGroupValues) {
+      final text = _cleanOptionalValue(value);
 
-      if (nestedName != null) {
-        return nestedName;
-      }
-    }
-
-    return null;
-  }
-
-  String? _firstValidPersonName(
-      Iterable<dynamic> values,
-      ) {
-    for (final value in values) {
-      final String text =
-          value?.toString().trim() ?? '';
-
-      if (_isValidPersonName(text)) {
-        return _cleanWhitespace(text);
-      }
-    }
-
-    return null;
-  }
-
-  String? _firstNonEmpty(
-      Iterable<dynamic> values,
-      ) {
-    for (final value in values) {
-      final String text =
-          value?.toString().trim() ?? '';
-
-      if (text.isNotEmpty &&
-          text.toLowerCase() != 'null' &&
-          text.toLowerCase() != 'undefined') {
+      if (text != null) {
         return text;
       }
     }
@@ -618,66 +518,53 @@ class StudentHomeProvider extends ChangeNotifier {
     return null;
   }
 
-  bool _isValidPersonName(String? value) {
-    final String text = value?.trim() ?? '';
-
-    if (text.isEmpty) {
-      return false;
-    }
-
-    final String normalized = text
-        .toLowerCase()
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
-    const invalidNames = {
-      'sin',
-      'sin nombre',
-      'estudiante',
-      'student',
-      'usuario',
-      'user',
-      'por asignar',
-      'sin asignar',
-      'no asignado',
-      'null',
-      'undefined',
-    };
-
-    if (invalidNames.contains(normalized)) {
-      return false;
-    }
-
-    if (text.contains('@')) {
-      return false;
-    }
-
-    final uuidRegex = RegExp(
-      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-'
-      r'[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
-      r'[0-9a-fA-F]{12}$',
+  String _cleanProfileGroupName() {
+    final profileGroupName = _cleanOptionalValue(
+      _profile?.groupName,
     );
 
-    if (uuidRegex.hasMatch(text)) {
-      return false;
-    }
-
-    if (RegExp(r'^\d+$').hasMatch(text)) {
-      return false;
-    }
-
-    if (!text.contains(' ') &&
-        RegExp(r'^[a-zA-Z0-9_-]{18,}$')
-            .hasMatch(text)) {
-      return false;
-    }
-
-    return true;
+    return profileGroupName ?? 'Sin grupo asignado';
   }
 
-  String _cleanWhitespace(String value) {
-    return value
-        .trim()
-        .replaceAll(RegExp(r'\s+'), ' ');
+  String _cleanName(String? value) {
+    final name = value?.trim() ?? '';
+
+    if (name.isEmpty ||
+        _isGenericName(name) ||
+        _isInvalidValue(name)) {
+      return 'Estudiante';
+    }
+
+    return name;
+  }
+
+  String? _cleanOptionalValue(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+
+    if (text.isEmpty || _isInvalidValue(text)) {
+      return null;
+    }
+
+    return text;
+  }
+
+  bool _isInvalidValue(String value) {
+    final normalized = value.toLowerCase().trim();
+
+    return normalized == 'null' ||
+        normalized == 'undefined' ||
+        normalized == 'n/a';
+  }
+
+  bool _isGenericName(String name) {
+    final normalized = name.toLowerCase().trim();
+
+    return normalized == 'estudiante' ||
+        normalized == 'sin nombre' ||
+        normalized == 'sin asignar' ||
+        normalized == 'usuario' ||
+        normalized == 'nombre' ||
+        normalized == 'apellido' ||
+        normalized == 'sin';
   }
 }

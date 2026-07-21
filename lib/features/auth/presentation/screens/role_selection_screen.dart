@@ -60,7 +60,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   ),
                   SizedBox(height: 32.h),
 
-                  // Cambiamos GridView por una lista de Widgets para permitir altura dinámica
                   _buildRoleCard(
                     title: 'Estudiante',
                     description: 'Explora carreras, juega minijuegos y descubre tu futuro profesional.',
@@ -79,7 +78,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     icon: Icons.account_balance_outlined,
                     role: 'universidad',
                   ),
-
+                  _buildRoleCard(
+                    title: 'Egresado',
+                    description: 'Comparte tu trayectoria y guía a futuros profesionales con tu experiencia.',
+                    icon: Icons.workspace_premium_outlined,
+                    role: 'egresado',
+                  ),
                 ],
               ),
             ),
