@@ -16,18 +16,44 @@ class UniversityCareerModel extends UniversityCareerEntity {
   });
 
   factory UniversityCareerModel.fromJson(Map<String, dynamic> json) {
+    double parsedCost = 0.0;
+    final rawCost = json['cost'] ?? json['costApprox'];
+    if (rawCost is num) {
+      parsedCost = rawCost.toDouble();
+    } else if (rawCost is String) {
+      parsedCost = double.tryParse(rawCost) ?? 0.0;
+    }
+
+    double? parsedLat;
+    final rawLat = json['latitude'];
+    if (rawLat is num) {
+      parsedLat = rawLat.toDouble();
+    } else if (rawLat is String) {
+      parsedLat = double.tryParse(rawLat);
+    }
+
+    double? parsedLng;
+    final rawLng = json['longitude'];
+    if (rawLng is num) {
+      parsedLng = rawLng.toDouble();
+    } else if (rawLng is String) {
+      parsedLng = double.tryParse(rawLng);
+    }
+
     return UniversityCareerModel(
-      id: json['id'] ?? json['careerId'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      cost: (json['cost'] ?? json['costApprox'] as num?)?.toDouble() ?? 0.0,
-      location: json['location'],
-      modality: json['modality'],
-      scholarshipAvailable: json['scholarshipAvailable'] ?? json['scholarship_available'],
-      admissionDates: json['admissionDates'] ?? json['admission_dates'],
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
-      duration: json['duration'],
+      id: (json['id'] ?? json['careerId'] ?? '').toString(),
+      name: (json['name'] ?? json['careerName'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
+      cost: parsedCost,
+      location: json['location']?.toString(),
+      modality: json['modality']?.toString(),
+      scholarshipAvailable: json['scholarshipAvailable'] == true ||
+          json['scholarship_available'] == true ||
+          json['scholarshipAvailable']?.toString() == 'true',
+      admissionDates: (json['admissionDates'] ?? json['admission_dates'])?.toString(),
+      latitude: parsedLat,
+      longitude: parsedLng,
+      duration: json['duration']?.toString(),
     );
   }
 

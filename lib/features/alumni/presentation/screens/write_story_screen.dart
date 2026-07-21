@@ -66,7 +66,7 @@ class WriteStoryScreen extends StatelessWidget {
                     name: profile?.name ?? 'Egresado',
                     major: profile?.degree ?? 'Carrera',
                     year: profile?.graduationYear.toString() ?? 'Año',
-                    title: 'Mi Historia de Éxito',
+                    title: provider.titleController.text.isEmpty ? 'Mi Historia de Éxito' : provider.titleController.text,
                     story: provider.storyController.text,
                   ),
                   SizedBox(height: 32.h),
@@ -78,6 +78,13 @@ class WriteStoryScreen extends StatelessWidget {
                       color: Colors.grey[400],
                       letterSpacing: 1.2,
                     ),
+                  ),
+                  SizedBox(height: 16.h),
+                  AlumniTextField(
+                    label: 'Título de tu Historia',
+                    hint: 'Ej: Mi Camino al Éxito',
+                    icon: Icons.title_rounded,
+                    controller: provider.titleController,
                   ),
                   SizedBox(height: 16.h),
                   AlumniTextField(

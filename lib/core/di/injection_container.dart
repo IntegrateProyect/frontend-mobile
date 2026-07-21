@@ -90,6 +90,7 @@ import '../../features/alumni/domain/usecases/get_alumni_profile_usecase.dart';
 import '../../features/alumni/domain/usecases/update_alumni_profile_usecase.dart';
 import '../../features/alumni/domain/usecases/manage_stories_usecase.dart';
 import '../../features/alumni/presentation/providers/alumni_home_provider.dart';
+import '../../features/alumni/presentation/providers/alumni_provider.dart';
 import '../../features/alumni/presentation/providers/success_stories_provider.dart';
 import '../../features/alumni/presentation/providers/alumni_profile_form_provider.dart';
 import '../../features/alumni/presentation/providers/write_story_provider.dart';
@@ -250,6 +251,8 @@ Future<void> init() async {
     createAlumniUseCase: sl<CreateUniversityAlumniUseCase>(),
     updateAlumniUseCase: sl<UpdateUniversityAlumniUseCase>(),
     deleteAlumniUseCase: sl<DeleteUniversityAlumniUseCase>(),
+    api: sl<IApi>(),
+    userService: sl<UserService>(),
   ));
   sl.registerFactory<UniversitiesProvider>(() => UniversitiesProvider(
     getCompatibleUniversitiesUseCase: sl<uni_usecase.GetCompatibleUniversitiesUseCase>(),
@@ -309,6 +312,9 @@ Future<void> init() async {
   sl.registerFactory<AlumniHomeProvider>(() => AlumniHomeProvider(
     getProfileUseCase: sl<GetAlumniProfileUseCase>(),
     manageStoriesUseCase: sl<ManageStoriesUseCase>(),
+  ));
+  sl.registerFactory<AlumniProvider>(() => AlumniProvider(
+    repository: sl<AlumniRepository>(),
   ));
   sl.registerFactory<SuccessStoriesProvider>(() => SuccessStoriesProvider(
     manageStoriesUseCase: sl<ManageStoriesUseCase>(),

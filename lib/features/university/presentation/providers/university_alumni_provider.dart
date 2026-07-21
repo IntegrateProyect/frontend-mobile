@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/IApi.dart';
+import '../../../../core/utils/UserService.dart';
 import '../../domain/entities/university_alumni_entity.dart';
 import '../../domain/usecases/get_university_alumni_usecase.dart';
 import '../../domain/usecases/create_university_alumni_usecase.dart';
@@ -10,9 +12,13 @@ class UniversityAlumniProvider extends ChangeNotifier {
   final CreateUniversityAlumniUseCase _createAlumniUseCase;
   final UpdateUniversityAlumniUseCase _updateAlumniUseCase;
   final DeleteUniversityAlumniUseCase _deleteAlumniUseCase;
+  final IApi _api;
+  final UserService _userService;
 
   List<UniversityAlumniEntity> _alumni = [];
+  List<dynamic> _pendingStories = [];
   bool _isLoading = false;
+  bool _isLoadingStories = false;
   String? _errorMessage;
 
   // --- Form State ---
@@ -32,13 +38,19 @@ class UniversityAlumniProvider extends ChangeNotifier {
     required CreateUniversityAlumniUseCase createAlumniUseCase,
     required UpdateUniversityAlumniUseCase updateAlumniUseCase,
     required DeleteUniversityAlumniUseCase deleteAlumniUseCase,
+    required IApi api,
+    required UserService userService,
   })  : _getAlumniUseCase = getAlumniUseCase,
         _createAlumniUseCase = createAlumniUseCase,
         _updateAlumniUseCase = updateAlumniUseCase,
-        _deleteAlumniUseCase = deleteAlumniUseCase;
+        _deleteAlumniUseCase = deleteAlumniUseCase,
+        _api = api,
+        _userService = userService;
 
   List<UniversityAlumniEntity> get alumni => _alumni;
+  List<dynamic> get pendingStories => _pendingStories;
   bool get isLoading => _isLoading;
+  bool get isLoadingStories => _isLoadingStories;
   String? get errorMessage => _errorMessage;
 
   @override
@@ -143,6 +155,56 @@ class UniversityAlumniProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // --- Story Moderation ---
+
+  Future<void> fetchPendingStories() async {
+    _isLoadingStories = true;
+    notifyListeners();
+    try {
+      final token = await _userService.getToken();
+      if (token != null) {
+        _pendingStories = await _api.getPendingSuccessStories(token);
+      }
+    } catch (e) {
+      debugPrint('Error fetching pending stories: $e');
+    } finally {
+      _isLoadingStories = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> approveStory(String storyId) async {
+    try {
+      final token = await _userService.getToken();
+      if (token != null) {
+        await _api.approveSuccessStory(token, storyId);
+        _pendingStories.removeWhere((s) => s['id'] == storyId);
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+    return false;
+  }
+
+  Future<bool> rejectStory(String storyId) async {
+    try {
+      final token = await _userService.getToken();
+      if (token != null) {
+        await _api.rejectSuccessStory(token, storyId);
+        _pendingStories.removeWhere((s) => s['id'] == storyId);
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+    return false;
   }
 
   void clearError() {

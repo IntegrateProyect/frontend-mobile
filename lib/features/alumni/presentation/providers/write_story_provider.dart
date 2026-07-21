@@ -12,11 +12,15 @@ class WriteStoryProvider extends ChangeNotifier {
     required this.manageStoriesUseCase,
   }) {
     // Escuchar cambios en el controlador para actualizar el preview
+    titleController.addListener(() {
+      notifyListeners();
+    });
     storyController.addListener(() {
       notifyListeners();
     });
   }
 
+  final TextEditingController titleController = TextEditingController();
   final TextEditingController storyController = TextEditingController();
 
   AlumniProfileEntity? _profile;
@@ -29,6 +33,7 @@ class WriteStoryProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    titleController.dispose();
     storyController.dispose();
     super.dispose();
   }
@@ -47,7 +52,14 @@ class WriteStoryProvider extends ChangeNotifier {
   }
 
   Future<bool> submitStory() async {
+    final title = titleController.text.trim();
     final content = storyController.text.trim();
+
+    if (title.isEmpty) {
+      _errorMessage = 'Por favor, escribe un título para tu historia';
+      notifyListeners();
+      return false;
+    }
     if (content.isEmpty) {
       _errorMessage = 'Por favor, escribe tu historia';
       notifyListeners();
@@ -58,11 +70,12 @@ class WriteStoryProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      await manageStoriesUseCase.shareStory(content);
+      await manageStoriesUseCase.shareStory(title: title, content: content);
+      titleController.clear();
       storyController.clear();
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
       return false;
     } finally {
       _isLoading = false;
