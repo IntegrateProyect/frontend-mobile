@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
-import '../screens/checkout_webview.dart';
+import '../../../../features/auth/presentation/screens/checkout_webview.dart';
 
 void showPremiumUpgradeDialog(BuildContext context, {required String feature}) {
   showDialog(
