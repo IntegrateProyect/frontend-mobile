@@ -654,7 +654,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> createPaymentPreference(double amount) async {
+  Future<String?> createPaymentPreference(double amount, {String paymentMethod = 'card'}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -668,7 +668,7 @@ class AuthProvider extends ChangeNotifier {
       final response = await _api.createPaymentPreference(token, {
         'title': 'Suscripción Universitaria Premium - Oriéntate+',
         'price': amount,
-        'paymentMethod': 'card',
+        'paymentMethod': paymentMethod,
       });
 
       if (response['status'] == 'success' && response['data'] != null) {
