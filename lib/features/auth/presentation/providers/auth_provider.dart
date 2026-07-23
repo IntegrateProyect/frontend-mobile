@@ -606,4 +606,51 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> recoverPassword(String email) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final normalizedEmail = email.trim().toLowerCase();
+      final emailError = _validateEmail(normalizedEmail);
+      if (emailError != null) {
+        throw Exception(emailError);
+      }
+
+      await _api.recoverPassword(normalizedEmail);
+      return true;
+    } catch (error) {
+      _errorMessage = _cleanError(error);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resetPassword(String token, String newPassword) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      if (token.trim().isEmpty) {
+        throw Exception('El token es obligatorio');
+      }
+      if (newPassword.length < 6) {
+        throw Exception('La contraseña debe tener al menos 6 caracteres');
+      }
+
+      await _api.resetPassword(token.trim(), newPassword);
+      return true;
+    } catch (error) {
+      _errorMessage = _cleanError(error);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
