@@ -12,6 +12,7 @@ class AuthMapper {
       role: model.role,
       verificationStatus: model.verificationStatus,
       universityName: model.universityName,
+      isPremium: model.isPremium,
     );
   }
 
@@ -25,6 +26,7 @@ class AuthMapper {
       role: entity.role,
       verificationStatus: entity.verificationStatus,
       universityName: entity.universityName,
+      isPremium: entity.isPremium,
     );
   }
 }

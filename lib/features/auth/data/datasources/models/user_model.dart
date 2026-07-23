@@ -10,6 +10,7 @@ class UserModel extends UserEntity {
     super.role,
     super.verificationStatus,
     super.universityName,
+    super.isPremium = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -101,6 +102,10 @@ class UserModel extends UserEntity {
         data['universityName'],
         data['university_name'],
       ]),
+      isPremium: data['isPremium'] == true ||
+          data['is_premium'] == true ||
+          profile?['isPremium'] == true ||
+          profile?['is_premium'] == true,
     );
   }
 
@@ -114,6 +119,7 @@ class UserModel extends UserEntity {
       'roleName': role,
       'verificationStatus': verificationStatus,
       'universityName': universityName,
+      'isPremium': isPremium,
     };
   }
 

@@ -7,6 +7,8 @@ import '../components/university_announcement_form.dart';
 import '../components/university_bottom_navigation_bar.dart';
 import '../components/university_empty_state.dart';
 import '../components/university_premium_fab.dart';
+import '../components/premium_upgrade_dialog.dart';
+import '../../../../features/auth/presentation/providers/auth_provider.dart';
 
 class ManageAnnouncementsScreen extends StatefulWidget {
   const ManageAnnouncementsScreen({super.key});
@@ -104,6 +106,8 @@ class _ManageAnnouncementsScreenState extends State<ManageAnnouncementsScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<UniversityAnnouncementsProvider>();
+    final authProvider = context.watch<AuthProvider>();
+    final isPremium = authProvider.user?.isPremium ?? false;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
@@ -140,7 +144,13 @@ class _ManageAnnouncementsScreenState extends State<ManageAnnouncementsScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: UniversityPremiumFab(
         label: 'Nuevo Anuncio',
-        onPressed: () => _showFormDialog(context),
+        onPressed: () {
+          if (!isPremium && provider.announcements.length >= 1) {
+            showPremiumUpgradeDialog(context, feature: 'anuncios publicados');
+          } else {
+            _showFormDialog(context);
+          }
+        },
       ),
       bottomNavigationBar: const UniversityBottomNavigationBar(currentIndex: 3),
     );

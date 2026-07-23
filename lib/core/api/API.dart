@@ -1494,4 +1494,15 @@ class API implements IApi {
       token: token,
     );
   }
+
+  @override
+  Future<Map<String, dynamic>> createPaymentPreference(String token, Map<String, dynamic> data) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/payments/preference',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
 }

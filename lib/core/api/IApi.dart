@@ -107,4 +107,7 @@ abstract class IApi {
   Future<List<dynamic>> getPendingSuccessStories(String token);
   Future<Map<String, dynamic>> approveSuccessStory(String token, String storyId);
   Future<Map<String, dynamic>> rejectSuccessStory(String token, String storyId);
+
+  // --- 💳 SERVICIO DE PAGOS ---
+  Future<Map<String, dynamic>> createPaymentPreference(String token, Map<String, dynamic> data);
 }
