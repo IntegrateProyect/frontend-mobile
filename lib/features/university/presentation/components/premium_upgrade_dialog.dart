@@ -103,6 +103,55 @@ Widget _buildFeatureRow(String text) {
 }
 
 void _startUpgradeFlow(BuildContext context) async {
+  // 1. Mostrar selector de método de pago
+  final selectedMethod = await showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+    ),
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.all(20.w),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Selecciona método de pago',
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1D1B4B),
+            ),
+          ),
+          SizedBox(height: 16.h),
+          ListTile(
+            leading: Icon(Icons.credit_card_rounded, color: const Color(0xFF311B92), size: 24.sp),
+            title: Text('Tarjeta de Crédito / Débito', style: TextStyle(fontSize: 14.sp)),
+            subtitle: Text('Aprobación instantánea', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+            onTap: () => Navigator.pop(ctx, 'card'),
+          ),
+          ListTile(
+            leading: Icon(Icons.account_balance_rounded, color: const Color(0xFF311B92), size: 24.sp),
+            title: Text('Transferencia Bancaria (SPEI)', style: TextStyle(fontSize: 14.sp)),
+            subtitle: Text('Pago vía banca móvil', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+            onTap: () => Navigator.pop(ctx, 'transfer'),
+          ),
+          ListTile(
+            leading: Icon(Icons.payments_rounded, color: const Color(0xFF311B92), size: 24.sp),
+            title: Text('Efectivo (OXXO / Autoservicio)', style: TextStyle(fontSize: 14.sp)),
+            subtitle: Text('Pago en establecimientos autorizados', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+            onTap: () => Navigator.pop(ctx, 'cash'),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  if (selectedMethod == null) return; // Si canceló la selección, salimos
+  
+  if (!context.mounted) return;
+
   final authProvider = context.read<AuthProvider>();
 
   // Mostramos indicador de carga
@@ -116,7 +165,7 @@ void _startUpgradeFlow(BuildContext context) async {
     ),
   );
 
-  final initPoint = await authProvider.createPaymentPreference(199.00); // $199 ARS
+  final initPoint = await authProvider.createPaymentPreference(199.00, paymentMethod: selectedMethod);
   
   if (context.mounted) {
     Navigator.pop(context); // Cierra el indicador de carga

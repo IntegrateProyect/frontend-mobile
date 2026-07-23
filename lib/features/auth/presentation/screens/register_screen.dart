@@ -56,6 +56,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
   ];
 
   bool get _isStudent => _selectedRole == 'estudiante';
+  bool get _isCounselor => _selectedRole == 'orientador';
+  bool get _isUniversity => _selectedRole == 'universidad';
+  bool get _isAlumni => _selectedRole == 'egresado';
+
+  int get _totalSteps {
+    if (_isStudent) return 2;
+    if (_isCounselor) return 3;
+    return 1;
+  }
+
+  bool get _isLastStep => _currentStep == _totalSteps - 1;
+
+  String get _appBarTitle {
+    switch (_selectedRole) {
+      case 'estudiante':
+        return 'Registro Estudiante';
+      case 'orientador':
+        return 'Registro Orientador';
+      case 'universidad':
+        return 'Registro Universidad';
+      case 'egresado':
+        return 'Registro Egresado';
+      default:
+        return 'Crea tu cuenta';
+    }
+  }
 
   @override
   void initState() {
@@ -137,7 +163,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     Map<String, dynamic>? counselorData;
-    if (!_isStudent) {
+    if (_isCounselor) {
       counselorData = {
         'age': int.tryParse(_counselorAgeController.text) ?? 0,
         'institution': _counselorInstController.text,
@@ -158,7 +184,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       profileImage: _profileImage,
       studentProfile: studentProfile,
       accessCode: _isStudent && _groupCodeController.text.isNotEmpty ? _groupCodeController.text.trim() : null,
-      additionalData: _isStudent ? null : counselorData,
+      additionalData: _isCounselor ? counselorData : null,
     );
 
     if (success && mounted) {
@@ -183,7 +209,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           onPressed: () => _currentStep > 0 ? setState(() => _currentStep--) : Navigator.pop(context),
         ),
         title: Text(
-          _isStudent ? 'Registro Estudiante' : 'Registro Orientador',
+          _appBarTitle,
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18.sp),
         ),
       ),
@@ -204,7 +230,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildStepper() {
-    int total = _isStudent ? 2 : 3;
+    int total = _totalSteps;
+    if (total <= 1) return const SizedBox.shrink();
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 40.w),
       child: Row(
@@ -392,7 +419,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildFooter(bool loading) {
-    bool isLast = _isStudent ? _currentStep == 1 : _currentStep == 2;
+    bool isLast = _isLastStep;
     return Container(
       padding: EdgeInsets.all(24.w),
       child: ElevatedButton(
