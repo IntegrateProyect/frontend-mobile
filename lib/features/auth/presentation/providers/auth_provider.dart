@@ -653,4 +653,52 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<String?> createPaymentPreference(double amount) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final token = await _userService.getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('Usuario no autenticado.');
+      }
+
+      final response = await _api.createPaymentPreference(token, {
+        'title': 'Suscripción Universitaria Premium - Oriéntate+',
+        'price': amount,
+        'paymentMethod': 'card',
+      });
+
+      if (response['status'] == 'success' && response['data'] != null) {
+        return response['data']['initPoint'] as String?;
+      } else {
+        throw Exception(response['message'] ?? 'Error al generar la preferencia de pago');
+      }
+    } catch (error) {
+      _errorMessage = _cleanError(error);
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void setPremium(bool val) {
+    if (_user != null) {
+      _user = UserEntity(
+        id: _user!.id,
+        email: _user!.email,
+        name: _user!.name,
+        photoUrl: _user!.photoUrl,
+        avatarUrl: _user!.avatarUrl,
+        role: _user!.role,
+        verificationStatus: _user!.verificationStatus,
+        universityName: _user!.universityName,
+        isPremium: val,
+      );
+      notifyListeners();
+    }
+  }
 }

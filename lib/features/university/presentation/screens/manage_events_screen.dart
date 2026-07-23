@@ -9,6 +9,8 @@ import '../components/university_event_form.dart';
 import '../components/university_empty_state.dart';
 import '../components/university_bottom_navigation_bar.dart';
 import '../components/university_premium_fab.dart';
+import '../components/premium_upgrade_dialog.dart';
+import '../../../../features/auth/presentation/providers/auth_provider.dart';
 
 class ManageEventsScreen extends StatefulWidget {
   const ManageEventsScreen({super.key});
@@ -56,7 +58,7 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
                 content: Text(
                   event == null ? '¡Evento publicado con éxito!' : 'Evento actualizado correctamente',
                   style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                  ),
                 backgroundColor: Colors.green,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
@@ -95,6 +97,8 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<UniversityEventsProvider>();
+    final authProvider = context.watch<AuthProvider>();
+    final isPremium = authProvider.user?.isPremium ?? false;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
@@ -125,7 +129,13 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: UniversityPremiumFab(
         label: 'Publicar Evento',
-        onPressed: () => _showEventFormDialog(context),
+        onPressed: () {
+          if (!isPremium) {
+            showPremiumUpgradeDialog(context, feature: 'publicación de eventos');
+          } else {
+            _showEventFormDialog(context);
+          }
+        },
       ),
       bottomNavigationBar: const UniversityBottomNavigationBar(currentIndex: 2),
     );

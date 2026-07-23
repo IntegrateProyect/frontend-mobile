@@ -7,6 +7,7 @@ class UserEntity {
   final String? role;
   final String? verificationStatus;
   final String? universityName;
+  final bool isPremium;
 
   UserEntity({
     required this.id,
@@ -17,6 +18,7 @@ class UserEntity {
     this.role,
     this.verificationStatus,
     this.universityName,
+    this.isPremium = false,
   });
 
   // Helper to get the best available image URL
