@@ -13,68 +13,104 @@ class AlumniHeader extends StatelessWidget {
     this.isVerified = false,
   });
 
-  static const Color primaryColor = Color(0xFF311B92);
-  static const Color accentColor = Color(0xFF6A4CFF);
+  static const Color _primaryColor = Color(0xFF311B92);
+  static const Color _accentColor = Color(0xFF6366F1);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(24.w, 80.h, 24.w, 40.h),
+      padding: EdgeInsets.fromLTRB(24.w, 70.h, 24.w, 40.h),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [primaryColor, accentColor],
+          colors: [_primaryColor, _accentColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(40.r)),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(48.r)),
+        boxShadow: [
+          BoxShadow(
+            color: _primaryColor.withOpacity(0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         children: [
+          // Profle Picture Composition
           Stack(
+            alignment: Alignment.center,
             children: [
+              // Decorative halo
               Container(
-                padding: EdgeInsets.all(4.w),
-                decoration: const BoxDecoration(
-                  color: Colors.white24,
+                width: 110.r,
+                height: 110.r,
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                ),
-                child: CircleAvatar(
-                  radius: 50.r,
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.person, size: 50.sp, color: primaryColor),
+                  color: Colors.white.withOpacity(0.15),
                 ),
               ),
+              // Main Avatar
+              Container(
+                width: 90.r,
+                height: 90.r,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.person_rounded, 
+                    size: 50.sp, 
+                    color: _primaryColor.withOpacity(0.8)
+                  ),
+                ),
+              ),
+              // Verified Badge
               if (isVerified)
                 Positioned(
-                  bottom: 0,
-                  right: 0,
+                  bottom: 2.h,
+                  right: 2.w,
                   child: Container(
-                    padding: EdgeInsets.all(8.w),
+                    padding: EdgeInsets.all(6.r),
                     decoration: const BoxDecoration(
-                      color: Colors.white,
+                      color: Color(0xFF10B981), // Emerald/Green
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))
+                      ],
                     ),
-                    child: Icon(Icons.verified, color: Colors.blue, size: 20.sp),
+                    child: Icon(Icons.verified_rounded, color: Colors.white, size: 14.sp),
                   ),
                 ),
             ],
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: 20.h),
           Text(
             name,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 22.sp,
+              fontSize: 24.sp,
               fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
             ),
           ),
+          SizedBox(height: 4.h),
           Text(
-            subtitle,
+            subtitle.toUpperCase(),
             style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
             ),
           ),
         ],

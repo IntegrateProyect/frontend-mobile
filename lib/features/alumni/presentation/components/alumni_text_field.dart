@@ -30,35 +30,52 @@ class AlumniTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+        Padding(
+          padding: EdgeInsets.only(left: 4.w, bottom: 8.h),
+          child: Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w900,
+              color: Colors.grey[400],
+              letterSpacing: 1.2,
+            ),
           ),
         ),
-        SizedBox(height: 8.h),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           validator: validator,
           onChanged: onChanged,
-          maxLines: isLongText ? null : 1,
-          style: isLongText ? TextStyle(fontSize: 16.sp, height: 1.6) : null,
+          maxLines: isLongText ? 6 : 1,
+          minLines: isLongText ? 4 : 1,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1D1B4B),
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[300], fontSize: 14.sp),
-            prefixIcon: Icon(icon, color: primaryColor, size: 20.sp),
+            hintStyle: TextStyle(color: Colors.grey[300], fontSize: 13.sp, fontWeight: FontWeight.w500),
+            prefixIcon: Icon(icon, color: primaryColor.withOpacity(0.4), size: 20.sp),
             filled: true,
             fillColor: const Color(0xFFF8F9FE),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: isLongText ? 16.h : 0),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16.r),
               borderSide: BorderSide.none,
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16.r),
+              borderSide: BorderSide(color: const Color(0xFFE2E8F0).withOpacity(0.5), width: 1),
+            ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16.r),
               borderSide: const BorderSide(color: primaryColor, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16.r),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1),
             ),
           ),
         ),
