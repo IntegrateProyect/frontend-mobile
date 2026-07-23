@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:orientate/core/routes/AppRoutes.dart';
 import '../components/alumni_story_card.dart';
-import '../providers/alumni_provider.dart';
+import '../providers/alumni_home_provider.dart';
+import '../components/alumni_empty_state.dart';
 
 class SuccessStoriesScreen extends StatefulWidget {
   const SuccessStoriesScreen({super.key});
@@ -15,99 +16,100 @@ class SuccessStoriesScreen extends StatefulWidget {
 
 class _SuccessStoriesScreenState extends State<SuccessStoriesScreen> {
   final TextEditingController _searchController = TextEditingController();
-  static const Color primaryColor = Color(0xFF311B92);
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AlumniProvider>().loadAlumniData();
-    });
-  }
+  static const Color _primaryColor = Color(0xFF311B92);
+  static const Color _accentColor = Color(0xFF1D1B4B);
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AlumniProvider>();
+    final provider = context.watch<AlumniHomeProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
-      body: provider.isLoading && provider.stories.isEmpty
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : CustomScrollView(
-              slivers: [
-                _buildAppBar(),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 8.h),
-                    child: _buildSearchBar(),
-                  ),
-                ),
-                if (provider.stories.isEmpty && !provider.isLoading)
-                  SliverFillRemaining(
-                    child: Center(
-                      child: Text(
-                        'No hay historias disponibles aún.',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 14.sp),
-                      ),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final story = provider.stories[index];
-                          return AlumniStoryCard(
-                            story: {
-                              'name': story.alumniName,
-                              'major': story.career,
-                              'year': story.graduationYear.toString(),
-                              'title': 'Historia de éxito',
-                              'story': story.story,
-                            },
-                            onTap: () {},
-                          );
-                        },
-                        childCount: provider.stories.length,
-                      ),
-                    ),
-                  ),
-              ],
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          _buildAppBar(),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 4.h),
+              child: _buildSearchBar(),
             ),
+          ),
+          if (provider.isLoading && provider.recentStories.isEmpty)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator(color: _primaryColor)),
+            )
+          else if (provider.recentStories.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: EdgeInsets.only(top: 40.h),
+                child: const AlumniEmptyState(
+                  title: 'Explora Historias',
+                  description: 'Sé el primero en compartir tu experiencia o espera a que otros publiquen la suya.',
+                  imagePath: 'assets/images/cientifico.jpg',
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 100.h),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final story = provider.recentStories[index];
+                    return AlumniStoryCard(
+                      story: {
+                        'name': story.alumniName,
+                        'major': story.career,
+                        'year': story.graduationYear.toString(),
+                        'title': 'Mi Trayectoria Profesional',
+                        'story': story.story,
+                      },
+                      onTap: () {},
+                    );
+                  },
+                  childCount: provider.recentStories.length,
+                ),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.writeStory.path),
-        backgroundColor: primaryColor,
+        backgroundColor: _primaryColor,
+        elevation: 8,
         label: Text('Compartir mi Historia', 
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp, color: Colors.white)),
-        icon: const Icon(Icons.auto_awesome_outlined, color: Colors.white),
-        elevation: 4,
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.sp, color: Colors.white, letterSpacing: 0.3)),
+        icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
       ),
     );
   }
 
   Widget _buildAppBar() {
     return SliverAppBar(
-      expandedHeight: 120.h,
+      expandedHeight: 110.h,
       floating: false,
       pinned: true,
       elevation: 0,
       backgroundColor: Colors.white,
+      centerTitle: false,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back_ios_new, color: _accentColor, size: 20.sp),
+        onPressed: () => context.pop(),
+      ),
       flexibleSpace: FlexibleSpaceBar(
         centerTitle: false,
-        titlePadding: EdgeInsets.only(left: 24.w, bottom: 16.h),
+        titlePadding: EdgeInsets.only(left: 20.w, bottom: 16.h),
         title: Text(
           'Historias de Éxito',
           style: TextStyle(
-            color: const Color(0xFF1D1B4B),
+            color: _accentColor,
             fontWeight: FontWeight.w900,
             fontSize: 20.sp,
+            letterSpacing: -0.5,
           ),
         ),
-      ),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-        onPressed: () => context.pop(),
       ),
     );
   }
@@ -116,23 +118,21 @@ class _SuccessStoriesScreenState extends State<SuccessStoriesScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20.r),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
         ],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: TextField(
         controller: _searchController,
+        style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
         decoration: InputDecoration(
           hintText: 'Buscar por carrera o nombre...',
-          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14.sp),
-          prefixIcon: const Icon(Icons.search, color: primaryColor),
+          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13.sp, fontWeight: FontWeight.w500),
+          prefixIcon: Icon(Icons.search_rounded, color: _primaryColor.withOpacity(0.6), size: 22.sp),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+          contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
         ),
       ),
     );

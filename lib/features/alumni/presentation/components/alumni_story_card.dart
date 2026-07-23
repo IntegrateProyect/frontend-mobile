@@ -12,39 +12,42 @@ class AlumniStoryCard extends StatelessWidget {
   });
 
   static const Color primaryColor = Color(0xFF311B92);
-  static const Color accentColor = Color(0xFF6A4CFF);
+  static const Color accentColor = Color(0xFF6366F1);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: 20.h),
+      margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24.r),
+        borderRadius: BorderRadius.circular(28.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.025),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24.r),
+        borderRadius: BorderRadius.circular(28.r),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
             child: Padding(
-              padding: EdgeInsets.all(20.w),
+              padding: EdgeInsets.all(20.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      // Avatar Premium con Gradiente
                       Container(
-                        width: 48.w,
-                        height: 48.w,
+                        width: 52.r,
+                        height: 52.r,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [primaryColor, accentColor],
@@ -52,6 +55,13 @@ class AlumniStoryCard extends StatelessWidget {
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(16.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            )
+                          ],
                         ),
                         child: Center(
                           child: Text(
@@ -60,13 +70,13 @@ class AlumniStoryCard extends StatelessWidget {
                                 : '?',
                             style: TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 20.sp,
                             ),
                           ),
                         ),
                       ),
-                      SizedBox(width: 16.w),
+                      SizedBox(width: 14.w),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,44 +84,53 @@ class AlumniStoryCard extends StatelessWidget {
                             Text(
                               story['name'] ?? 'Egresado',
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w900,
                                 fontSize: 16.sp,
                                 color: const Color(0xFF1D1B4B),
+                                letterSpacing: -0.5,
                               ),
                             ),
+                            SizedBox(height: 2.h),
                             Text(
-                              '${story['major'] ?? ''} • Clase ${story['year'] ?? ''}',
+                              '${story['major'] ?? 'Carrera'} • Clase ${story['year'] ?? ''}',
                               style: TextStyle(
                                 color: Colors.grey[500],
-                                fontSize: 12.sp,
+                                fontSize: 11.5.sp,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.1,
                               ),
                             ),
                           ],
                         ),
                       ),
+                      // Icono de comillas sutil
                       Icon(
                         Icons.format_quote_rounded, 
-                        color: primaryColor.withOpacity(0.1), 
-                        size: 40.sp,
+                        color: primaryColor.withOpacity(0.06), 
+                        size: 36.sp,
                       ),
                     ],
                   ),
                   SizedBox(height: 16.h),
+                  // Título de la historia
                   Text(
                     story['title'] ?? 'Historia de Éxito',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: 15.sp,
+                      fontSize: 14.5.sp,
                       color: primaryColor,
+                      letterSpacing: 0.1,
                     ),
                   ),
                   SizedBox(height: 8.h),
+                  // Contenido de la historia
                   Text(
                     story['story'] ?? '',
                     style: TextStyle(
                       color: Colors.grey[700],
                       fontSize: 13.sp,
                       height: 1.5,
+                      fontWeight: FontWeight.w500,
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
