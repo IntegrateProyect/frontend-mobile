@@ -9,12 +9,20 @@ import '../../../domain/entities/game_entity.dart';
 import '../../../domain/entities/game_question_entity.dart';
 import '../../providers/games_provider.dart';
 import '../game_result_screen.dart';
+import 'arithmetic_machine_challenge.dart';
+import 'atomic_energy_challenge.dart';
+import 'area_carpet_challenge.dart';
+import 'aquarium_care_challenge.dart';
+import 'eclipse_sequence_challenge.dart';
+import 'first_aid_challenge.dart';
 import 'game_fx.dart';
 import 'laboratory_challenge.dart';
 import 'numeric_sequence_challenge.dart';
+import 'plant_collection_challenge.dart';
+import 'tray_sequence_challenge.dart';
+import 'telescope_focus_challenge.dart';
 
-const Color _kBgTop = Color(0xFF0A1220);
-const Color _kBgBottom = Color(0xFF0E1B2E);
+const Color _kLaboratoryBackground = Color(0xFF010E28);
 const Color _kNeon = Color(0xFF29B6F6);
 
 class LaboratorioGameScreen extends StatefulWidget {
@@ -47,30 +55,33 @@ class _LaboratorioGameScreenState extends State<LaboratorioGameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_kBgTop, _kBgBottom],
-          ),
-        ),
+      backgroundColor: _kLaboratoryBackground,
+      body: ColoredBox(
+        color: _kLaboratoryBackground,
         child: Stack(
           children: [
             Positioned.fill(
-              child: GameWidget<LaboratorioFlameGame>(game: _game),
+              child: GameWidget<LaboratorioFlameGame>(
+                game: _game,
+              ),
             ),
             Positioned(
               top: MediaQuery.of(context).padding.top + 10,
               left: 16,
-              child: _ExitButton(onTap: () => Navigator.of(context).pop()),
+              child: _ExitButton(
+                onTap: () => Navigator.of(context).pop(),
+              ),
             ),
             Positioned(
               top: MediaQuery.of(context).padding.top + 14,
               right: 16,
               child: ValueListenableBuilder<int>(
                 valueListenable: _game.streakNotifier,
-                builder: (context, streak, _) => _NeonStreakBadge(streak: streak),
+                builder: (context, streak, _) {
+                  return _NeonStreakBadge(
+                    streak: streak,
+                  );
+                },
               ),
             ),
           ],
@@ -87,9 +98,7 @@ class LaboratorioFlameGame extends FlameGame {
 
   late final TextBoxComponent questionText;
 
-  /// Puede contener LaboratoryChallengeComponent o
-  /// NumericSequenceChallengeComponent — ambos son PositionComponent
-  /// y comparten el mismo contrato onFinish(level, meta).
+  /// Puede contener cualquiera de los retos del Laboratorio.
   PositionComponent? activeChallenge;
 
   final ValueNotifier<int> streakNotifier = ValueNotifier<int>(0);
@@ -104,7 +113,7 @@ class LaboratorioFlameGame extends FlameGame {
   });
 
   @override
-  Color backgroundColor() => const Color(0x00000000); // el degradado lo pone el Container de Flutter
+  Color backgroundColor() => _kLaboratoryBackground;
 
   @override
   Future<void> onLoad() async {
@@ -178,21 +187,150 @@ class LaboratorioFlameGame extends FlameGame {
       return;
     }
 
+    final normalizedQuestion = question.text
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ü', 'u');
+
+    final isArithmeticMachine =
+        normalizedQuestion.contains('mecaniz') ||
+            normalizedQuestion.contains('aritmet');
+
+    final isTelescopeFocus =
+        normalizedQuestion.contains('telescopio') &&
+            (normalizedQuestion.contains('regalo') ||
+                normalizedQuestion.contains('enfoque') ||
+                normalizedQuestion.contains('enfocar'));
+
+    // Detección directa para impedir que esta pregunta caiga en el reto
+    // procedural genérico de HERBARIO.
+    final isPlantCollection =
+        normalizedQuestion.contains('colecciones de plantas') ||
+            normalizedQuestion.contains('coleccion de plantas') ||
+            normalizedQuestion.contains('herbario');
+
+    final isFirstAid = normalizedQuestion.contains('primeros auxilios');
+
+    final isAtomicEnergy =
+        normalizedQuestion.contains('energia atomica') ||
+            normalizedQuestion.contains('atomo');
+
+    final isCarpetArea =
+        normalizedQuestion.contains('area de un cuarto') ||
+            normalizedQuestion.contains('alfombrarse') ||
+            normalizedQuestion.contains('alfombrar');
+
+    final isAquariumCare =
+        normalizedQuestion.contains('cuidar un pequeno acuario') ||
+            normalizedQuestion.contains('cuidado del acuario') ||
+            normalizedQuestion.contains('acuario');
+
     final config = LaboratoryChallengeConfig.fromQuestion(question.text);
 
-    final challenge = config.useNumericSequenceChallenge
-        ? NumericSequenceChallengeComponent(
-      config: NumericSequenceConfig.defaultConfig,
-      position: Vector2(size.x / 2, 178),
-      size: Vector2(size.x - 32, size.y - 198),
-      onFinish: _submitEngagementLevel,
-    )
-        : LaboratoryChallengeComponent(
-      config: config,
-      position: Vector2(size.x / 2, 178),
-      size: Vector2(size.x - 32, size.y - 198),
-      onFinish: _submitEngagementLevel,
+    debugPrint(
+      'RETO SELECCIONADO: ${question.text} '
+          '-> MAQUINA=$isArithmeticMachine, ENFOQUE=$isTelescopeFocus, '
+          'PLANTAS=$isPlantCollection',
     );
+
+    final usesFullTelescopeTemplate =
+        isTelescopeFocus || config.useTelescopeFocusChallenge;
+
+    // La plantilla del telescopio llega hasta los bordes de la pantalla.
+    // Así no queda encerrada en un rectángulo de otro tono.
+    final challengePosition = Vector2(
+      size.x / 2,
+      usesFullTelescopeTemplate ? 145 : 178,
+    );
+    final challengeSize = Vector2(
+      usesFullTelescopeTemplate ? size.x : size.x - 32,
+      usesFullTelescopeTemplate ? size.y - 145 : size.y - 198,
+    );
+
+    final PositionComponent challenge;
+    // Debe evaluarse antes del componente procedural genérico.
+    if (isAquariumCare || config.useAquariumCareChallenge) {
+      challenge = AquariumCareChallengeComponent(
+        config: AquariumCareConfig.defaultConfig,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    } else if (isCarpetArea || config.useAreaCarpetChallenge) {
+      challenge = AreaCarpetChallengeComponent(
+        config: AreaCarpetConfig.defaultConfig,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    } else if (isAtomicEnergy || config.useAtomicEnergyChallenge) {
+      challenge = AtomicEnergyChallengeComponent(
+        config: AtomicEnergyConfig.defaultConfig,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    } else if (isFirstAid || config.useFirstAidChallenge) {
+      challenge = FirstAidChallengeComponent(
+        config: FirstAidConfig.defaultConfig,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    } else if (isPlantCollection || config.usePlantCollectionChallenge) {
+      challenge = PlantCollectionChallengeComponent(
+        config: PlantCollectionConfig.defaultConfig,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    } else if (isTelescopeFocus || config.useTelescopeFocusChallenge) {
+      challenge = TelescopeFocusChallengeComponent(
+        config: TelescopeFocusConfig.defaultConfig,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    } else if (isArithmeticMachine) {
+      challenge = ArithmeticMachineChallengeComponent(
+        config: ArithmeticMachineConfig.defaultConfig,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    } else if (config.useNumericSequenceChallenge) {
+      challenge = NumericSequenceChallengeComponent(
+        config: NumericSequenceConfig.defaultConfig,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    } else if (config.useEclipseSequenceChallenge) {
+      challenge = EclipseSequenceChallengeComponent(
+        config: EclipseSequenceConfig.defaultConfig,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    } else if (config.useTraySequenceChallenge) {
+      challenge = TraySequenceChallengeComponent(
+        config: TraySequenceConfig.analisisSangre,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    } else {
+      challenge = LaboratoryChallengeComponent(
+        config: config,
+        position: challengePosition,
+        size: challengeSize,
+        onFinish: _submitEngagementLevel,
+      );
+    }
 
     activeChallenge = challenge;
     add(challenge);
@@ -207,6 +345,21 @@ class LaboratorioFlameGame extends FlameGame {
     if (currentIndex < 0 || currentIndex >= provider.questions.length) return;
 
     final currentQuestion = provider.questions[currentIndex];
+    final normalizedCurrentQuestion = currentQuestion.text
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ü', 'u');
+
+    // El acuario es la última actividad del Laboratorio. Aunque el backend
+    // entregue más preguntas después, al terminar este reto se cierra el juego.
+    final isLastLaboratoryActivity =
+        normalizedCurrentQuestion.contains('cuidar un pequeno acuario') ||
+            normalizedCurrentQuestion.contains('cuidado del acuario') ||
+            normalizedCurrentQuestion.contains('acuario');
 
     if (currentQuestion.options.isEmpty) {
       _showMessage('No se pudo registrar esta actividad.');
@@ -238,7 +391,8 @@ class LaboratorioFlameGame extends FlameGame {
 
       if (!context.mounted) return;
 
-      if (currentIndex + 1 < provider.questions.length) {
+      if (!isLastLaboratoryActivity &&
+          currentIndex + 1 < provider.questions.length) {
         _isSubmitting = false;
         _updateGameStage();
       } else {
