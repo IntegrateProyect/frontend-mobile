@@ -61,8 +61,8 @@ class NumericSequenceConfig {
       Vector2(0.51, 0.685),
       Vector2(0.80, 0.685),
     ],
-    skipButtonFraction: Vector2(0.72, 0.81),
-    skipButtonSizeFraction: Vector2(0.28, 0.045),
+    skipButtonFraction: Vector2(0.50, 0.895),
+    skipButtonSizeFraction: Vector2(0.46, 0.040),
     correctAnswer: '16',
   );
 }
@@ -80,6 +80,7 @@ class NumericSequenceChallengeComponent
   late final _FlaskTargetGlow _targetGlow;
   late final _FeedbackBanner _feedbackBanner;
   late final _HintButton _hintButton;
+  late final _SkipButton _skipButton;
 
   final List<_DraggableNumberCard> _cards = [];
   final List<Map<String, dynamic>> _attemptHistory = [];
@@ -89,6 +90,7 @@ class NumericSequenceChallengeComponent
 
   bool _touchedAny = false;
   bool _completed = false;
+  bool _skipped = false;
   bool _locked = false;
   bool _isValidating = false;
 
@@ -101,6 +103,7 @@ class NumericSequenceChallengeComponent
   final DateTime _startedAt = DateTime.now();
   DateTime? _firstActionAt;
   DateTime? _firstHintAt;
+  DateTime? _skippedAt;
 
   NumericSequenceChallengeComponent({
     required this.config,
@@ -129,6 +132,7 @@ class NumericSequenceChallengeComponent
     _addOptionCards();
     _addFeedbackBanner();
     _addHintButton();
+    _addSkipButton();
   }
 
   Future<void> _addBackground() async {
@@ -347,7 +351,7 @@ class NumericSequenceChallengeComponent
       label: '💡 Pista',
       position: Vector2(
         size.x / 2,
-        size.y * 0.83,
+        size.y * 0.82,
       ),
       size: Vector2(
         150,
@@ -357,6 +361,65 @@ class NumericSequenceChallengeComponent
     );
 
     add(_hintButton);
+  }
+
+  void _addSkipButton() {
+    /*
+     * El botón se coloca siempre centrado debajo de "Pista".
+     * No se utilizan aquí las fracciones externas porque algunas
+     * configuraciones antiguas todavía lo enviaban hacia la derecha.
+     */
+    _skipButton = _SkipButton(
+      label: 'Saltar actividad',
+      position: Vector2(
+        size.x / 2,
+        size.y * 0.895,
+      ),
+      size: Vector2(
+        174,
+        38,
+      ),
+      onPressed: _skipChallenge,
+    );
+
+    add(_skipButton);
+  }
+
+  Future<void> _skipChallenge() async {
+    if (_locked || _isValidating || _completed) {
+      return;
+    }
+
+    _isValidating = true;
+    _skipped = true;
+    _skippedAt = DateTime.now();
+    _selectedAnswer = null;
+
+    _targetGlow.setHovering(false);
+
+    for (final card in _cards) {
+      card.disable();
+    }
+
+    _hintButton.disable();
+    _skipButton.disable();
+
+    _feedbackBanner.showMessage(
+      'Actividad omitida. Continuamos con el siguiente reto.',
+      const Color(0xFFB7C9D9),
+    );
+
+    await Future<void>.delayed(
+      const Duration(milliseconds: 650),
+    );
+
+    if (!isMounted || _locked) {
+      return;
+    }
+
+    _finish(
+      reason: 'skipped',
+    );
   }
 
   void _registerFirstAction() {
@@ -505,8 +568,14 @@ class NumericSequenceChallengeComponent
     _completed = true;
     _selectedAnswer = card.label;
 
+    _skipButton.disable();
+
+    final liquidColor = card.cardColor;
+
+    // La silueta punteada ya está dibujada en la plantilla.
+    // Quitamos el glow extra para no cambiar su forma ni su color.
     _targetGlow.setHovering(false);
-    _targetGlow.showSuccess();
+    _targetGlow.removeFromParent();
 
     _missingValueText?.removeFromParent();
     _missingValueText = null;
@@ -515,21 +584,24 @@ class NumericSequenceChallengeComponent
       currentCard.disable();
     }
 
-    card.acceptAt(
-      _targetPosition,
-    );
-
-    final fillSize = Vector2(
-      size.x * 0.19,
-      size.y * 0.18,
-    );
+    // La tarjeta no debe convertirse en el frasco.
+    // Se elimina y solo se anima el líquido dentro de la silueta existente.
+    if (card.isMounted) {
+      card.removeFromParent();
+    }
 
     add(
       _FlaskFillComponent(
-        position: _targetPosition.clone(),
-        size: fillSize,
+        position: Vector2(
+          _targetPosition.x,
+          _targetPosition.y - 17,
+        ),
+        size: Vector2(
+          size.x * 0.17,
+          size.y * 0.17,
+        ),
         value: card.label,
-        liquidColor: card.cardColor,
+        liquidColor: liquidColor,
       ),
     );
 
@@ -547,15 +619,7 @@ class NumericSequenceChallengeComponent
     );
 
     await Future<void>.delayed(
-      const Duration(milliseconds: 250),
-    );
-
-    if (card.isMounted) {
-      card.removeFromParent();
-    }
-
-    await Future<void>.delayed(
-      const Duration(milliseconds: 1050),
+      const Duration(milliseconds: 1150),
     );
 
     if (!isMounted || _locked) {
@@ -568,6 +632,10 @@ class NumericSequenceChallengeComponent
   }
 
   int _calculateLevel() {
+    if (_skipped) {
+      return 0;
+    }
+
     /*
      * El nivel se usa para elegir una de las
      * opciones originales del backend.
@@ -641,7 +709,8 @@ class NumericSequenceChallengeComponent
         'selectedAnswer':
         _selectedAnswer,
         'completed': _completed,
-        'isCorrect': _completed,
+        'skipped': _skipped,
+        'isCorrect': _completed && !_skipped,
         'touchedAny': _touchedAny,
         'attempts': _attempts,
         'incorrectAttempts':
@@ -659,7 +728,14 @@ class NumericSequenceChallengeComponent
         responseTimeMs,
         'completionTimeSeconds':
         responseTimeMs / 1000,
-        'inputMethod': 'drag_drop',
+        'skipTimeMs': _skippedAt == null
+            ? null
+            : _skippedAt!
+            .difference(_startedAt)
+            .inMilliseconds,
+        'inputMethod': _skipped
+            ? 'skip_button'
+            : 'drag_drop',
         'rule': 'double_each_step',
         'endReason': reason,
         'attemptHistory':
@@ -1193,8 +1269,7 @@ class _FlaskTargetGlow
   }
 }
 
-class _FlaskFillComponent
-    extends PositionComponent {
+class _FlaskFillComponent extends PositionComponent {
   final String value;
   final Color liquidColor;
 
@@ -1217,7 +1292,7 @@ class _FlaskFillComponent
     super.update(dt);
 
     if (_progress < 1) {
-      _progress += dt / 0.65;
+      _progress += dt / 0.60;
 
       if (_progress > 1) {
         _progress = 1;
@@ -1227,126 +1302,140 @@ class _FlaskFillComponent
 
   @override
   void render(Canvas canvas) {
-    final liquidPaint = Paint()
-      ..color = liquidColor;
+    final width = size.x;
+    final height = size.y;
 
-    final highlightPaint = Paint()
-      ..color =
-      Colors.white.withOpacity(0.24);
-
+    /*
+     * La plantilla ya contiene el contorno punteado.
+     * Este trazado queda intencionalmente más pequeño
+     * para que el líquido permanezca dentro del frasco
+     * y no cubra el borde ni la base de la repisa.
+     */
     final liquidPath = Path()
+    // Superficie ondulada del líquido.
       ..moveTo(
-        size.x * 0.23,
-        size.y * 0.39,
+        width * 0.19,
+        height * 0.43,
+      )
+      ..cubicTo(
+        width * 0.34,
+        height * 0.40,
+        width * 0.65,
+        height * 0.47,
+        width * 0.81,
+        height * 0.43,
+      )
+    // Costado derecho, dejando margen con el contorno.
+      ..quadraticBezierTo(
+        width * 0.86,
+        height * 0.54,
+        width * 0.89,
+        height * 0.69,
       )
       ..quadraticBezierTo(
-        size.x * 0.16,
-        size.y * 0.47,
-        size.x * 0.10,
-        size.y * 0.67,
+        width * 0.91,
+        height * 0.82,
+        width * 0.74,
+        height * 0.87,
+      )
+    // Fondo redondeado, separado de la línea punteada.
+      ..quadraticBezierTo(
+        width * 0.50,
+        height * 0.91,
+        width * 0.26,
+        height * 0.87,
+      )
+    // Costado izquierdo.
+      ..quadraticBezierTo(
+        width * 0.09,
+        height * 0.82,
+        width * 0.11,
+        height * 0.69,
       )
       ..quadraticBezierTo(
-        size.x * 0.03,
-        size.y * 0.86,
-        size.x * 0.23,
-        size.y * 0.94,
-      )
-      ..quadraticBezierTo(
-        size.x * 0.50,
-        size.y * 1.02,
-        size.x * 0.79,
-        size.y * 0.94,
-      )
-      ..quadraticBezierTo(
-        size.x * 0.98,
-        size.y * 0.86,
-        size.x * 0.91,
-        size.y * 0.67,
-      )
-      ..quadraticBezierTo(
-        size.x * 0.84,
-        size.y * 0.47,
-        size.x * 0.77,
-        size.y * 0.39,
+        width * 0.14,
+        height * 0.54,
+        width * 0.19,
+        height * 0.43,
       )
       ..close();
 
-    final liquidBottom =
-        size.y * 0.97;
-
-    final liquidTop =
-        size.y * 0.39;
-
-    final visibleTop =
-        liquidBottom -
-            (liquidBottom - liquidTop) *
-                _progress;
+    final bounds = liquidPath.getBounds();
+    final visibleTop = bounds.bottom - bounds.height * _progress;
 
     canvas.save();
 
+    // Animación de llenado desde la parte inferior.
     canvas.clipRect(
       Rect.fromLTRB(
         0,
         visibleTop,
-        size.x,
-        size.y,
+        width,
+        height,
       ),
     );
 
     canvas.drawPath(
       liquidPath,
-      liquidPaint,
+      Paint()..color = liquidColor,
+    );
+
+    final bubblePaint = Paint()
+      ..color = Colors.white.withOpacity(0.22);
+
+    canvas.drawCircle(
+      Offset(
+        width * 0.34,
+        height * 0.61,
+      ),
+      width * 0.035,
+      bubblePaint,
     );
 
     canvas.drawCircle(
       Offset(
-        size.x * 0.32,
-        size.y * 0.66,
+        width * 0.66,
+        height * 0.70,
       ),
-      size.x * 0.045,
-      highlightPaint,
+      width * 0.027,
+      bubblePaint,
     );
 
     canvas.drawCircle(
       Offset(
-        size.x * 0.70,
-        size.y * 0.77,
+        width * 0.57,
+        height * 0.54,
       ),
-      size.x * 0.035,
-      highlightPaint,
+      width * 0.021,
+      bubblePaint,
     );
 
     canvas.restore();
 
-    if (_progress > 0.45) {
-      final textPainter =
-      TextPainter(
+    if (_progress > 0.42) {
+      final textPainter = TextPainter(
         text: TextSpan(
           text: value,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 27,
-            fontWeight:
-            FontWeight.w900,
+            fontWeight: FontWeight.w900,
             shadows: [
               Shadow(
-                color: Colors.black38,
+                color: Colors.black45,
                 blurRadius: 5,
               ),
             ],
           ),
         ),
-        textDirection:
-        TextDirection.ltr,
+        textDirection: TextDirection.ltr,
       )..layout();
 
       textPainter.paint(
         canvas,
         Offset(
-          (size.x -
-              textPainter.width) /
-              2,
-          size.y * 0.61,
+          (width - textPainter.width) / 2,
+          height * 0.57,
         ),
       );
     }
@@ -1521,8 +1610,8 @@ class _HintButton extends PositionComponent
         text: label,
         style: TextStyle(
           color: color,
-          fontSize: 12.5,
-          fontWeight: FontWeight.w800,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -1543,6 +1632,100 @@ class _HintButton extends PositionComponent
   void onTapDown(
       TapDownEvent event,
       ) {
+    super.onTapDown(event);
+
+    if (_disabled) {
+      return;
+    }
+
+    onPressed();
+  }
+}
+
+
+class _SkipButton extends PositionComponent
+    with TapCallbacks {
+  String label;
+  final VoidCallback onPressed;
+
+  bool _disabled = false;
+
+  _SkipButton({
+    required this.label,
+    required Vector2 position,
+    required Vector2 size,
+    required this.onPressed,
+  }) : super(
+    position: position,
+    size: size,
+    anchor: Anchor.center,
+    priority: 15,
+  );
+
+  void disable() {
+    _disabled = true;
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final borderColor = _disabled
+        ? const Color(0xFF526575)
+        : const Color(0xFF70879A);
+
+    final textColor = _disabled
+        ? const Color(0xFF6F8392)
+        : const Color(0xFFBFD0DC);
+
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        0,
+        0,
+        size.x,
+        size.y,
+      ),
+      Radius.circular(size.y / 2),
+    );
+
+    canvas.drawRRect(
+      rect,
+      Paint()
+        ..color = const Color(0xFF07192B)
+            .withOpacity(_disabled ? 0.45 : 0.72),
+    );
+
+    canvas.drawRRect(
+      rect,
+      Paint()
+        ..color = borderColor.withOpacity(0.88)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    final painter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    painter.paint(
+      canvas,
+      Offset(
+        (size.x - painter.width) / 2,
+        (size.y - painter.height) / 2,
+      ),
+    );
+
+    super.render(canvas);
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
     super.onTapDown(event);
 
     if (_disabled) {

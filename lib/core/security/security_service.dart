@@ -18,14 +18,33 @@ class SecurityService {
 
       final bool rooted =
           await _channel.invokeMethod<bool>('isRooted') ?? false;
+          
+      final bool mockLocation =
+          await _channel.invokeMethod<bool>('isMockLocationEnabled') ?? false;
 
-      if (adbEnabled || emulator || rooted) {
+      if (adbEnabled || emulator || rooted || mockLocation) {
         return false; // Entorno no seguro (dispositivo real comprometido en producción)
       }
 
       return true;
     } catch (_) {
       return true;
+    }
+  }
+  
+  static Future<bool> isAdbEnabled() async {
+    try {
+      return await _channel.invokeMethod<bool>('isAdbEnabled') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> isMockLocationEnabled() async {
+    try {
+      return await _channel.invokeMethod<bool>('isMockLocationEnabled') ?? false;
+    } catch (_) {
+      return false;
     }
   }
 }

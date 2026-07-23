@@ -38,6 +38,26 @@ class LaboratoryChallengeConfig {
   /// no como imagen de fondo estática.
   final bool useNumericSequenceChallenge;
 
+  /// Si es true, la pantalla debe usar TraySequenceChallengeComponent
+  /// (charola con N espacios secuenciales sobre imagen de fondo) en
+  /// vez de este componente procedural (ver tray_sequence_challenge.dart).
+  final bool useTraySequenceChallenge;
+
+  /// Si es true, la pantalla usa el reto específico de las tres
+  /// fases del eclipse con la tira fotográfica.
+  final bool useEclipseSequenceChallenge;
+
+  /// Activa la máquina de mecanizaciones aritméticas.
+  final bool useArithmeticMachineChallenge;
+
+  /// Activa el reto específico de enfoque del telescopio.
+  final bool useTelescopeFocusChallenge;
+  final bool usePlantCollectionChallenge;
+  final bool useFirstAidChallenge;
+  final bool useAtomicEnergyChallenge;
+  final bool useAreaCarpetChallenge;
+  final bool useAquariumCareChallenge;
+
   const LaboratoryChallengeConfig({
     required this.kind,
     required this.instruction,
@@ -49,12 +69,121 @@ class LaboratoryChallengeConfig {
     this.apparatusFraction,
     this.stationFractions,
     this.useNumericSequenceChallenge = false,
+    this.useTraySequenceChallenge = false,
+    this.useEclipseSequenceChallenge = false,
+    this.useArithmeticMachineChallenge = false,
+    this.useTelescopeFocusChallenge = false,
+    this.usePlantCollectionChallenge = false,
+    this.useFirstAidChallenge = false,
+    this.useAtomicEnergyChallenge = false,
+    this.useAreaCarpetChallenge = false,
+    this.useAquariumCareChallenge = false,
   });
 
   bool get usesCustomBackground => backgroundAsset != null;
 
   static LaboratoryChallengeConfig fromQuestion(String rawText) {
     final text = _normalize(rawText);
+
+    if (_has(text, ['cuidar un pequeno acuario', 'cuidado del acuario', 'acuario'])) {
+      return const LaboratoryChallengeConfig(
+        kind: LaboratoryChallengeKind.biology,
+        instruction: 'Ajusta la temperatura, el agua y el alimento del acuario',
+        apparatusEmoji: '🐠',
+        apparatusLabel: 'Acuario',
+        steps: ['Temperatura', 'Agua', 'Alimento'],
+        color: Color(0xFF45E6B0),
+        useAquariumCareChallenge: true,
+      );
+    }
+
+    // Debe ir antes del reto genérico de área que aparece más abajo.
+    if (_has(text, ['area de un cuarto', 'alfombrarse', 'alfombrar'])) {
+      return const LaboratoryChallengeConfig(
+        kind: LaboratoryChallengeKind.numeric,
+        instruction: 'Toca las casillas para cubrir el cuarto con alfombra',
+        apparatusEmoji: '📐',
+        apparatusLabel: 'Plano del cuarto',
+        steps: ['Largo', 'Ancho', 'Área'],
+        color: Color(0xFF29B6F6),
+        useAreaCarpetChallenge: true,
+      );
+    }
+
+    if (text.contains('energia atomica') ||
+        text.contains('atomo') ||
+        text.contains('atómica')) {
+      return const LaboratoryChallengeConfig(
+        kind: LaboratoryChallengeKind.astronomy,
+        instruction: 'Construye el átomo con las cantidades solicitadas',
+        apparatusEmoji: '⚛️',
+        apparatusLabel: 'Modelo atómico',
+        steps: ['Protón', 'Neutrón', 'Electrón'],
+        color: Color(0xFF9D70FF),
+        useAtomicEnergyChallenge: true,
+      );
+    }
+
+    if (text.contains('primeros auxilios') ||
+        text.contains('practicar primeros auxilios')) {
+      return const LaboratoryChallengeConfig(
+        kind: LaboratoryChallengeKind.medical,
+        instruction: 'Aplica correctamente el vendaje y comprueba la circulación',
+        apparatusEmoji: '🩹',
+        apparatusLabel: 'Primeros auxilios',
+        steps: ['Elegir', 'Proteger', 'Comprobar'],
+        color: Color(0xFFFF526D),
+        useFirstAidChallenge: true,
+      );
+    }
+
+    if (text.contains('colecciones de plantas') ||
+        text.contains('coleccion de plantas') ||
+        text.contains('herbario')) {
+      return const LaboratoryChallengeConfig(
+        kind: LaboratoryChallengeKind.biology,
+        instruction: 'Toca la prensa para procesar tres muestras de hojas',
+        apparatusEmoji: '🌿',
+        apparatusLabel: 'Herbario',
+        steps: ['Recolectar', 'Observar', 'Clasificar'],
+        color: Color(0xFF4DE39A),
+        usePlantCollectionChallenge: true,
+      );
+    }
+
+    // Debe evaluarse antes de los retos genéricos de telescopio.
+    if ((text.contains('telescopio') && text.contains('regalo')) ||
+        text.contains('enfoque del telescopio') ||
+        text.contains('enfocar el telescopio')) {
+      return const LaboratoryChallengeConfig(
+        kind: LaboratoryChallengeKind.astronomy,
+        instruction: 'Gira la perilla hasta enfocar la estrella',
+        apparatusEmoji: '🔭',
+        apparatusLabel: 'Telescopio',
+        steps: ['Enfocar'],
+        color: Color(0xFF55E8FF),
+        useTelescopeFocusChallenge: true,
+      );
+    }
+
+    // Esta condición debe estar antes de los retos numéricos genéricos.
+    if (_has(text, [
+      'mecanizaciones aritmeticas',
+      'mecanizacion aritmetica',
+      'ejecutar mecanizaciones',
+      'mecanizaciones',
+      'aritmeticas',
+    ])) {
+      return const LaboratoryChallengeConfig(
+        kind: LaboratoryChallengeKind.numeric,
+        instruction: 'Elige una operación y confirma con la palanca',
+        apparatusEmoji: '⚙️',
+        apparatusLabel: 'Máquina',
+        steps: ['+2', '×2', '−2'],
+        color: Color(0xFF29B6F6),
+        useArithmeticMachineChallenge: true,
+      );
+    }
 
     // --- "Completa la secuencia": ver NumericSequenceChallengeComponent ---
     if (_has(text, ['rompecabezas numerico', 'secuencia numerica'])) {
@@ -79,6 +208,7 @@ class LaboratoryChallengeConfig {
         color: Color(0xFFFF4D6D),
       );
     }
+    // --- "Charola con espacios en secuencia": ver TraySequenceChallengeComponent ---
     if (_has(text, ['operacion medica', 'analisis de sangre'])) {
       return const LaboratoryChallengeConfig(
         kind: LaboratoryChallengeKind.medical,
@@ -87,16 +217,18 @@ class LaboratoryChallengeConfig {
         apparatusLabel: 'Charola',
         steps: ['🧤 Guantes', '🧪 Muestra', '🔬 Analizar'],
         color: Color(0xFFFF4D6D),
+        useTraySequenceChallenge: true,
       );
     }
     if (_has(text, ['eclipse'])) {
       return const LaboratoryChallengeConfig(
         kind: LaboratoryChallengeKind.astronomy,
-        instruction: 'Une cada fase del eclipse con el telescopio',
+        instruction: 'Ordena las fases del eclipse',
         apparatusEmoji: '🔭',
         apparatusLabel: 'Telescopio',
         steps: ['☀️ Inicio', '🌘 Parcial', '🌑 Total'],
         color: Color(0xFFB388FF),
+        useEclipseSequenceChallenge: true,
       );
     }
     if (_has(text, ['telescopio', 'estrellas'])) {
