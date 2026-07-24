@@ -198,7 +198,8 @@ class AquariumCareChallengeComponent extends PositionComponent {
   void _finish(String reason) {
     if (_locked) return;
     _locked = true;
-    onFinish(_level(), <String, dynamic>{
+    final level = _level();
+    final meta = <String, dynamic>{
       'activityKind': 'biology',
       'challengeType': 'aquariumCare',
       'temperatureCorrect': _temperature.isCorrect,
@@ -208,7 +209,23 @@ class AquariumCareChallengeComponent extends PositionComponent {
       'attempts': _attempts,
       'completionTimeSeconds': DateTime.now().difference(_startedAt).inSeconds,
       'endReason': reason,
-    });
+    };
+
+    // Saltar termina inmediatamente. Al completar correctamente se muestra
+    // primero la felicitación y el resultado se envía al tocar Continuar.
+    if (reason != 'completed') {
+      onFinish(level, meta);
+      return;
+    }
+
+    _message?.removeFromParent();
+    _message = null;
+    add(
+      _AquariumCompletionOverlay(
+        size: size.clone(),
+        onContinue: () => onFinish(level, meta),
+      ),
+    );
   }
 }
 
@@ -455,6 +472,195 @@ class _AquariumButton extends PositionComponent with TapCallbacks {
   @override
   void onTapDown(TapDownEvent event) {
     super.onTapDown(event);
+    onPressed();
+  }
+}
+
+class _AquariumCompletionOverlay extends PositionComponent {
+  final VoidCallback onContinue;
+
+  _AquariumCompletionOverlay({
+    required Vector2 size,
+    required this.onContinue,
+  }) : super(size: size, priority: 10000);
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    final panelWidth = (size.x - 34).clamp(286.0, 430.0).toDouble();
+    final panelHeight = (size.y * 0.52).clamp(330.0, 440.0).toDouble();
+    final panel = _AquariumCompletionPanel(
+      position: size / 2,
+      size: Vector2(panelWidth, panelHeight),
+    );
+    add(panel);
+
+    try {
+      final character = await Sprite.load('cuidadora_acuario.png');
+      final characterHeight = panelHeight * 0.64;
+      final characterWidth =
+          characterHeight * character.srcSize.x / character.srcSize.y;
+      panel.add(
+        SpriteComponent(
+          sprite: character,
+          position: Vector2(panelWidth * 0.25, panelHeight * 0.56),
+          size: Vector2(characterWidth, characterHeight),
+          anchor: Anchor.center,
+          priority: 2,
+        ),
+      );
+    } catch (error) {
+      debugPrint('No se pudo cargar cuidadora_acuario.png: $error');
+      panel.add(
+        TextComponent(
+          text: '🧑‍🔬🐠',
+          position: Vector2(panelWidth * 0.25, panelHeight * 0.53),
+          anchor: Anchor.center,
+          priority: 2,
+          textRenderer: TextPaint(
+            style: const TextStyle(fontSize: 58),
+          ),
+        ),
+      );
+    }
+
+    panel.add(
+      TextComponent(
+        text: '¡Felicidades!',
+        position: Vector2(panelWidth * 0.70, panelHeight * 0.20),
+        anchor: Anchor.center,
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF45E6B0),
+            fontSize: 25,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+
+    panel.add(
+      TextBoxComponent(
+        text:
+        'Cuidaste correctamente el acuario. Equilibraste la temperatura, '
+            'el nivel del agua y la cantidad de alimento para mantener al pez '
+            'sano y su hábitat estable.',
+        position: Vector2(panelWidth * 0.49, panelHeight * 0.30),
+        size: Vector2(panelWidth * 0.45, panelHeight * 0.36),
+        priority: 3,
+        align: Anchor.topLeft,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            height: 1.25,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+
+    panel.add(
+      _AquariumContinueButton(
+        position: Vector2(panelWidth * 0.70, panelHeight * 0.83),
+        size: Vector2(panelWidth * 0.43, 52),
+        onPressed: onContinue,
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()..color = const Color(0xFF001226).withOpacity(0.84),
+    );
+  }
+}
+
+class _AquariumCompletionPanel extends PositionComponent {
+  _AquariumCompletionPanel({
+    required Vector2 position,
+    required Vector2 size,
+  }) : super(
+    position: position,
+    size: size,
+    anchor: Anchor.center,
+    priority: 1,
+  );
+
+  @override
+  void render(Canvas canvas) {
+    final shape = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      const Radius.circular(28),
+    );
+    canvas.drawRRect(shape, Paint()..color = const Color(0xFF12304A));
+    canvas.drawRRect(
+      shape,
+      Paint()
+        ..color = const Color(0xFF45E6B0)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
+  }
+}
+
+class _AquariumContinueButton extends PositionComponent with TapCallbacks {
+  final VoidCallback onPressed;
+  bool _pressed = false;
+
+  _AquariumContinueButton({
+    required Vector2 position,
+    required Vector2 size,
+    required this.onPressed,
+  }) : super(
+    position: position,
+    size: size,
+    anchor: Anchor.center,
+    priority: 5,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    add(
+      TextComponent(
+        text: 'Continuar',
+        position: size / 2,
+        anchor: Anchor.center,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF071726),
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final shape = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Radius.circular(size.y / 2),
+    );
+    canvas.drawRRect(
+      shape,
+      Paint()
+        ..color = _pressed
+            ? const Color(0xFF36C796)
+            : const Color(0xFF45E6B0),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    if (_pressed) return;
+    _pressed = true;
     onPressed();
   }
 }

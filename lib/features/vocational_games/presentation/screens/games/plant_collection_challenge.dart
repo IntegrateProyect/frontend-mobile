@@ -122,9 +122,27 @@ class PlantCollectionChallengeComponent extends PositionComponent {
 
     if (_samples >= config.samplesTotal) {
       Future<void>.delayed(const Duration(milliseconds: 1500), () {
-        if (!_locked) _finish('completed');
+        if (!_locked) _showCompletion();
       });
     }
+  }
+
+  void _showCompletion() {
+    if (_locked) return;
+    _locked = true;
+    _press.lock();
+    _hint?.removeFromParent();
+    _fact?.removeFromParent();
+    _hint = null;
+    _fact = null;
+
+    add(
+      _PlantCompletionOverlay(
+        size: size.clone(),
+        characterAsset: 'adolescente_botanica.png',
+        onContinue: () => _deliverFinish('completed'),
+      ),
+    );
   }
 
   void _showClassificationFact(int index) {
@@ -189,8 +207,12 @@ class PlantCollectionChallengeComponent extends PositionComponent {
     _press.lock();
     _hint?.removeFromParent();
     _fact?.removeFromParent();
+    _deliverFinish(reason);
+  }
+
+  void _deliverFinish(String reason) {
     final elapsed = DateTime.now().difference(_startedAt).inSeconds;
-    onFinish(_level(), <String, dynamic>{
+    onFinish(reason == 'completed' ? 4 : _level(), <String, dynamic>{
       'activityKind': 'biology',
       'challengeType': 'plantCollection',
       'samplesProcessed': _samples,
@@ -410,5 +432,203 @@ class _PlantButton extends PositionComponent with TapCallbacks {
   void onTapDown(TapDownEvent event) {
     super.onTapDown(event);
     onPressed();
+  }
+}
+
+class _PlantCompletionOverlay extends PositionComponent {
+  final String characterAsset;
+  final VoidCallback onContinue;
+
+  _PlantCompletionOverlay({
+    required Vector2 size,
+    required this.characterAsset,
+    required this.onContinue,
+  }) : super(size: size, position: Vector2.zero(), priority: 1000);
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    final panelSize = Vector2(size.x * 0.86, size.y * 0.55);
+    final panel = _PlantCompletionPanel(
+      position: size / 2,
+      size: panelSize,
+    );
+    add(panel);
+
+    try {
+      final sprite = await Sprite.load(characterAsset);
+      panel.add(
+        SpriteComponent(
+          sprite: sprite,
+          position: Vector2(panelSize.x * 0.28, panelSize.y * 0.56),
+          size: Vector2(panelSize.x * 0.43, panelSize.y * 0.76),
+          anchor: Anchor.center,
+          priority: 2,
+        ),
+      );
+    } catch (error) {
+      debugPrint('No se pudo cargar $characterAsset: $error');
+    }
+
+    panel.add(
+      TextBoxComponent(
+        text: '¡Felicidades!',
+        position: Vector2(panelSize.x * 0.69, panelSize.y * 0.16),
+        size: Vector2(panelSize.x * 0.52, 44),
+        anchor: Anchor.topCenter,
+        align: Anchor.topCenter,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF55F0A4),
+            fontSize: 25,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+
+    panel.add(
+      TextBoxComponent(
+        text:
+        '¡Excelente trabajo!\n\nObservaste y clasificaste correctamente las tres muestras. Ahora puedes reconocer plantas por la forma y las partes de sus hojas.',
+        position: Vector2(panelSize.x * 0.69, panelSize.y * 0.29),
+        size: Vector2(panelSize.x * 0.50, panelSize.y * 0.38),
+        anchor: Anchor.topCenter,
+        align: Anchor.topCenter,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFF0FFF7),
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            height: 1.25,
+          ),
+        ),
+      ),
+    );
+
+    panel.add(
+      _PlantCompletionButton(
+        text: 'Continuar',
+        position: Vector2(panelSize.x * 0.69, panelSize.y * 0.80),
+        size: Vector2(panelSize.x * 0.46, 48),
+        onPressed: onContinue,
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()..color = const Color(0xFF010B1D).withOpacity(0.82),
+    );
+  }
+}
+
+class _PlantCompletionPanel extends PositionComponent {
+  _PlantCompletionPanel({
+    required Vector2 position,
+    required Vector2 size,
+  }) : super(
+    position: position,
+    size: size,
+    anchor: Anchor.center,
+    priority: 1,
+  );
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    final shape = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      const Radius.circular(28),
+    );
+    canvas.drawRRect(
+      shape,
+      Paint()..color = const Color(0xFF102D35).withOpacity(0.99),
+    );
+    canvas.drawRRect(
+      shape,
+      Paint()
+        ..color = const Color(0xFF55F0A4)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2,
+    );
+  }
+}
+
+class _PlantCompletionButton extends PositionComponent with TapCallbacks {
+  final String text;
+  final VoidCallback onPressed;
+  bool _pressed = false;
+
+  _PlantCompletionButton({
+    required this.text,
+    required Vector2 position,
+    required Vector2 size,
+    required this.onPressed,
+  }) : super(
+    position: position,
+    size: size,
+    anchor: Anchor.center,
+    priority: 20,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    add(
+      TextComponent(
+        text: text,
+        position: size / 2,
+        anchor: Anchor.center,
+        priority: 2,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF06251B),
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    final shape = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Radius.circular(size.y / 2),
+    );
+    canvas.drawRRect(
+      shape,
+      Paint()
+        ..color = _pressed
+            ? const Color(0xFF35C982)
+            : const Color(0xFF55F0A4),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+    _pressed = true;
+  }
+
+  @override
+  void onTapUp(TapUpEvent event) {
+    super.onTapUp(event);
+    if (!_pressed) return;
+    _pressed = false;
+    onPressed();
+  }
+
+  @override
+  void onTapCancel(TapCancelEvent event) {
+    super.onTapCancel(event);
+    _pressed = false;
   }
 }

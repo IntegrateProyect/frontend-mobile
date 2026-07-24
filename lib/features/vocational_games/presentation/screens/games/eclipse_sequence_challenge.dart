@@ -60,6 +60,12 @@ class EclipseSequenceConfig {
 }
 
 class EclipseSequenceChallengeComponent extends PositionComponent {
+  static const List<String> _factMessages = [
+    '☀️ ¿Sabías que? El Sol nunca debe observarse directamente sin protección solar certificada.',
+    '🌘 ¿Sabías que? En un eclipse parcial, la Luna cubre solamente una parte del disco solar.',
+    '🌑 ¿Sabías que? Durante un eclipse total puede observarse la corona, la atmósfera exterior del Sol.',
+  ];
+
   final EclipseSequenceConfig config;
   final void Function(int level, Map<String, dynamic> meta) onFinish;
 
@@ -71,6 +77,7 @@ class EclipseSequenceChallengeComponent extends PositionComponent {
   int _attempts = 0;
   bool _touchedAny = false;
   bool _locked = false;
+  bool _completionShown = false;
 
   final DateTime _startedAt = DateTime.now();
 
@@ -249,9 +256,53 @@ class EclipseSequenceChallengeComponent extends PositionComponent {
         color: _colorForCard(card.cardIndex),
       ),
     );
+
+    _showFact(card.cardIndex);
+
     if (_placedCards >= config.cardAssets.length) {
-      _finish(reason: 'completed');
+      for (final eclipseCard in _cards) {
+        eclipseCard.lock();
+      }
+      add(
+        TimerComponent(
+          period: 3.2,
+          removeOnFinish: true,
+          onTick: _showCompletionModal,
+        ),
+      );
     }
+  }
+
+  void _showFact(int cardIndex) {
+    _hintBanner?.removeFromParent();
+    _hintBanner = null;
+
+    final safeIndex = cardIndex.clamp(0, _factMessages.length - 1).toInt();
+    final banner = _EclipseHintBanner(
+      text: _factMessages[safeIndex],
+      position: Vector2(size.x / 2, size.y * 0.185),
+      size: Vector2(size.x - 62, 70),
+      color: _colorForCard(safeIndex),
+      duration: 3,
+    );
+    _hintBanner = banner;
+    add(banner);
+  }
+
+  void _showCompletionModal() {
+    if (_locked || _completionShown) return;
+    _completionShown = true;
+    _hintBanner?.removeFromParent();
+    _hintBanner = null;
+
+    add(
+      _EclipseCompletionModal(
+        imageAsset: 'adolescente_eclipse.png',
+        position: Vector2.zero(),
+        size: size.clone(),
+        onContinue: () => _finish(reason: 'completed'),
+      ),
+    );
   }
 
   Color _colorForCard(int index) {
@@ -417,11 +468,15 @@ class _DraggableEclipseCard extends SpriteComponent with DragCallbacks {
 
 class _EclipseHintBanner extends PositionComponent {
   final String text;
+  final Color color;
+  final double duration;
 
   _EclipseHintBanner({
     required this.text,
     required Vector2 position,
     required Vector2 size,
+    this.color = const Color(0xFFB388FF),
+    this.duration = 4,
   }) : super(
     position: position,
     size: size,
@@ -451,7 +506,7 @@ class _EclipseHintBanner extends PositionComponent {
     );
     add(
       TimerComponent(
-        period: 4,
+        period: duration,
         removeOnFinish: true,
         onTick: removeFromParent,
       ),
@@ -470,10 +525,195 @@ class _EclipseHintBanner extends PositionComponent {
     canvas.drawRRect(
       rrect,
       Paint()
-        ..color = const Color(0xFFB388FF).withOpacity(0.85)
+        ..color = color.withOpacity(0.85)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
+  }
+}
+
+class _EclipseCompletionModal extends PositionComponent with TapCallbacks {
+  final String imageAsset;
+  final VoidCallback onContinue;
+
+  _EclipseCompletionModal({
+    required this.imageAsset,
+    required Vector2 position,
+    required Vector2 size,
+    required this.onContinue,
+  }) : super(
+    position: position,
+    size: size,
+    priority: 1000,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    final modalSize = Vector2(size.x - 52, 330);
+    final modalTopLeft = Vector2(
+      (size.x - modalSize.x) / 2,
+      (size.y - modalSize.y) / 2,
+    );
+
+    add(
+      _EclipseCompletionBackground(
+        position: modalTopLeft,
+        size: modalSize,
+      ),
+    );
+
+    try {
+      final character = await Sprite.load(imageAsset);
+      add(
+        SpriteComponent(
+          sprite: character,
+          position: modalTopLeft + Vector2(91, 170),
+          size: Vector2(135, 275),
+          anchor: Anchor.center,
+          priority: 2,
+        ),
+      );
+    } catch (error) {
+      debugPrint('No se pudo cargar $imageAsset: $error');
+    }
+
+    add(
+      TextBoxComponent(
+        text: '¡Felicidades!',
+        position: modalTopLeft + Vector2(145, 60),
+        size: Vector2(modalSize.x - 165, 52),
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFB388FF),
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        priority: 3,
+      ),
+    );
+
+    add(
+      TextBoxComponent(
+        text:
+        'Aprendiste a reconocer las fases de un eclipse y colocarlas en su secuencia.',
+        position: modalTopLeft + Vector2(145, 112),
+        size: Vector2(modalSize.x - 165, 95),
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFF4F0FF),
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
+        ),
+        priority: 3,
+      ),
+    );
+
+    add(
+      _EclipseContinueButton(
+        position: Vector2(
+          modalTopLeft.x + modalSize.x - 112,
+          modalTopLeft.y + modalSize.y - 52,
+        ),
+        onPressed: onContinue,
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()..color = const Color(0xFF01071B).withOpacity(0.84),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+  }
+}
+
+class _EclipseCompletionBackground extends PositionComponent {
+  _EclipseCompletionBackground({
+    required Vector2 position,
+    required Vector2 size,
+  }) : super(position: position, size: size, priority: 1);
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final rrect = RRect.fromRectAndRadius(
+      rect,
+      const Radius.circular(28),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()..color = const Color(0xFF17163B),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = const Color(0xFFB388FF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2,
+    );
+  }
+}
+
+class _EclipseContinueButton extends PositionComponent with TapCallbacks {
+  final VoidCallback onPressed;
+
+  _EclipseContinueButton({
+    required Vector2 position,
+    required this.onPressed,
+  }) : super(
+    position: position,
+    size: Vector2(170, 52),
+    anchor: Anchor.center,
+    priority: 5,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    add(
+      TextComponent(
+        text: 'Continuar',
+        position: size / 2,
+        anchor: Anchor.center,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF100B25),
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final rrect = RRect.fromRectAndRadius(
+      rect,
+      Radius.circular(size.y / 2),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()..color = const Color(0xFFB388FF),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+    onPressed();
   }
 }
 

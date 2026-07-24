@@ -1,10 +1,8 @@
-// features/chatbot/data/repositories/chatbot_repository_impl.dart
 import '../../../../core/utils/UserService.dart';
 import '../../domain/entities/chat_source_entity.dart';
 import '../../domain/repositories/chatbot_repository.dart';
 import '../datasources/remote/chatbot_remote_datasource.dart';
 
-// ── Model (vive aquí porque solo lo usa este repositorio) ────────────────────
 class _ChatbotResponseModel {
   final String response;
   final String modelUsed;
@@ -12,7 +10,7 @@ class _ChatbotResponseModel {
   final bool usedSearch;
   final List<ChatSourceEntity> sources;
 
-  _ChatbotResponseModel({
+  const _ChatbotResponseModel({
     required this.response,
     required this.modelUsed,
     required this.tokensUsed,
@@ -20,30 +18,46 @@ class _ChatbotResponseModel {
     required this.sources,
   });
 
-  factory _ChatbotResponseModel.fromJson(Map<String, dynamic> json) {
-    final sourcesList = (json['sources'] as List<dynamic>? ?? [])
-        .map((s) => ChatSourceEntity.fromJson(Map<String, dynamic>.from(s)))
-        .toList();
+  factory _ChatbotResponseModel.fromJson(
+      Map<String, dynamic> json,
+      ) {
+    final rawSources = json['sources'];
+
+    final sources = rawSources is List
+        ? rawSources
+        .whereType<Map>()
+        .map(
+          (source) => ChatSourceEntity.fromJson(
+        Map<String, dynamic>.from(source),
+      ),
+    )
+        .toList()
+        : <ChatSourceEntity>[];
+
+    final rawTokens = json['tokens_used'];
 
     return _ChatbotResponseModel(
-      response:    json['response']     ?? '',
-      modelUsed:   json['model_used']   ?? '',
-      tokensUsed:  json['tokens_used']  ?? 0,
-      usedSearch:  json['used_search']  == true,
-      sources:     sourcesList,
+      response: json['response']?.toString() ?? '',
+      modelUsed: json['model_used']?.toString() ?? '',
+      tokensUsed: rawTokens is int
+          ? rawTokens
+          : int.tryParse(rawTokens?.toString() ?? '') ?? 0,
+      usedSearch: json['used_search'] == true,
+      sources: sources,
     );
   }
 
-  ChatbotResponseEntity toEntity() => ChatbotResponseEntity(
-    response:    response,
-    modelUsed:   modelUsed,
-    tokensUsed:  tokensUsed,
-    usedSearch:  usedSearch,
-    sources:     sources,
-  );
+  ChatbotResponseEntity toEntity() {
+    return ChatbotResponseEntity(
+      response: response,
+      modelUsed: modelUsed,
+      tokensUsed: tokensUsed,
+      usedSearch: usedSearch,
+      sources: sources,
+    );
+  }
 }
 
-// ── Implementación del repositorio ───────────────────────────────────────────
 class ChatbotRepositoryImpl implements ChatbotRepository {
   final ChatbotRemoteDataSource remoteDataSource;
   final UserService userService;
@@ -56,21 +70,27 @@ class ChatbotRepositoryImpl implements ChatbotRepository {
   @override
   Future<ChatbotResponseEntity> sendMessage(
       String message, {
-        List<Map<String, String>> history = const [],
         bool search = false,
       }) async {
-    final user = await userService.getUser();
+    final token = await userService.getToken();
+
+    if (token == null || token.trim().isEmpty) {
+      throw const ChatbotSessionExpiredException(
+        'No se encontró una sesión activa.',
+      );
+    }
+
     final json = await remoteDataSource.sendMessage(
-      {
-        'message': message,
-        'history': history,
-        'search':  search,
-      },
-      studentId: user?.id,
+      token: token,
+      message: message,
+      search: search,
     );
+
     return _ChatbotResponseModel.fromJson(json).toEntity();
   }
 
   @override
-  Future<bool> checkHealth() => remoteDataSource.checkHealth();
+  Future<bool> checkHealth() {
+    return remoteDataSource.checkHealth();
+  }
 }

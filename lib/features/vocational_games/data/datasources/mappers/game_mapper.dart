@@ -18,16 +18,10 @@ class GameMapper {
     );
   }
 
-  /// Expone la detección de categoría para poder generar
-  /// etiquetas de opciones y escenas visuales con sentido según
-  /// el tema real de cada pregunta (no solo según la pantalla
-  /// del minijuego en la que vive).
   static VocationalCategory detectCategory(String text) {
     return _detectCategory(text);
   }
 
-  /// Agrupa las preguntas recibidas del backend
-  /// en los cuatro minijuegos principales.
   static List<VocationalMiniGameEntity> groupQuestions(
       List<GameQuestionEntity> questions,
       ) {
@@ -36,51 +30,40 @@ class GameMapper {
     final tallerQuestions = <GameQuestionEntity>[];
     final estudioQuestions = <GameQuestionEntity>[];
 
+    // Después de agregar la pregunta del acuario, Laboratorio queda cerrado.
+    // Las preguntas siguientes continúan clasificándose para los otros juegos,
+    // pero ya no se agregan más preguntas científicas al Laboratorio.
+    var laboratoryClosed = false;
+
     for (final question in questions) {
       final category = _detectCategory(question.text);
 
       switch (category) {
-      /*
-         * Laboratorio:
-         * Cálculo, físico y biológico.
-         */
         case VocationalCategory.calculo:
         case VocationalCategory.fisico:
         case VocationalCategory.biologico:
-          laboratorioQuestions.add(question);
+          if (!laboratoryClosed) {
+            laboratorioQuestions.add(question);
+
+            if (_isAquariumQuestion(question.text)) {
+              laboratoryClosed = true;
+            }
+          }
           break;
 
-      /*
-         * Consultorio:
-         * Servicio social.
-         */
         case VocationalCategory.social:
           consultorioQuestions.add(question);
           break;
 
-      /*
-         * Taller:
-         * Mecánico.
-         */
         case VocationalCategory.mecanico:
           tallerQuestions.add(question);
           break;
 
-      /*
-         * Estudio:
-         * Artístico y musical.
-         */
         case VocationalCategory.artistico:
         case VocationalCategory.musical:
           estudioQuestions.add(question);
           break;
 
-      /*
-         * Persuasivo se divide:
-         *
-         * Liderar, dirigir y organizar -> Taller.
-         * Convencer, debatir y defender -> Consultorio.
-         */
         case VocationalCategory.persuasivo:
           if (_isLeadershipQuestion(question.text)) {
             tallerQuestions.add(question);
@@ -89,12 +72,6 @@ class GameMapper {
           }
           break;
 
-      /*
-         * Literario se divide:
-         *
-         * Escritura creativa -> Estudio.
-         * Lectura y comunicación -> Consultorio.
-         */
         case VocationalCategory.literario:
           if (_isCreativeLiteraryQuestion(question.text)) {
             estudioQuestions.add(question);
@@ -121,8 +98,7 @@ class GameMapper {
       VocationalMiniGameEntity(
         kind: VocationalGameKind.consultorio,
         title: 'Consultorio',
-        description:
-        'Escucha distintas situaciones y decide cómo ayudar.',
+        description: 'Escucha distintas situaciones y decide cómo ayudar.',
         categories: const [
           VocationalCategory.social,
           VocationalCategory.literario,
@@ -133,8 +109,7 @@ class GameMapper {
       VocationalMiniGameEntity(
         kind: VocationalGameKind.taller,
         title: 'Taller',
-        description:
-        'Arma, repara y organiza las piezas de un dispositivo.',
+        description: 'Arma, repara y organiza las piezas de un dispositivo.',
         categories: const [
           VocationalCategory.mecanico,
           VocationalCategory.persuasivo,
@@ -144,8 +119,7 @@ class GameMapper {
       VocationalMiniGameEntity(
         kind: VocationalGameKind.estudio,
         title: 'Estudio creativo',
-        description:
-        'Combina colores, figuras, palabras y sonidos.',
+        description: 'Combina colores, figuras, palabras y sonidos.',
         categories: const [
           VocationalCategory.artistico,
           VocationalCategory.musical,
@@ -154,6 +128,20 @@ class GameMapper {
         questions: estudioQuestions,
       ),
     ];
+  }
+
+  static bool _isAquariumQuestion(String rawText) {
+    final text = _normalize(rawText);
+    return _containsAny(
+      text,
+      const [
+        'cuidar un pequeno acuario',
+        'cuidado del acuario',
+        'pequeno acuario',
+        'acuario',
+        'peces',
+      ],
+    );
   }
 
   static bool _isLeadershipQuestion(String rawText) {
@@ -177,9 +165,7 @@ class GameMapper {
     );
   }
 
-  static bool _isCreativeLiteraryQuestion(
-      String rawText,
-      ) {
+  static bool _isCreativeLiteraryQuestion(String rawText) {
     final text = _normalize(rawText);
 
     return _containsAny(
@@ -201,9 +187,7 @@ class GameMapper {
     );
   }
 
-  static VocationalCategory _detectCategory(
-      String rawText,
-      ) {
+  static VocationalCategory _detectCategory(String rawText) {
     final text = _normalize(rawText);
 
     for (final entry in _keywords.entries) {
@@ -212,18 +196,10 @@ class GameMapper {
       }
     }
 
-    /*
-     * Se conserva Artístico como categoría predeterminada
-     * para no perder preguntas que el backend mande
-     * sin una categoría identificable.
-     */
     return VocationalCategory.artistico;
   }
 
-  static bool _containsAny(
-      String text,
-      List<String> words,
-      ) {
+  static bool _containsAny(String text, List<String> words) {
     return words.any(text.contains);
   }
 
@@ -277,6 +253,7 @@ class GameMapper {
       'hormigas',
       'organismos',
       'acuario',
+      'peces',
       'oxigeno',
       'primeros auxilios',
       'operacion medica',
