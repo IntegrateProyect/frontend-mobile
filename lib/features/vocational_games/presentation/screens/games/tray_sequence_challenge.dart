@@ -7,21 +7,25 @@ import 'game_fx.dart';
 
 class TraySequenceConfig {
   final String backgroundAsset;
+  final String instruction;
   final List<String> itemAssets;
   final List<Vector2> slotFractions;
   final List<Vector2> itemFractions;
   final List<Vector2> itemSizeFractions;
   final List<String> hintMessages;
+  final List<String> factMessages;
   final double dropDistance;
   final double placedScale;
 
   TraySequenceConfig({
     required this.backgroundAsset,
+    required this.instruction,
     required this.itemAssets,
     required this.slotFractions,
     required this.itemFractions,
     required this.itemSizeFractions,
     required this.hintMessages,
+    required this.factMessages,
     required this.dropDistance,
     required this.placedScale,
   });
@@ -29,6 +33,9 @@ class TraySequenceConfig {
   static final TraySequenceConfig analisisSangre =
   TraySequenceConfig(
     backgroundAsset: 'analisissangre.png',
+    instruction:
+    'Arrastra los elementos a la bandeja en el orden correcto: '
+        'primero protégete, después prepara la muestra y al final analízala.',
 
     itemAssets: const [
       'guantes.png',
@@ -59,9 +66,18 @@ class TraySequenceConfig {
 
     // Pista correspondiente a cada tarjeta.
     hintMessages: const [
-      '🧤 Paso 1: coloca los guantes en el primer espacio',
-      '🧪 Paso 2: coloca la muestra en el segundo espacio',
-      '🔬 Paso 3: coloca el microscopio en el último espacio',
+      'Busca el elemento que protege al paciente, al alumno y a la muestra.',
+      'Ahora identifica dónde se conserva la sangre para poder estudiarla.',
+      'El último paso requiere observar detalles que no se ven a simple vista.',
+    ],
+
+    factMessages: const [
+      '🧤 ¿Sabías que? Los guantes se colocan primero porque reducen el '
+          'contacto con la sangre y evitan contaminar la muestra.',
+      '🧪 ¿Sabías que? El tubo mantiene la muestra protegida y debe '
+          'identificarse para evitar confundirla con la de otra persona.',
+      '🔬 ¿Sabías que? El microscopio se utiliza al final, cuando la muestra '
+          'ya fue obtenida y preparada para observar sus células.',
     ],
 
     dropDistance: 160,
@@ -82,10 +98,12 @@ class TraySequenceChallengeComponent
   final List<Vector2> _slotPositions = [];
 
   PositionComponent? _hintMessage;
+  PositionComponent? _instructionMessage;
 
   int _filledCount = 0;
   bool _touchedAny = false;
   bool _locked = false;
+  bool _completionShown = false;
 
   final DateTime _startedAt = DateTime.now();
 
@@ -107,6 +125,7 @@ class TraySequenceChallengeComponent
     _validateConfiguration();
 
     await _addBackground();
+    _addInstruction();
     _calculateSlotPositions();
     await _addDraggableCards();
     _addButtons();
@@ -144,6 +163,32 @@ class TraySequenceChallengeComponent
         'Debe existir una pista por cada tarjeta.',
       );
     }
+
+    if (config.factMessages.length != total) {
+      throw ArgumentError(
+        'Debe existir un dato educativo por cada tarjeta.',
+      );
+    }
+  }
+
+  void _addInstruction() {
+    _instructionMessage = TextBoxComponent(
+      text: config.instruction,
+      position: Vector2(size.x / 2, size.y * 0.105),
+      size: Vector2(size.x - 64, 68),
+      anchor: Anchor.topCenter,
+      align: Anchor.topCenter,
+      priority: 150,
+      textRenderer: TextPaint(
+        style: const TextStyle(
+          color: Color(0xFFEAF7FF),
+          fontSize: 13.5,
+          fontWeight: FontWeight.w800,
+          height: 1.22,
+        ),
+      ),
+    );
+    add(_instructionMessage!);
   }
 
   Future<void> _addBackground() async {
@@ -220,6 +265,8 @@ class TraySequenceChallengeComponent
         targetPositionProvider: () {
           return _slotPositionForCard(index);
         },
+        canPlaceProvider: () => index == _filledCount,
+        onWrongOrder: () => _showWrongOrderMessage(index),
         onTouched: () {
           _touchedAny = true;
         },
@@ -302,25 +349,67 @@ class TraySequenceChallengeComponent
     )
         .toInt();
 
+    _showInformation(
+      config.hintMessages[hintIndex],
+      color: const Color(0xFFFF4D6D),
+      duration: 4,
+    );
+
+    nextCard.showHint();
+  }
+
+  void _showWrongOrderMessage(int attemptedIndex) {
+    if (_locked) return;
+
+    final message = attemptedIndex == 1
+        ? 'Antes de manipular la muestra debes proteger tus manos y evitar '
+        'contaminar la sangre.'
+        : 'El análisis con el microscopio se realiza después de protegerse '
+        'y preparar correctamente la muestra.';
+
+    _showInformation(
+      '💡 $message',
+      color: const Color(0xFFFFB74D),
+      duration: 3.8,
+    );
+  }
+
+  void _showInformation(
+      String text, {
+        required Color color,
+        double duration = 4.5,
+      }) {
+    _hintMessage?.removeFromParent();
+    _hideInstruction();
+
     final banner = _HintBanner(
-      text: config.hintMessages[hintIndex],
-
-      // Se coloca en el espacio vacío encima de la charola.
-      position: Vector2(
-        size.x / 2,
-        size.y * 0.205,
-      ),
-
-      size: Vector2(
-        size.x - 70,
-        60,
-      ),
+      text: text,
+      color: color,
+      duration: duration,
+      // Reemplaza temporalmente a la instrucción; no se dibuja encima.
+      position: Vector2(size.x / 2, size.y * 0.135),
+      size: Vector2(size.x - 62, 82),
+      onDismiss: _restoreInstruction,
     );
 
     _hintMessage = banner;
     add(banner);
+  }
 
-    nextCard.showHint();
+  void _hideInstruction() {
+    final instruction = _instructionMessage;
+    if (instruction is TextBoxComponent) {
+      instruction.text = '';
+    }
+  }
+
+  void _restoreInstruction() {
+    if (_locked) return;
+    final instruction = _instructionMessage;
+    if (instruction is TextBoxComponent) {
+      instruction.text = config.instruction;
+    }
+    _hintMessage = null;
   }
 
   void _onCardDropped(
@@ -345,21 +434,44 @@ class TraySequenceChallengeComponent
       ),
     );
 
-    if (_filledCount >= _slotPositions.length) {
-      _hintMessage?.removeFromParent();
-      _hintMessage = null;
+    _showInformation(
+      config.factMessages[card.cardIndex],
+      color: const Color(0xFF35D69A),
+      duration: 4.5,
+    );
 
+    if (_filledCount >= _slotPositions.length) {
+      // Muestra la felicitación casi inmediatamente al completar la actividad.
       add(
-        FloatingPraise(
-          position:
-          _slotPositions.last - Vector2(0, 70),
-          text: '¡Actividad completada!',
-          color: const Color(0xFF35D69A),
+        TimerComponent(
+          period: 0.35,
+          removeOnFinish: true,
+          onTick: _showCompletionModal,
         ),
       );
-
-      _finish(reason: 'completed');
     }
+  }
+
+  void _showCompletionModal() {
+    if (_locked || _completionShown) return;
+    _completionShown = true;
+
+    _hintMessage?.removeFromParent();
+    _hintMessage = null;
+    _hideInstruction();
+
+    for (final card in _cards) {
+      card.lock();
+    }
+
+    add(
+      _ActivityCompletionModal(
+        imageAsset: 'adolescente_laboratorio.png',
+        position: Vector2.zero(),
+        size: size.clone(),
+        onContinue: () => _finish(reason: 'completed'),
+      ),
+    );
   }
 
   int _currentLevel() {
@@ -415,7 +527,9 @@ class _DraggableMedicalCard
   final double dropDistance;
 
   final Vector2 Function() targetPositionProvider;
+  final bool Function() canPlaceProvider;
   final VoidCallback onTouched;
+  final VoidCallback onWrongOrder;
 
   final void Function(
       _DraggableMedicalCard card,
@@ -436,7 +550,9 @@ class _DraggableMedicalCard
     required Vector2 position,
     required Vector2 size,
     required this.targetPositionProvider,
+    required this.canPlaceProvider,
     required this.onTouched,
+    required this.onWrongOrder,
     required this.onDropped,
   }) : super(
     position: position,
@@ -595,7 +711,12 @@ class _DraggableMedicalCard
     position.distanceTo(targetPosition);
 
     if (distance <= dropDistance) {
-      _placeAtTarget(targetPosition);
+      if (canPlaceProvider()) {
+        _placeAtTarget(targetPosition);
+      } else {
+        _returnToOriginalPosition();
+        onWrongOrder();
+      }
     } else {
       _returnToOriginalPosition();
     }
@@ -636,9 +757,16 @@ class _DraggableMedicalCard
 
 class _HintBanner extends PositionComponent {
   final String text;
+  final Color color;
+  final double duration;
+  final VoidCallback? onDismiss;
+  bool _dismissed = false;
 
   _HintBanner({
     required this.text,
+    this.color = const Color(0xFFFF4D6D),
+    this.duration = 4,
+    this.onDismiss,
     required Vector2 position,
     required Vector2 size,
   }) : super(
@@ -647,6 +775,15 @@ class _HintBanner extends PositionComponent {
     anchor: Anchor.center,
     priority: 300,
   );
+
+  @override
+  void onRemove() {
+    if (!_dismissed) {
+      _dismissed = true;
+      onDismiss?.call();
+    }
+    super.onRemove();
+  }
 
   @override
   Future<void> onLoad() async {
@@ -675,7 +812,7 @@ class _HintBanner extends PositionComponent {
 
     add(
       TimerComponent(
-        period: 4,
+        period: duration,
         removeOnFinish: true,
         onTick: removeFromParent,
       ),
@@ -709,8 +846,7 @@ class _HintBanner extends PositionComponent {
     canvas.drawRRect(
       roundedRectangle,
       Paint()
-        ..color = const Color(0xFFFF4D6D)
-            .withOpacity(0.75)
+        ..color = color.withOpacity(0.82)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
@@ -793,6 +929,198 @@ class _GhostButton extends PositionComponent
   void onTapDown(
       TapDownEvent event,
       ) {
+    super.onTapDown(event);
+    onPressed();
+  }
+}
+
+class _ActivityCompletionModal extends PositionComponent with TapCallbacks {
+  final String imageAsset;
+  final VoidCallback onContinue;
+
+  _ActivityCompletionModal({
+    required this.imageAsset,
+    required Vector2 position,
+    required Vector2 size,
+    required this.onContinue,
+  }) : super(
+    position: position,
+    size: size,
+    priority: 1000,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    final modalSize = Vector2(size.x - 52, 330);
+    final modalTopLeft = Vector2(
+      (size.x - modalSize.x) / 2,
+      (size.y - modalSize.y) / 2,
+    );
+
+    add(
+      _CompletionCardBackground(
+        position: modalTopLeft,
+        size: modalSize,
+      ),
+    );
+
+    try {
+      final character = await Sprite.load(imageAsset);
+      add(
+        SpriteComponent(
+          sprite: character,
+          position: modalTopLeft + Vector2(90, 160),
+          size: Vector2(125, 245),
+          anchor: Anchor.center,
+          priority: 2,
+        ),
+      );
+    } catch (error) {
+      debugPrint('No se pudo cargar $imageAsset: $error');
+    }
+
+    add(
+      TextBoxComponent(
+        text: '¡Felicidades!',
+        position: Vector2(
+          modalTopLeft.x + 140,
+          modalTopLeft.y + 62,
+        ),
+        size: Vector2(modalSize.x - 165, 58),
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF45E6B0),
+            fontSize: 25,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        priority: 3,
+      ),
+    );
+
+    add(
+      TextBoxComponent(
+        text:
+        'Aprendiste a seguir el orden básico de un análisis de sangre: protegerte, preparar la muestra y observarla con seguridad.',
+        position: Vector2(
+          modalTopLeft.x + 140,
+          modalTopLeft.y + 112,
+        ),
+        size: Vector2(modalSize.x - 160, 105),
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFF4F8FC),
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
+        ),
+        priority: 3,
+      ),
+    );
+
+    add(
+      _ModalContinueButton(
+        position: Vector2(
+          modalTopLeft.x + modalSize.x - 112,
+          modalTopLeft.y + modalSize.y - 52,
+        ),
+        onPressed: onContinue,
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()..color = const Color(0xFF010B1D).withOpacity(0.82),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    // Consume los toques para impedir que lleguen a Pista o Saltar.
+    super.onTapDown(event);
+  }
+}
+
+class _CompletionCardBackground extends PositionComponent {
+  _CompletionCardBackground({
+    required Vector2 position,
+    required Vector2 size,
+  }) : super(position: position, size: size, priority: 1);
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final rrect = RRect.fromRectAndRadius(
+      rect,
+      const Radius.circular(28),
+    );
+
+    canvas.drawRRect(
+      rrect,
+      Paint()..color = const Color(0xFF102840),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = const Color(0xFF45E6B0)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2,
+    );
+  }
+}
+
+class _ModalContinueButton extends PositionComponent with TapCallbacks {
+  final VoidCallback onPressed;
+
+  _ModalContinueButton({
+    required Vector2 position,
+    required this.onPressed,
+  }) : super(
+    position: position,
+    size: Vector2(170, 52),
+    anchor: Anchor.center,
+    priority: 5,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    add(
+      TextComponent(
+        text: 'Continuar',
+        position: size / 2,
+        anchor: Anchor.center,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF02182B),
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      const Radius.circular(26),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()..color = const Color(0xFF45E6B0),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
     super.onTapDown(event);
     onPressed();
   }

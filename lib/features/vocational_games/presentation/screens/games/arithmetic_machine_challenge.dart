@@ -1,6 +1,6 @@
 import 'dart:math';
 
-// Reto interactivo de mecanizaciones aritméticas.
+// Máquina interactiva para el reto de mecanizaciones aritméticas.
 
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
@@ -49,6 +49,7 @@ class ArithmeticMachineChallengeComponent extends PositionComponent {
   late final _AnimatedGear _leftGear;
   late final _AnimatedGear _rightGear;
   late final TextComponent _resultDisplay;
+  late final _MachineActionButton _hintButton;
 
   PositionComponent? _messageBanner;
   int? _selectedOperation;
@@ -56,6 +57,7 @@ class ArithmeticMachineChallengeComponent extends PositionComponent {
   int _hintsUsed = 0;
   bool _touchedAny = false;
   bool _locked = false;
+  bool _completionShown = false;
 
   ArithmeticMachineChallengeComponent({
     required this.config,
@@ -265,9 +267,9 @@ class ArithmeticMachineChallengeComponent extends PositionComponent {
       }
       add(
         TimerComponent(
-          period: 0.8,
+          period: 0.75,
           removeOnFinish: true,
-          onTick: () => _finish(reason: 'completed', forceLevel: 4),
+          onTick: _showCompletion,
         ),
       );
     } else {
@@ -285,15 +287,14 @@ class ArithmeticMachineChallengeComponent extends PositionComponent {
   }
 
   void _addBottomButtons() {
-    add(
-      _MachineActionButton(
-        text: '💡 Pista',
-        color: const Color(0xFF29DDF2),
-        position: Vector2(size.x / 2 - 62, size.y - 40),
-        width: 108,
-        onPressed: _showHint,
-      ),
+    _hintButton = _MachineActionButton(
+      text: '💡 Pista',
+      color: const Color(0xFF29DDF2),
+      position: Vector2(size.x / 2 - 62, size.y - 40),
+      width: 108,
+      onPressed: _showHint,
     );
+    add(_hintButton);
     add(
       _MachineActionButton(
         text: 'Saltar',
@@ -306,13 +307,36 @@ class ArithmeticMachineChallengeComponent extends PositionComponent {
   }
 
   void _showHint() {
-    if (_locked) return;
+    if (_locked || _hintsUsed >= 3) return;
+
+    final hints = <String>[
+      'Pista 1 de 3: compara cuánto debe cambiar el número inicial para llegar al resultado.',
+      'Pista 2 de 3: prueba mentalmente cada operación antes de mover la palanca.',
+      'Pista 3 de 3: busca la operación que transforma ${config.initialValue} en ${config.targetValue} en un solo paso.',
+    ];
+
+    _showMessage(hints[_hintsUsed], const Color(0xFFFFC247));
     _hintsUsed++;
-    final index = config.correctOperationIndex;
-    _operationButtons[index].pulse();
-    _showMessage(
-      'Pista: busca una operación que convierta ${config.initialValue} en ${config.targetValue}.',
-      const Color(0xFFFFC247),
+
+    if (_hintsUsed == 3) {
+      _operationButtons[config.correctOperationIndex].pulse();
+      _hintButton.disable();
+    }
+  }
+
+  void _showCompletion() {
+    if (_completionShown) return;
+    _completionShown = true;
+    _messageBanner?.removeFromParent();
+    _messageBanner = null;
+    _leftGear.active = false;
+    _rightGear.active = false;
+
+    add(
+      _MechanicCompletionModal(
+        size: size.clone(),
+        onContinue: () => _finish(reason: 'completed', forceLevel: 4),
+      ),
     );
   }
 
@@ -453,7 +477,9 @@ class _OperationButton extends PositionComponent with TapCallbacks {
     add(
       TextComponent(
         text: label,
-        position: size / 2,
+        // La ilustración del botón tiene el centro visual un poco más abajo
+        // que el centro geométrico del hitbox.
+        position: Vector2(size.x / 2, size.y / 2 + 10),
         anchor: Anchor.center,
         textRenderer: TextPaint(
           style: const TextStyle(
@@ -469,26 +495,46 @@ class _OperationButton extends PositionComponent with TapCallbacks {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    if (!selected) return;
-    canvas.drawCircle(
-      Offset(size.x / 2, size.y / 2),
-      size.x * 0.48,
-      Paint()
-        ..color = color.withOpacity(0.95)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
+    // La plantilla ya contiene el borde, el volumen y el color de cada
+    // botón. No se dibuja otro círculo encima porque produciría un
+    // contorno duplicado y desalineado.
   }
 
   @override
   void onTapDown(TapDownEvent event) {
     super.onTapDown(event);
-    if (!_locked) onPressed();
+    if (_locked) return;
+    add(
+      SequenceEffect(
+        [
+          ScaleEffect.to(
+            Vector2.all(0.92),
+            EffectController(
+              duration: 0.08,
+              curve: Curves.easeOut,
+            ),
+          ),
+          ScaleEffect.to(
+            Vector2.all(1),
+            EffectController(
+              duration: 0.14,
+              curve: Curves.elasticOut,
+            ),
+          ),
+        ],
+      ),
+    );
+    onPressed();
   }
 }
 
 class _LeverControl extends PositionComponent with TapCallbacks {
   final VoidCallback onPressed;
+
+  bool _animating = false;
+  double _animationTime = 0;
+  static const double _animationDuration = 0.62;
+
   _LeverControl({
     required Vector2 position,
     required Vector2 size,
@@ -496,9 +542,79 @@ class _LeverControl extends PositionComponent with TapCallbacks {
   }) : super(position: position, size: size, anchor: Anchor.center, priority: 180);
 
   @override
+  void update(double dt) {
+    super.update(dt);
+    if (!_animating) return;
+
+    _animationTime += dt;
+    if (_animationTime >= _animationDuration) {
+      _animationTime = 0;
+      _animating = false;
+      onPressed();
+    }
+  }
+
+  double get _progress {
+    if (!_animating) return 0;
+    final normalized =
+    (_animationTime / _animationDuration).clamp(0.0, 1.0);
+    return sin(normalized * pi);
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+
+    final progress = _progress;
+    final pivot = Offset(size.x * 0.50, size.y * 0.82);
+    final restingKnob = Offset(size.x * 0.50, size.y * 0.18);
+    final pulledKnob = Offset(size.x * 0.30, size.y * 0.69);
+    final knob = Offset.lerp(restingKnob, pulledKnob, progress)!;
+
+    if (_animating) {
+      canvas.drawCircle(
+        knob,
+        size.x * (0.32 + progress * 0.18),
+        Paint()
+          ..color = const Color(0xFFFF7A63)
+              .withOpacity(0.18 + progress * 0.20)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3,
+      );
+    }
+
+    canvas.drawLine(
+      pivot,
+      knob,
+      Paint()
+        ..color = const Color(0xFFD9E7F4).withOpacity(0.90)
+        ..strokeWidth = max(4.0, size.x * 0.11)
+        ..strokeCap = StrokeCap.round,
+    );
+
+    canvas.drawCircle(
+      pivot,
+      size.x * 0.16,
+      Paint()..color = const Color(0xFF223852),
+    );
+    canvas.drawCircle(
+      knob,
+      size.x * 0.27,
+      Paint()..color = const Color(0xFFFF6659),
+    );
+    canvas.drawCircle(
+      knob - Offset(size.x * 0.07, size.x * 0.07),
+      size.x * 0.08,
+      Paint()..color = Colors.white.withOpacity(0.55),
+    );
+  }
+
+  @override
   void onTapDown(TapDownEvent event) {
     super.onTapDown(event);
-    onPressed();
+    if (_animating) return;
+    _animating = true;
+    _animationTime = 0;
   }
 }
 
@@ -554,6 +670,8 @@ class _MachineActionButton extends PositionComponent with TapCallbacks {
   final String text;
   final Color color;
   final VoidCallback onPressed;
+  bool _enabled = true;
+  late final TextComponent _label;
   _MachineActionButton({
     required this.text,
     required this.color,
@@ -567,6 +685,199 @@ class _MachineActionButton extends PositionComponent with TapCallbacks {
     priority: 300,
   );
 
+  void disable() {
+    _enabled = false;
+    _label.textRenderer = TextPaint(
+      style: const TextStyle(
+        color: Color(0xFF8B96A5),
+        fontSize: 12.5,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    _label = TextComponent(
+      text: text,
+      position: size / 2,
+      anchor: Anchor.center,
+      textRenderer: TextPaint(
+        style: TextStyle(
+          color: color.withOpacity(0.98),
+          fontSize: 12.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+    add(_label);
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(size.y / 2));
+    final effectiveColor =
+    _enabled ? color : const Color(0xFF6F7B89);
+    canvas.drawRRect(
+      rrect,
+      Paint()..color = const Color(0xFF101D35).withOpacity(0.9),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = effectiveColor.withOpacity(_enabled ? 0.65 : 0.42)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4,
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+    if (!_enabled) return;
+    onPressed();
+  }
+}
+
+class _MechanicCompletionModal extends PositionComponent {
+  final VoidCallback onContinue;
+
+  _MechanicCompletionModal({
+    required Vector2 size,
+    required this.onContinue,
+  }) : super(size: size, priority: 1000);
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    final panelWidth = size.x - 34;
+    final panelHeight = min(420.0, size.y * 0.62);
+    final panelLeft = (size.x - panelWidth) / 2;
+    final panelTop = (size.y - panelHeight) / 2;
+
+    try {
+      final sprite = await Sprite.load('adolescente_mecanica.png');
+      add(
+        SpriteComponent(
+          sprite: sprite,
+          position: Vector2(
+            panelLeft + panelWidth * 0.23,
+            panelTop + panelHeight * 0.55,
+          ),
+          size: Vector2(panelWidth * 0.39, panelHeight * 0.68),
+          anchor: Anchor.center,
+          priority: 2,
+        ),
+      );
+    } catch (error) {
+      debugPrint('No se pudo cargar adolescente_mecanica.png: $error');
+    }
+
+    add(
+      TextComponent(
+        text: '¡Felicidades!',
+        position: Vector2(
+          panelLeft + panelWidth * 0.69,
+          panelTop + panelHeight * 0.22,
+        ),
+        anchor: Anchor.center,
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFFFC247),
+            fontSize: 27,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+
+    add(
+      TextBoxComponent(
+        text:
+        'Elegiste la operación correcta y confirmaste el resultado usando la palanca de la máquina.',
+        position: Vector2(
+          panelLeft + panelWidth * 0.69,
+          panelTop + panelHeight * 0.34,
+        ),
+        size: Vector2(panelWidth * 0.47, panelHeight * 0.30),
+        anchor: Anchor.topCenter,
+        align: Anchor.topCenter,
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            height: 1.28,
+          ),
+        ),
+      ),
+    );
+
+    add(
+      _CompletionButton(
+        text: 'Continuar',
+        position: Vector2(
+          panelLeft + panelWidth * 0.69,
+          panelTop + panelHeight * 0.79,
+        ),
+        size: Vector2(panelWidth * 0.47, 52),
+        onPressed: onContinue,
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()..color = const Color(0xFF000817).withOpacity(0.78),
+    );
+
+    final panelWidth = size.x - 34;
+    final panelHeight = min(420.0, size.y * 0.62);
+    final panelRect = Rect.fromLTWH(
+      (size.x - panelWidth) / 2,
+      (size.y - panelHeight) / 2,
+      panelWidth,
+      panelHeight,
+    );
+    final panel = RRect.fromRectAndRadius(
+      panelRect,
+      const Radius.circular(28),
+    );
+    canvas.drawRRect(panel, Paint()..color = const Color(0xFF132B43));
+    canvas.drawRRect(
+      panel,
+      Paint()
+        ..color = const Color(0xFFFFC247)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2,
+    );
+  }
+}
+
+class _CompletionButton extends PositionComponent with TapCallbacks {
+  final String text;
+  final VoidCallback onPressed;
+
+  _CompletionButton({
+    required this.text,
+    required Vector2 position,
+    required Vector2 size,
+    required this.onPressed,
+  }) : super(
+    position: position,
+    size: size,
+    anchor: Anchor.center,
+    priority: 4,
+  );
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -576,10 +887,10 @@ class _MachineActionButton extends PositionComponent with TapCallbacks {
         position: size / 2,
         anchor: Anchor.center,
         textRenderer: TextPaint(
-          style: TextStyle(
-            color: color.withOpacity(0.98),
-            fontSize: 12.5,
-            fontWeight: FontWeight.w800,
+          style: const TextStyle(
+            color: Color(0xFF071527),
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),
@@ -588,16 +899,12 @@ class _MachineActionButton extends PositionComponent with TapCallbacks {
 
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
-    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(size.y / 2));
-    canvas.drawRRect(rrect, Paint()..color = const Color(0xFF101D35).withOpacity(0.9));
     canvas.drawRRect(
-      rrect,
-      Paint()
-        ..color = color.withOpacity(0.65)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4,
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.x, size.y),
+        Radius.circular(size.y / 2),
+      ),
+      Paint()..color = const Color(0xFFFFC247),
     );
   }
 

@@ -93,6 +93,7 @@ class NumericSequenceChallengeComponent
   bool _skipped = false;
   bool _locked = false;
   bool _isValidating = false;
+  bool _completionShown = false;
 
   int _attempts = 0;
   int _incorrectAttempts = 0;
@@ -350,12 +351,12 @@ class NumericSequenceChallengeComponent
     _hintButton = _HintButton(
       label: '💡 Pista',
       position: Vector2(
-        size.x / 2,
-        size.y * 0.82,
+        size.x / 2 - 62,
+        size.y - 40,
       ),
       size: Vector2(
-        150,
-        43,
+        108,
+        36,
       ),
       onPressed: showHint,
     );
@@ -364,20 +365,15 @@ class NumericSequenceChallengeComponent
   }
 
   void _addSkipButton() {
-    /*
-     * El botón se coloca siempre centrado debajo de "Pista".
-     * No se utilizan aquí las fracciones externas porque algunas
-     * configuraciones antiguas todavía lo enviaban hacia la derecha.
-     */
     _skipButton = _SkipButton(
-      label: 'Saltar actividad',
+      label: 'Saltar',
       position: Vector2(
-        size.x / 2,
-        size.y * 0.895,
+        size.x / 2 + 62,
+        size.y - 40,
       ),
       size: Vector2(
-        174,
-        38,
+        108,
+        36,
       ),
       onPressed: _skipChallenge,
     );
@@ -619,15 +615,40 @@ class NumericSequenceChallengeComponent
     );
 
     await Future<void>.delayed(
-      const Duration(milliseconds: 1150),
+      const Duration(milliseconds: 1800),
     );
 
     if (!isMounted || _locked) {
       return;
     }
 
-    _finish(
-      reason: 'correct_answer',
+    _showCompletionModal();
+  }
+
+  void _showCompletionModal() {
+    if (_locked || _completionShown) {
+      return;
+    }
+
+    _completionShown = true;
+    _isValidating = true;
+
+    _hintButton.disable();
+    _skipButton.disable();
+
+    for (final card in _cards) {
+      card.disable();
+    }
+
+    add(
+      _NumericCompletionModal(
+        imageAsset: 'adolescente_cientifica_numerica.png',
+        position: Vector2.zero(),
+        size: size.clone(),
+        onContinue: () {
+          _finish(reason: 'correct_answer');
+        },
+      ),
     );
   }
 
@@ -1839,4 +1860,215 @@ class _ParticleData {
     required this.velocity,
     required this.radius,
   });
+}
+
+class _NumericCompletionModal extends PositionComponent with TapCallbacks {
+  final String imageAsset;
+  final VoidCallback onContinue;
+
+  _NumericCompletionModal({
+    required this.imageAsset,
+    required Vector2 position,
+    required Vector2 size,
+    required this.onContinue,
+  }) : super(
+    position: position,
+    size: size,
+    priority: 1000,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    final cardSize = Vector2(size.x - 36, 360);
+    final cardPosition = Vector2(
+      (size.x - cardSize.x) / 2,
+      (size.y - cardSize.y) / 2,
+    );
+
+    add(
+      _NumericCompletionBackground(
+        position: cardPosition,
+        size: cardSize,
+      ),
+    );
+
+    try {
+      final character = await Sprite.load(imageAsset);
+      add(
+        SpriteComponent(
+          sprite: character,
+          position: cardPosition + Vector2(72, 190),
+          size: Vector2(128, 270),
+          anchor: Anchor.center,
+          priority: 2,
+        ),
+      );
+    } catch (error) {
+      debugPrint('No se pudo cargar $imageAsset: $error');
+    }
+
+    final textLeft = cardPosition.x + 128;
+    final textWidth = cardSize.x - 148;
+
+    add(
+      TextBoxComponent(
+        text: '¡Felicidades!',
+        position: Vector2(textLeft, cardPosition.y + 32),
+        size: Vector2(textWidth, 44),
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFFFC857),
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+
+    add(
+      TextBoxComponent(
+        text: 'Descubriste el patrón y completaste correctamente la secuencia.',
+        position: Vector2(textLeft, cardPosition.y + 90),
+        size: Vector2(textWidth, 92),
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFF2F8FF),
+            fontSize: 13.8,
+            fontWeight: FontWeight.w800,
+            height: 1.25,
+          ),
+        ),
+      ),
+    );
+
+    add(
+      TextBoxComponent(
+        text: 'La regla era multiplicar cada número por 2:\n'
+            '2, 4, 8, 16 y 32.',
+        position: Vector2(textLeft, cardPosition.y + 196),
+        size: Vector2(textWidth, 82),
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF29D8E8),
+            fontSize: 13.2,
+            fontWeight: FontWeight.w800,
+            height: 1.28,
+          ),
+        ),
+      ),
+    );
+
+    add(
+      _NumericContinueButton(
+        position: Vector2(
+          cardPosition.x + cardSize.x - 105,
+          cardPosition.y + cardSize.y - 48,
+        ),
+        onPressed: onContinue,
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()..color = const Color(0xFF010B1D).withOpacity(0.84),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    // El modal consume los toques para bloquear los controles inferiores.
+    super.onTapDown(event);
+  }
+}
+
+class _NumericCompletionBackground extends PositionComponent {
+  _NumericCompletionBackground({
+    required Vector2 position,
+    required Vector2 size,
+  }) : super(
+    position: position,
+    size: size,
+    priority: 1,
+  );
+
+  @override
+  void render(Canvas canvas) {
+    final rounded = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      const Radius.circular(28),
+    );
+
+    canvas.drawRRect(
+      rounded,
+      Paint()..color = const Color(0xFF102840),
+    );
+    canvas.drawRRect(
+      rounded,
+      Paint()
+        ..color = const Color(0xFFFFC857)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2,
+    );
+  }
+}
+
+class _NumericContinueButton extends PositionComponent with TapCallbacks {
+  final VoidCallback onPressed;
+
+  _NumericContinueButton({
+    required Vector2 position,
+    required this.onPressed,
+  }) : super(
+    position: position,
+    size: Vector2(170, 52),
+    anchor: Anchor.center,
+    priority: 5,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    add(
+      TextComponent(
+        text: 'Continuar',
+        position: size / 2,
+        anchor: Anchor.center,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF07192B),
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final rounded = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      const Radius.circular(26),
+    );
+
+    canvas.drawRRect(
+      rounded,
+      Paint()..color = const Color(0xFFFFC857),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+    onPressed();
+  }
 }

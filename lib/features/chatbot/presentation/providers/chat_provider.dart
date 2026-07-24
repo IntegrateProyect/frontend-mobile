@@ -1,5 +1,6 @@
-// features/chatbot/presentation/providers/chat_provider.dart
 import 'package:flutter/material.dart';
+
+import '../../data/datasources/remote/chatbot_remote_datasource.dart';
 import '../../domain/entities/chat_message_entity.dart';
 import '../../domain/entities/chat_source_entity.dart';
 import '../../domain/usecases/send_message_usecase.dart';
@@ -7,84 +8,122 @@ import '../../domain/usecases/send_message_usecase.dart';
 class ChatbotProvider extends ChangeNotifier {
   final SendMessageUseCase _sendMessageUseCase;
 
-  // Historial en-memoria para multi-turn
   final List<ChatMessageEntity> _messages = [];
-  // Historial en formato para la API  [{role: user/assistant, content: ...}]
-  final List<Map<String, String>> _apiHistory = [];
 
   List<ChatSourceEntity> _lastSources = [];
+
   bool _isLoading = false;
   bool _usedSearch = false;
+  bool _sessionExpired = false;
   String? _error;
 
-  ChatbotProvider({required SendMessageUseCase sendMessageUseCase})
-      : _sendMessageUseCase = sendMessageUseCase;
+  ChatbotProvider({
+    required SendMessageUseCase sendMessageUseCase,
+  }) : _sendMessageUseCase = sendMessageUseCase;
 
-  List<ChatMessageEntity> get messages    => List.unmodifiable(_messages);
-  List<ChatSourceEntity>  get lastSources => List.unmodifiable(_lastSources);
-  bool    get isLoading  => _isLoading;
-  bool    get usedSearch => _usedSearch;
-  String? get error      => _error;
+  List<ChatMessageEntity> get messages =>
+      List.unmodifiable(_messages);
 
-  Future<void> sendMessage(String text, {bool search = false}) async {
-    if (text.trim().isEmpty) return;
+  List<ChatSourceEntity> get lastSources =>
+      List.unmodifiable(_lastSources);
 
-    // Mensaje del usuario → UI inmediata
-    final userMsg = ChatMessageEntity(
-      id:        DateTime.now().millisecondsSinceEpoch.toString(),
-      text:      text.trim(),
-      sender:    MessageSender.user,
-      timestamp: DateTime.now(),
+  bool get isLoading => _isLoading;
+
+  bool get usedSearch => _usedSearch;
+
+  bool get sessionExpired => _sessionExpired;
+
+  String? get error => _error;
+
+  Future<void> sendMessage(
+      String text, {
+        bool search = false,
+      }) async {
+    final cleanText = text.trim();
+
+    if (cleanText.isEmpty || _isLoading) {
+      return;
+    }
+
+    final now = DateTime.now();
+
+    _messages.add(
+      ChatMessageEntity(
+        id: now.microsecondsSinceEpoch.toString(),
+        text: cleanText,
+        sender: MessageSender.user,
+        timestamp: now,
+      ),
     );
-    _messages.add(userMsg);
+
     _isLoading = true;
+    _sessionExpired = false;
     _error = null;
+    _lastSources = [];
+
     notifyListeners();
 
     try {
       final result = await _sendMessageUseCase(
-        text,
-        history: List.from(_apiHistory),  // copia para evitar mutación
-        search:  search,
+        cleanText,
+        search: search,
       );
 
-      // Guardar en historial multi-turn para la próxima request
-      _apiHistory.add({'role': 'user',      'content': text});
-      _apiHistory.add({'role': 'assistant', 'content': result.response});
-
-      // Limitar historial a 10 turnos (20 mensajes) para no saturar tokens
-      while (_apiHistory.length > 20) {
-        _apiHistory.removeAt(0);
-      }
-
-      final botMsg = ChatMessageEntity(
-        id:        '${DateTime.now().millisecondsSinceEpoch}_bot',
-        text:      result.response,
-        sender:    MessageSender.bot,
-        timestamp: DateTime.now(),
+      _messages.add(
+        ChatMessageEntity(
+          id: '${DateTime.now().microsecondsSinceEpoch}_bot',
+          text: result.response.isEmpty
+              ? 'No recibí una respuesta válida.'
+              : result.response,
+          sender: MessageSender.bot,
+          timestamp: DateTime.now(),
+        ),
       );
-      _messages.add(botMsg);
+
       _lastSources = result.sources;
-      _usedSearch  = result.usedSearch;
-    } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
-      _messages.add(ChatMessageEntity(
-        id:        '${DateTime.now().millisecondsSinceEpoch}_err',
-        text:      'Lo siento, no pude procesar tu mensaje. Intenta de nuevo.',
-        sender:    MessageSender.bot,
-        timestamp: DateTime.now(),
-      ));
+      _usedSearch = result.usedSearch;
+    } on ChatbotSessionExpiredException catch (error) {
+      _sessionExpired = true;
+      _error = error.message;
+    } on ChatbotApiException catch (error) {
+      _error = error.message;
+
+      _addErrorMessage(
+        'No pude procesar tu mensaje. Intenta nuevamente.',
+      );
+    } catch (error) {
+      _error = error
+          .toString()
+          .replaceFirst('Exception: ', '')
+          .trim();
+
+      _addErrorMessage(
+        'Ocurrió un problema de conexión. Intenta nuevamente.',
+      );
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
+  void _addErrorMessage(String text) {
+    _messages.add(
+      ChatMessageEntity(
+        id: '${DateTime.now().microsecondsSinceEpoch}_error',
+        text: text,
+        sender: MessageSender.bot,
+        timestamp: DateTime.now(),
+      ),
+    );
+  }
+
   void clearConversation() {
     _messages.clear();
-    _apiHistory.clear();
     _lastSources = [];
+    _usedSearch = false;
+    _sessionExpired = false;
     _error = null;
+
     notifyListeners();
   }
 }
