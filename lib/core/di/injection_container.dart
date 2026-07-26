@@ -184,6 +184,7 @@ Future<void> init() async {
     getAppointmentsUseCase: sl<GetCounselorAppointmentsUseCase>(),
     getGroupStudentsUseCase: sl<GetGroupStudentsUseCase>(),
     scheduleAppointmentUseCase: sl<ScheduleCounselorAppointmentUseCase>(),
+    repository: sl<CounselorRepository>(),
   ));
 
   // ==========================================================

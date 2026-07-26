@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../providers/counselor_provider.dart';
+
 import '../../domain/entities/student_alert_entity.dart';
+import '../components/home/counselor_appointment_booking_sheet.dart';
+import '../providers/counselor_provider.dart';
+
 
 class StudentFileScreen extends StatefulWidget {
   final String studentId;
@@ -20,14 +23,23 @@ class StudentFileScreen extends StatefulWidget {
 }
 
 class _StudentFileScreenState extends State<StudentFileScreen> {
-  static const Color primaryColor = Color(0xFF311B92);
+  static const Color _primary = Color(0xFF311B92);
+  static const Color _darkText = Color(0xFF1D1B4B);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CounselorProvider>().loadStudentFile(widget.studentId);
+      if (mounted) {
+        context.read<CounselorProvider>().loadStudentFile(widget.studentId);
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    context.read<CounselorProvider>().clearCurrentStudentFile();
+    super.dispose();
   }
 
   @override
@@ -38,132 +50,343 @@ class _StudentFileScreenState extends State<StudentFileScreen> {
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 0,
-        title: Text(
-          'Expediente del Alumno',
-          style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 18.sp),
-        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: primaryColor),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: provider.isLoadingFile
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : provider.errorMessage != null && provider.currentStudentFile == null
-              ? _buildErrorView(provider)
-              : _buildContent(provider),
-    );
-  }
-
-  Widget _buildErrorView(CounselorProvider provider) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64.sp, color: Colors.redAccent),
-          SizedBox(height: 16.h),
-          Text(
-            'Error al cargar el expediente',
-            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+          onPressed: Navigator.of(context).pop,
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: _darkText,
           ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 8.h),
-            child: Text(
-              provider.errorMessage!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
+        ),
+        title: Text(
+          'Expediente',
+          style: TextStyle(
+            color: _darkText,
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Actualizar',
+            onPressed: provider.isLoadingFile
+                ? null
+                : () => provider.loadStudentFile(widget.studentId),
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: _primary,
             ),
           ),
-          ElevatedButton(
-            onPressed: () => provider.loadStudentFile(widget.studentId),
-            style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
-            child: const Text('Reintentar'),
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildContent(CounselorProvider provider) {
-    final file = provider.currentStudentFile;
-    if (file == null) return const SizedBox.shrink();
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(20.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStudentHeader(),
-          SizedBox(height: 24.h),
-          _buildProfileSection(file.profile),
-          SizedBox(height: 24.h),
-          AlertsSection(alerts: file.alerts),
-          SizedBox(height: 100.h),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStudentHeader() {
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 30.r,
-          backgroundColor: primaryColor.withOpacity(0.1),
-          child: Text(
-            widget.studentName.isNotEmpty ? widget.studentName[0].toUpperCase() : '?',
-            style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 24.sp),
+      body: _buildBody(provider),
+      bottomNavigationBar: provider.currentStudentFile == null
+          ? null
+          : SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 12.h),
+          child: SizedBox(
+            height: 52.h,
+            child: ElevatedButton.icon(
+              onPressed: () => showCounselorBookingSheet(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+              ),
+              icon: const Icon(Icons.event_available_rounded),
+              label: const Text(
+                'Agendar sesión de asesoría',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
           ),
         ),
-        SizedBox(width: 16.w),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+    );
+  }
+
+  Widget _buildBody(CounselorProvider provider) {
+    if (provider.isLoadingFile) {
+      return const Center(
+        child: CircularProgressIndicator(color: _primary),
+      );
+    }
+
+    if (provider.currentStudentFile == null) {
+      return _ErrorState(
+        message: provider.errorMessage ??
+            'No fue posible cargar el expediente.',
+        onRetry: () => provider.loadStudentFile(widget.studentId),
+      );
+    }
+
+    final file = provider.currentStudentFile!;
+    return RefreshIndicator(
+      color: _primary,
+      onRefresh: () => provider.loadStudentFile(widget.studentId),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 110.h),
+        children: [
+          _StudentHeader(
+            studentName: widget.studentName,
+            studentId: widget.studentId,
+            email: _text(
+              file.profile['email'] ??
+                  file.profile['user']?['email'],
+              fallback: 'Correo no disponible',
+            ),
+          ),
+          SizedBox(height: 20.h),
+          _sectionTitle('Información vocacional'),
+          SizedBox(height: 10.h),
+          _ProfileCard(profile: file.profile),
+          SizedBox(height: 20.h),
+          Row(
             children: [
-              Text(
-                widget.studentName,
-                style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900, color: const Color(0xFF1D1B4B)),
+              Expanded(
+                child: _CounterCard(
+                  icon: Icons.assignment_outlined,
+                  label: 'Tareas',
+                  value: file.tasks.length,
+                  color: const Color(0xFF1597D4),
+                ),
               ),
-              Text(
-                'ID: ${widget.studentId}',
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+              SizedBox(width: 11.w),
+              Expanded(
+                child: _CounterCard(
+                  icon: Icons.history_rounded,
+                  label: 'Sesiones',
+                  value: file.sessions.length,
+                  color: const Color(0xFF7B2CBF),
+                ),
               ),
             ],
           ),
-        ),
-      ],
+          SizedBox(height: 22.h),
+          _sectionTitle('Alertas y seguimiento'),
+          SizedBox(height: 10.h),
+          AlertsSection(
+            alerts: file.alerts,
+            onSchedule: () => showCounselorBookingSheet(context),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildProfileSection(Map<String, dynamic> profile) {
+  Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        color: _darkText,
+        fontSize: 17.sp,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+
+  static String _text(dynamic value, {required String fallback}) {
+    final text = (value ?? '').toString().trim();
+    return text.isEmpty ? fallback : text;
+  }
+}
+
+class _StudentHeader extends StatelessWidget {
+  final String studentName;
+  final String studentId;
+  final String email;
+
+  const _StudentHeader({
+    required this.studentName,
+    required this.studentId,
+    required this.email,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final name =
+    studentName.trim().isEmpty ? 'Alumno sin nombre' : studentName.trim();
+    return Container(
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF311B92), Color(0xFF5B3FC4)],
+        ),
+        borderRadius: BorderRadius.circular(22.r),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 31.r,
+            backgroundColor: Colors.white,
+            child: Text(
+              name.substring(0, 1).toUpperCase(),
+              style: TextStyle(
+                color: const Color(0xFF311B92),
+                fontSize: 22.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          SizedBox(width: 14.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  email,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(.8),
+                    fontSize: 11.sp,
+                  ),
+                ),
+                Text(
+                  'ID: $studentId',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(.6),
+                    fontSize: 9.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileCard extends StatelessWidget {
+  final Map<String, dynamic> profile;
+
+  const _ProfileCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final clarity = _percentage(profile['vocationalClarity']);
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+        borderRadius: BorderRadius.circular(19.r),
+        border: Border.all(color: const Color(0xFFECECF3)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Información General', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
-          SizedBox(height: 12.h),
-          _buildInfoRow('Claridad Vocacional', '${(profile['vocationalClarity'] ?? 0) * 10}%'),
-          _buildInfoRow('Requiere Beca', profile['needsScholarship'] == true ? 'Sí' : 'No'),
+          _row('Claridad vocacional', '$clarity%'),
+          const Divider(),
+          _row(
+            'Requiere beca',
+            profile['needsScholarship'] == true ? 'Sí' : 'No',
+          ),
+          const Divider(),
+          _row(
+            'Interés en estudiar fuera',
+            profile['studyAbroad'] == true ? 'Sí' : 'No',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _row(String label, String value) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.symmetric(vertical: 7.h),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF1D1B4B),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _percentage(dynamic value) {
+    final number =
+    value is num ? value.toDouble() : double.tryParse('$value') ?? 0;
+    if (number <= 1) return (number * 100).round().clamp(0, 100);
+    if (number <= 10) return (number * 10).round().clamp(0, 100);
+    return number.round().clamp(0, 100);
+  }
+}
+
+class _CounterCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int value;
+  final Color color;
+
+  const _CounterCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(15.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18.r),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          SizedBox(width: 9.w),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$value',
+                style: TextStyle(
+                  color: const Color(0xFF1D1B4B),
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 10.sp,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -172,113 +395,187 @@ class _StudentFileScreenState extends State<StudentFileScreen> {
 
 class AlertsSection extends StatelessWidget {
   final List<StudentAlertEntity> alerts;
+  final VoidCallback onSchedule;
 
-  const AlertsSection({super.key, required this.alerts});
+  const AlertsSection({
+    super.key,
+    required this.alerts,
+    required this.onSchedule,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Alertas del Alumno',
-          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: const Color(0xFF1D1B4B)),
+    if (alerts.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(22.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(19.r),
         ),
-        SizedBox(height: 12.h),
-        if (alerts.isEmpty)
-          Container(
-            padding: EdgeInsets.all(24.w),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20.r),
+        child: Column(
+          children: [
+            Icon(
+              Icons.check_circle_outline_rounded,
+              color: Colors.green.shade400,
+              size: 43.sp,
             ),
-            child: Column(
-              children: [
-                Icon(Icons.check_circle_outline, color: Colors.green[300], size: 48.sp),
-                SizedBox(height: 12.h),
-                Text(
-                  'Sin alertas pendientes',
-                  style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600),
-                ),
-              ],
+            SizedBox(height: 9.h),
+            const Text(
+              'Sin alertas pendientes',
+              style: TextStyle(fontWeight: FontWeight.w800),
             ),
-          )
-        else
-          ...alerts.map((alert) => AlertCard(alert: alert)),
-      ],
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: alerts
+          .map(
+            (alert) => AlertCard(
+          alert: alert,
+          onSchedule: onSchedule,
+        ),
+      )
+          .toList(),
     );
   }
 }
 
 class AlertCard extends StatelessWidget {
   final StudentAlertEntity alert;
+  final VoidCallback onSchedule;
 
-  const AlertCard({super.key, required this.alert});
+  const AlertCard({
+    super.key,
+    required this.alert,
+    required this.onSchedule,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isHighIndecision = alert.alertType == AlertType.highIndecision;
-    
-    final Color cardColor = isHighIndecision 
-        ? const Color(0xFFFFEBEE) // Rojo suave
-        : const Color(0xFFFFF8E1); // Amarillo suave
-        
-    final Color textColor = isHighIndecision 
-        ? Colors.red[900]! 
-        : Colors.orange[900]!;
-
-    final IconData icon = isHighIndecision ? Icons.warning_rounded : Icons.info_rounded;
-    final String title = isHighIndecision ? 'Alta Indecisión' : 'Necesidad de Beca';
+    final high = alert.alertType == AlertType.highIndecision;
+    final scholarship = alert.alertType == AlertType.scholarshipNeed;
+    final color = high
+        ? Colors.red.shade800
+        : scholarship
+        ? Colors.orange.shade800
+        : Colors.blue.shade800;
+    final title = high
+        ? 'Alta indecisión'
+        : scholarship
+        ? 'Necesidad de beca'
+        : 'Seguimiento necesario';
 
     return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(16.w),
+      margin: EdgeInsets.only(bottom: 11.h),
+      padding: EdgeInsets.all(15.w),
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: textColor.withOpacity(0.1)),
+        color: color.withOpacity(.07),
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: color.withOpacity(.13)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: textColor, size: 24.sp),
+              Icon(Icons.warning_amber_rounded, color: color),
               SizedBox(width: 8.w),
-              Text(
-                title,
-                style: TextStyle(color: textColor, fontWeight: FontWeight.w900, fontSize: 16.sp),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
-              const Spacer(),
               Text(
-                DateFormat('dd/MM/yyyy').format(alert.createdAt),
-                style: TextStyle(fontSize: 11.sp, color: textColor.withOpacity(0.7)),
+                DateFormat('dd/MM/yyyy').format(alert.createdAt.toLocal()),
+                style: TextStyle(
+                  color: color.withOpacity(.65),
+                  fontSize: 9.sp,
+                ),
               ),
             ],
           ),
           SizedBox(height: 8.h),
           Text(
-            alert.details,
-            style: TextStyle(fontSize: 13.sp, color: textColor.withOpacity(0.8)),
+            alert.details.trim().isEmpty
+                ? 'Este alumno requiere seguimiento.'
+                : alert.details,
+            style: TextStyle(color: color.withOpacity(.85)),
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: 12.h),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                // Acción para agendar sesión
-              },
+            child: ElevatedButton.icon(
+              onPressed: onSchedule,
               style: ElevatedButton.styleFrom(
-                backgroundColor: textColor,
+                backgroundColor: color,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
               ),
-              child: const Text('Agendar Sesión de Asesoría'),
+              icon: const Icon(Icons.event_available_rounded),
+              label: const Text('Agendar asesoría'),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(28.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              color: Colors.redAccent,
+              size: 58.sp,
+            ),
+            SizedBox(height: 14.h),
+            Text(
+              'No se pudo cargar el expediente',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            SizedBox(height: 7.h),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            SizedBox(height: 18.h),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Reintentar'),
+            ),
+          ],
+        ),
       ),
     );
   }

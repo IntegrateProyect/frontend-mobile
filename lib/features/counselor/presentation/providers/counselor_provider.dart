@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:orientate/features/student/domain/entities/student_profile_entity.dart';
 
 import '../../domain/entities/appointment_entity.dart';
+import '../../domain/entities/availability_slot_entity.dart';
 import '../../domain/entities/counselor_profile_entity.dart';
 import '../../domain/entities/student_consultation_entity.dart';
 import '../../domain/entities/student_file_entity.dart';
@@ -21,6 +22,7 @@ import '../../domain/usecases/get_student_file_usecase.dart';
 import '../../domain/usecases/register_session_usecase.dart';
 import '../../domain/usecases/schedule_counselor_appointment_usecase.dart';
 import '../../domain/usecases/update_group_usecase.dart';
+import '../../domain/repositories/counselor_repository.dart';
 
 class CounselorProvider extends ChangeNotifier {
   final GetGroupsUseCase _getGroupsUseCase;
@@ -36,8 +38,8 @@ class CounselorProvider extends ChangeNotifier {
   final GetStudentFileUseCase _getStudentFileUseCase;
   final GetCounselorAppointmentsUseCase _getAppointmentsUseCase;
   final GetGroupStudentsUseCase _getGroupStudentsUseCase;
-  final ScheduleCounselorAppointmentUseCase
-  _scheduleAppointmentUseCase;
+  final ScheduleCounselorAppointmentUseCase _scheduleAppointmentUseCase;
+  final CounselorRepository _repository;
 
   CounselorProvider({
     required GetGroupsUseCase getGroupsUseCase,
@@ -53,8 +55,8 @@ class CounselorProvider extends ChangeNotifier {
     required GetStudentFileUseCase getStudentFileUseCase,
     required GetCounselorAppointmentsUseCase getAppointmentsUseCase,
     required GetGroupStudentsUseCase getGroupStudentsUseCase,
-    required ScheduleCounselorAppointmentUseCase
-    scheduleAppointmentUseCase,
+    required ScheduleCounselorAppointmentUseCase scheduleAppointmentUseCase,
+    required CounselorRepository repository,
   })  : _getGroupsUseCase = getGroupsUseCase,
         _createGroupUseCase = createGroupUseCase,
         _updateGroupUseCase = updateGroupUseCase,
@@ -68,7 +70,8 @@ class CounselorProvider extends ChangeNotifier {
         _getStudentFileUseCase = getStudentFileUseCase,
         _getAppointmentsUseCase = getAppointmentsUseCase,
         _getGroupStudentsUseCase = getGroupStudentsUseCase,
-        _scheduleAppointmentUseCase = scheduleAppointmentUseCase;
+        _scheduleAppointmentUseCase = scheduleAppointmentUseCase,
+        _repository = repository;
 
   CounselorProfileEntity? _profile;
 
@@ -76,6 +79,7 @@ class CounselorProvider extends ChangeNotifier {
   List<StudentProfileEntity> _students = [];
   List<StudentConsultationEntity> _consultations = [];
   List<AppointmentEntity> _appointments = [];
+  List<AvailabilitySlotEntity> _availability = [];
 
   Map<String, dynamic> _stats = {};
 
@@ -93,41 +97,25 @@ class CounselorProvider extends ChangeNotifier {
 
   CounselorProfileEntity? get profile => _profile;
 
-  List<dynamic> get groups {
-    return List<dynamic>.unmodifiable(_groups);
-  }
+  List<dynamic> get groups => List<dynamic>.unmodifiable(_groups);
 
-  List<StudentProfileEntity> get students {
-    return List<StudentProfileEntity>.unmodifiable(_students);
-  }
+  List<StudentProfileEntity> get students => List<StudentProfileEntity>.unmodifiable(_students);
 
-  List<StudentConsultationEntity> get consultations {
-    return List<StudentConsultationEntity>.unmodifiable(
-      _consultations,
-    );
-  }
+  List<StudentConsultationEntity> get consultations => List<StudentConsultationEntity>.unmodifiable(_consultations);
 
-  List<AppointmentEntity> get appointments {
-    return List<AppointmentEntity>.unmodifiable(
-      _appointments,
-    );
-  }
+  List<AppointmentEntity> get appointments => List<AppointmentEntity>.unmodifiable(_appointments);
+  
+  List<AvailabilitySlotEntity> get availability => List<AvailabilitySlotEntity>.unmodifiable(_availability);
 
-  StudentFileEntity? get currentStudentFile {
-    return _currentStudentFile;
-  }
+  StudentFileEntity? get currentStudentFile => _currentStudentFile;
 
-  Map<String, dynamic> get stats {
-    return Map<String, dynamic>.unmodifiable(_stats);
-  }
+  Map<String, dynamic> get stats => Map<String, dynamic>.unmodifiable(_stats);
 
   bool get isLoading => _isLoading;
 
   bool get isLoadingFile => _isLoadingFile;
 
-  bool get isLoadingGroupStudents {
-    return _isLoadingGroupStudents;
-  }
+  bool get isLoadingGroupStudents => _isLoadingGroupStudents;
 
   String? get errorMessage => _errorMessage;
 
@@ -136,62 +124,19 @@ class CounselorProvider extends ChangeNotifier {
   // =========================================================
 
   int get totalStudentsCount {
-    final int apiValue = _toInt(
-      _stats['totalStudents'] ??
-          _stats['total_students'],
-    );
-
-    return apiValue > 0
-        ? apiValue
-        : _students.length;
+    final int apiValue = _toInt(_stats['totalStudents'] ?? _stats['total_students']);
+    return apiValue > 0 ? apiValue : _students.length;
   }
 
-  int get activeStudentsCount {
-    return _toInt(
-      _stats['activeStudents'] ??
-          _stats['active_students'],
-    );
-  }
-
-  int get lowProgressCount {
-    return _toInt(
-      _stats['lowProgress'] ??
-          _stats['low_progress'],
-    );
-  }
-
-  int get highIndecisionCount {
-    return _toInt(
-      _stats['highIndecision'] ??
-          _stats['high_indecision'],
-    );
-  }
-
-  int get solicitudesCount {
-    return _toInt(
-      _stats['requests'] ??
-          _stats['solicitudes'],
-    );
-  }
-
+  int get activeStudentsCount => _toInt(_stats['activeStudents'] ?? _stats['active_students']);
+  int get lowProgressCount => _toInt(_stats['lowProgress'] ?? _stats['low_progress']);
+  int get highIndecisionCount => _toInt(_stats['highIndecision'] ?? _stats['high_indecision']);
+  int get solicitudesCount => _toInt(_stats['requests'] ?? _stats['solicitudes']);
   int get groupsCount {
-    final int apiValue = _toInt(
-      _stats['groups'] ??
-          _stats['totalGroups'] ??
-          _stats['total_groups'],
-    );
-
-    return apiValue > 0
-        ? apiValue
-        : _groups.length;
+    final int apiValue = _toInt(_stats['groups'] ?? _stats['totalGroups'] ?? _stats['total_groups']);
+    return apiValue > 0 ? apiValue : _groups.length;
   }
-
-  int get reportesCount {
-    return _toInt(
-      _stats['reports'] ??
-          _stats['reportes'],
-    );
-  }
+  int get reportesCount => _toInt(_stats['reports'] ?? _stats['reportes']);
 
   // =========================================================
   // DASHBOARD
@@ -203,81 +148,23 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      /*
-       * Cada carga se protege individualmente.
-       * Si un endpoint falla, los demás datos continúan cargando.
-       */
-      final List<dynamic> groupsResult =
-      await _loadGroupsSafely();
-
-      final List<StudentConsultationEntity>
-      consultationsResult =
-      await _loadConsultationsSafely();
-
-      final CounselorProfileEntity? profileResult =
-      await _loadProfileSafely();
-
-      final Map<String, dynamic> statsResult =
-      await _loadStatsSafely();
-
-      final List<StudentProfileEntity> studentsResult =
-      await _loadStudentsSafely();
-
-      final List<AppointmentEntity> appointmentsResult =
-      await _loadAppointmentsSafely();
+      final groupsResult = await _loadGroupsSafely();
+      final consultationsResult = await _loadConsultationsSafely();
+      final profileResult = await _loadProfileSafely();
+      final statsResult = await _loadStatsSafely();
+      final studentsResult = await _loadStudentsSafely();
+      final appointmentsResult = await _loadAppointmentsSafely();
+      final availabilityResult = await _loadAvailabilitySafely();
 
       _groups = groupsResult;
       _consultations = consultationsResult;
       _profile = profileResult;
       _stats = statsResult;
-      _students = _removeDuplicatedStudents(
-        studentsResult,
-      );
+      _students = _removeDuplicatedStudents(studentsResult);
       _appointments = appointmentsResult;
+      _availability = availabilityResult;
 
-      debugPrint(
-        '========================================',
-      );
-      debugPrint(
-        'DASHBOARD DEL ORIENTADOR CARGADO',
-      );
-      debugPrint(
-        'Grupos: ${_groups.length}',
-      );
-      debugPrint(
-        'Alumnos: ${_students.length}',
-      );
-      debugPrint(
-        'Consultas: ${_consultations.length}',
-      );
-      debugPrint(
-        'Citas: ${_appointments.length}',
-      );
-      debugPrint(
-        'Estadísticas: $_stats',
-      );
-
-      for (final student in _students) {
-        debugPrint(
-          'ALUMNO DASHBOARD: '
-              'id=${student.id} | '
-              'nombre=${student.name} | '
-              'correo=${student.email}',
-        );
-      }
-
-      debugPrint(
-        '========================================',
-      );
-    } catch (error, stackTrace) {
-      debugPrint(
-        'ERROR GENERAL EN COUNSELOR PROVIDER: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
+    } catch (error) {
       _errorMessage = _cleanError(error);
     } finally {
       _isLoading = false;
@@ -287,292 +174,88 @@ class CounselorProvider extends ChangeNotifier {
 
   Future<List<dynamic>> _loadGroupsSafely() async {
     try {
-      final List<dynamic> result =
-      await _getGroupsUseCase.call();
-
-      debugPrint(
-        'GRUPOS CARGADOS: ${result.length}',
-      );
-
-      return result;
-    } catch (error) {
-      debugPrint(
-        'ERROR CARGANDO GRUPOS: $error',
-      );
-
+      return await _getGroupsUseCase.call();
+    } catch (_) {
       return <dynamic>[];
     }
   }
 
-  Future<List<StudentConsultationEntity>>
-  _loadConsultationsSafely() async {
+  Future<List<StudentConsultationEntity>> _loadConsultationsSafely() async {
     try {
-      final result =
-      await _getConsultationsUseCase.call();
-
-      return List<StudentConsultationEntity>.from(
-        result,
-      );
-    } catch (error) {
-      debugPrint(
-        'ERROR CARGANDO CONSULTAS: $error',
-      );
-
+      final result = await _getConsultationsUseCase.call();
+      return List<StudentConsultationEntity>.from(result);
+    } catch (_) {
       return <StudentConsultationEntity>[];
     }
   }
 
-  Future<CounselorProfileEntity?>
-  _loadProfileSafely() async {
+  Future<CounselorProfileEntity?> _loadProfileSafely() async {
     try {
       return await _getCounselorProfileUseCase.call();
-    } catch (error) {
-      debugPrint(
-        'ERROR CARGANDO PERFIL DEL ORIENTADOR: $error',
-      );
-
+    } catch (_) {
       return null;
     }
   }
 
-  Future<Map<String, dynamic>>
-  _loadStatsSafely() async {
+  Future<Map<String, dynamic>> _loadStatsSafely() async {
     try {
-      final result =
-      await _getCounselStatsUseCase.call();
-
+      final result = await _getCounselStatsUseCase.call();
       return Map<String, dynamic>.from(result);
-    } catch (error) {
-      debugPrint(
-        'ERROR CARGANDO ESTADÍSTICAS: $error',
-      );
-
+    } catch (_) {
       return <String, dynamic>{};
     }
   }
 
-  Future<List<StudentProfileEntity>>
-  _loadStudentsSafely() async {
+  Future<List<StudentProfileEntity>> _loadStudentsSafely() async {
     try {
-      final dynamic result =
-      await _getStudentsUseCase.call();
-
-      if (result is! List) {
-        debugPrint(
-          'RESPUESTA INVÁLIDA AL CARGAR ALUMNOS: '
-              '${result.runtimeType}',
-        );
-
-        return <StudentProfileEntity>[];
-      }
-
-      final List<StudentProfileEntity> students =
-      result
-          .whereType<StudentProfileEntity>()
-          .toList();
-
-      debugPrint(
-        'ALUMNOS GENERALES CARGADOS: '
-            '${students.length}',
-      );
-
-      return students;
-    } catch (error) {
-      debugPrint(
-        'ERROR CARGANDO ALUMNOS GENERALES: $error',
-      );
-
+      final dynamic result = await _getStudentsUseCase.call();
+      if (result is! List) return <StudentProfileEntity>[];
+      return result.whereType<StudentProfileEntity>().toList();
+    } catch (_) {
       return <StudentProfileEntity>[];
     }
   }
 
-  Future<List<AppointmentEntity>>
-  _loadAppointmentsSafely() async {
+  Future<List<AppointmentEntity>> _loadAppointmentsSafely() async {
     try {
-      final result =
-      await _getAppointmentsUseCase.call();
-
-      return List<AppointmentEntity>.from(
-        result,
-      );
-    } catch (error) {
-      debugPrint(
-        'ERROR CARGANDO CITAS: $error',
-      );
-
+      final result = await _getAppointmentsUseCase.call();
+      return List<AppointmentEntity>.from(result);
+    } catch (_) {
       return <AppointmentEntity>[];
     }
   }
 
-  // =========================================================
-  // ALUMNOS DE UN GRUPO
-  // =========================================================
-
-  Future<List<StudentProfileEntity>> getGroupStudents(
-      String groupId,
-      ) async {
-    final String cleanGroupId = groupId.trim();
-
-    if (cleanGroupId.isEmpty) {
-      throw Exception(
-        'El identificador del grupo está vacío',
-      );
-    }
-
-    _isLoadingGroupStudents = true;
-    _errorMessage = null;
-    notifyListeners();
-
+  Future<List<AvailabilitySlotEntity>> _loadAvailabilitySafely() async {
     try {
-      debugPrint(
-        'SOLICITANDO ALUMNOS DEL GRUPO: '
-            '$cleanGroupId',
-      );
-
-      final List<StudentProfileEntity> result =
-      await _getGroupStudentsUseCase.call(
-        cleanGroupId,
-      );
-
-      final List<StudentProfileEntity> students =
-      _removeDuplicatedStudents(result);
-
-      debugPrint(
-        'PROVIDER RECIBIÓ ${students.length} '
-            'ALUMNOS DEL GRUPO $cleanGroupId',
-      );
-
-      for (final student in students) {
-        debugPrint(
-          'ALUMNO DEL GRUPO: '
-              'id=${student.id} | '
-              'nombre=${student.name} | '
-              'correo=${student.email}',
-        );
-      }
-
-      return students;
-    } catch (error, stackTrace) {
-      debugPrint(
-        'ERROR CARGANDO ALUMNOS DEL GRUPO '
-            '$cleanGroupId: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      _errorMessage = _cleanError(error);
-
-      rethrow;
-    } finally {
-      _isLoadingGroupStudents = false;
-      notifyListeners();
+      final result = await _repository.getAvailability();
+      return result.map((json) => AvailabilitySlotEntity.fromJson(Map<String, dynamic>.from(json))).toList();
+    } catch (_) {
+      return <AvailabilitySlotEntity>[];
     }
   }
 
   // =========================================================
-  // EXPEDIENTE DEL ALUMNO
+  // GRUPOS
   // =========================================================
 
-  Future<void> loadStudentFile(
-      String studentId,
-      ) async {
-    final String cleanStudentId = studentId.trim();
-
-    if (cleanStudentId.isEmpty) {
-      _errorMessage =
-      'El identificador del alumno está vacío.';
-      notifyListeners();
-      return;
-    }
-
-    _isLoadingFile = true;
-    _errorMessage = null;
-    _currentStudentFile = null;
-    notifyListeners();
-
-    try {
-      _currentStudentFile =
-      await _getStudentFileUseCase.call(
-        cleanStudentId,
-      );
-
-      debugPrint(
-        'EXPEDIENTE CARGADO PARA EL ALUMNO: '
-            '$cleanStudentId',
-      );
-    } catch (error, stackTrace) {
-      debugPrint(
-        'ERROR CARGANDO EXPEDIENTE DEL ALUMNO: '
-            '$error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      _errorMessage = _cleanError(error);
-    } finally {
-      _isLoadingFile = false;
-      notifyListeners();
-    }
-  }
-
-  void clearCurrentStudentFile() {
-    _currentStudentFile = null;
-    notifyListeners();
-  }
-
-  // =========================================================
-  // CREAR GRUPO
-  // =========================================================
-
-  Future<bool> createGroup(
-      String name,
-      String accessCode,
-      ) async {
+  Future<bool> createGroup(String name, String accessCode) async {
     final String cleanName = name.trim();
-    final String cleanCode = accessCode.trim();
-
     if (cleanName.isEmpty) {
-      _errorMessage =
-      'Ingresa el nombre del grupo.';
+      _errorMessage = 'Ingresa el nombre del grupo.';
       notifyListeners();
-
       return false;
     }
 
-    /*
-     * El backend permite generar el código automáticamente.
-     * Por eso se permite enviarlo vacío.
-     */
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await _createGroupUseCase.call(
-        cleanName,
-        cleanCode.isEmpty
-            ? null
-            : cleanCode,
-      );
-
+      await _createGroupUseCase.call(cleanName, accessCode.trim().isEmpty ? null : accessCode.trim());
       await loadDashboardData();
-
       return true;
-    } catch (error, stackTrace) {
-      debugPrint(
-        'ERROR CREANDO GRUPO: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
+    } catch (error) {
       _errorMessage = _cleanError(error);
-
       return false;
     } finally {
       _isLoading = false;
@@ -580,109 +263,35 @@ class CounselorProvider extends ChangeNotifier {
     }
   }
 
-  // =========================================================
-  // DETALLE DE GRUPO
-  // =========================================================
-
-  Future<Map<String, dynamic>?> getGroupDetails(
-      String groupId,
-      ) async {
-    final String cleanGroupId = groupId.trim();
-
-    if (cleanGroupId.isEmpty) {
-      _errorMessage =
-      'El identificador del grupo está vacío.';
-      notifyListeners();
-
-      return null;
-    }
-
-    try {
-      final Map<String, dynamic> details =
-      await _getGroupDetailsUseCase.call(
-        cleanGroupId,
-      );
-
-      return Map<String, dynamic>.from(
-        details,
-      );
-    } catch (error, stackTrace) {
-      debugPrint(
-        'ERROR OBTENIENDO DETALLE DEL GRUPO: '
-            '$error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      _errorMessage = _cleanError(error);
-      notifyListeners();
-
-      return null;
-    }
-  }
-
-  // =========================================================
-  // ACTUALIZAR GRUPO
-  // =========================================================
-
-  Future<bool> updateGroup(
-      String groupId, {
-        String? name,
-        String? accessCode,
-      }) async {
-    final String cleanGroupId = groupId.trim();
-    final String cleanName = name?.trim() ?? '';
-    final String cleanCode =
-        accessCode?.trim() ?? '';
-
-    if (cleanGroupId.isEmpty) {
-      _errorMessage =
-      'El identificador del grupo está vacío.';
-      notifyListeners();
-
-      return false;
-    }
-
-    if (cleanName.isEmpty &&
-        cleanCode.isEmpty) {
-      _errorMessage =
-      'No hay cambios para actualizar.';
-      notifyListeners();
-
-      return false;
-    }
-
+  Future<bool> updateGroup(String groupId, {String? name, String? accessCode}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await _updateGroupUseCase.call(
-        cleanGroupId,
-        name: cleanName.isEmpty
-            ? null
-            : cleanName,
-        accessCode: cleanCode.isEmpty
-            ? null
-            : cleanCode,
-      );
-
+      await _updateGroupUseCase.call(groupId, name: name?.trim(), accessCode: accessCode?.trim());
       await loadDashboardData();
-
       return true;
-    } catch (error, stackTrace) {
-      debugPrint(
-        'ERROR ACTUALIZANDO GRUPO: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
+    } catch (error) {
       _errorMessage = _cleanError(error);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
+  Future<bool> deleteGroup(String groupId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.deleteGroup(groupId);
+      await loadDashboardData();
+      return true;
+    } catch (error) {
+      _errorMessage = _cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -691,50 +300,21 @@ class CounselorProvider extends ChangeNotifier {
   }
 
   // =========================================================
-  // REGISTRAR SESIÓN
+  // DISPONIBILIDAD (AGENDA)
   // =========================================================
 
-  Future<bool> registerSession(
-      String studentId,
-      Map<String, dynamic> sessionData,
-      ) async {
-    final String cleanStudentId =
-    studentId.trim();
-
-    if (cleanStudentId.isEmpty) {
-      _errorMessage =
-      'No se encontró el alumno.';
-      notifyListeners();
-
-      return false;
-    }
-
+  Future<bool> saveAvailability(List<AvailabilitySlotEntity> slots) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await _registerSessionUseCase.call(
-        cleanStudentId,
-        sessionData,
-      );
-
-      await loadStudentFile(
-        cleanStudentId,
-      );
-
+      final List<Map<String, dynamic>> rawSlots = slots.map((s) => s.toJson()).toList();
+      await _repository.saveAvailability(rawSlots);
+      _availability = await _loadAvailabilitySafely();
       return true;
-    } catch (error, stackTrace) {
-      debugPrint(
-        'ERROR REGISTRANDO SESIÓN: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
+    } catch (error) {
       _errorMessage = _cleanError(error);
-
       return false;
     } finally {
       _isLoading = false;
@@ -742,47 +322,33 @@ class CounselorProvider extends ChangeNotifier {
     }
   }
 
-  // =========================================================
-  // ASIGNAR TAREA
-  // =========================================================
+  List<AvailabilitySlotEntity> availabilityForDate(DateTime date) {
+    // dayOfWeek en DateTime: 1 (Lunes) a 7 (Domingo)
+    // dayOfWeek en Entity: 0 (Domingo) a 6 (Sábado)
+    final day = date.weekday % 7; 
+    return _availability.where((s) => s.dayOfWeek == day).toList();
+  }
 
-  Future<bool> assignTask(
-      Map<String, dynamic> taskData,
-      ) async {
-    if (taskData.isEmpty) {
-      _errorMessage =
-      'No hay información para asignar la tarea.';
-      notifyListeners();
+  bool isInsideAvailability(DateTime dateTime) {
+    final daySlots = availabilityForDate(dateTime);
+    if (daySlots.isEmpty) return false;
 
-      return false;
+    final time = TimeOfDay.fromDateTime(dateTime);
+    final minutes = time.hour * 60 + time.minute;
+
+    for (final slot in daySlots) {
+      final startParts = slot.startTime.split(':');
+      final endParts = slot.endTime.split(':');
+      
+      if (startParts.length < 2 || endParts.length < 2) continue;
+
+      final startMinutes = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
+      final endMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
+
+      if (minutes >= startMinutes && minutes <= endMinutes) return true;
     }
 
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      await _assignTaskUseCase.call(
-        taskData,
-      );
-
-      return true;
-    } catch (error, stackTrace) {
-      debugPrint(
-        'ERROR ASIGNANDO TAREA: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      _errorMessage = _cleanError(error);
-
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    return false;
   }
 
   // =========================================================
@@ -790,36 +356,28 @@ class CounselorProvider extends ChangeNotifier {
   // =========================================================
 
   Future<bool> scheduleAppointment(
-      String studentId,
-      DateTime date,
-      String motive,
-      ) async {
-    final String cleanStudentId =
-    studentId.trim();
-
+    String studentId,
+    DateTime date,
+    String motive,
+  ) async {
+    final String cleanStudentId = studentId.trim();
     final String cleanMotive = motive.trim();
 
     if (cleanStudentId.isEmpty) {
-      _errorMessage =
-      'Selecciona un alumno.';
+      _errorMessage = 'Selecciona un alumno.';
       notifyListeners();
-
       return false;
     }
 
     if (cleanMotive.isEmpty) {
-      _errorMessage =
-      'Ingresa el motivo de la cita.';
+      _errorMessage = 'Ingresa el motivo de la cita.';
       notifyListeners();
-
       return false;
     }
 
     if (!date.isAfter(DateTime.now())) {
-      _errorMessage =
-      'La fecha de la cita debe ser futura.';
+      _errorMessage = 'La fecha de la cita debe ser futura.';
       notifyListeners();
-
       return false;
     }
 
@@ -834,23 +392,11 @@ class CounselorProvider extends ChangeNotifier {
         cleanMotive,
       );
 
-      _appointments =
-      await _loadAppointmentsSafely();
-
+      _appointments = await _loadAppointmentsSafely();
       notifyListeners();
-
       return true;
-    } catch (error, stackTrace) {
-      debugPrint(
-        'ERROR AGENDANDO CITA: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
+    } catch (error) {
       _errorMessage = _cleanError(error);
-
       return false;
     } finally {
       _isLoading = false;
@@ -859,64 +405,61 @@ class CounselorProvider extends ChangeNotifier {
   }
 
   // =========================================================
-  // UTILIDADES
+  // OTROS MÉTODOS (SIN CAMBIOS)
   // =========================================================
 
-  List<StudentProfileEntity>
-  _removeDuplicatedStudents(
-      List<StudentProfileEntity> students,
-      ) {
-    final Map<String, StudentProfileEntity> unique =
-    <String, StudentProfileEntity>{};
-
-    for (final student in students) {
-      final String id = student.id.trim();
-
-      final String email = student.email
-          .trim()
-          .toLowerCase();
-
-      final String key = id.isNotEmpty
-          ? id
-          : email;
-
-      if (key.isNotEmpty) {
-        unique[key] = student;
-      }
+  Future<List<StudentProfileEntity>> getGroupStudents(String groupId) async {
+    _isLoadingGroupStudents = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final List<StudentProfileEntity> result = await _getGroupStudentsUseCase.call(groupId.trim());
+      return _removeDuplicatedStudents(result);
+    } catch (error) {
+      _errorMessage = _cleanError(error);
+      rethrow;
+    } finally {
+      _isLoadingGroupStudents = false;
+      notifyListeners();
     }
+  }
 
+  Future<void> loadStudentFile(String studentId) async {
+    _isLoadingFile = true;
+    _errorMessage = null;
+    _currentStudentFile = null;
+    notifyListeners();
+    try {
+      _currentStudentFile = await _getStudentFileUseCase.call(studentId.trim());
+    } catch (error) {
+      _errorMessage = _cleanError(error);
+    } finally {
+      _isLoadingFile = false;
+      notifyListeners();
+    }
+  }
+
+  void clearCurrentStudentFile() {
+    _currentStudentFile = null;
+    notifyListeners();
+  }
+
+  List<StudentProfileEntity> _removeDuplicatedStudents(List<StudentProfileEntity> students) {
+    final Map<String, StudentProfileEntity> unique = {};
+    for (final s in students) {
+      if (s.id.isNotEmpty) unique[s.id] = s;
+    }
     return unique.values.toList();
   }
 
   int _toInt(dynamic value) {
-    if (value is int) {
-      return value;
-    }
-
-    if (value is double) {
-      return value.round();
-    }
-
-    if (value is num) {
-      return value.toInt();
-    }
-
-    if (value is String) {
-      return int.tryParse(value) ?? 0;
-    }
-
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
     return 0;
   }
 
   String _cleanError(Object error) {
-    return error
-        .toString()
-        .replaceFirst('Exception: ', '')
-        .trim();
-  }
-
-  void clearError() {
-    _errorMessage = null;
-    notifyListeners();
+    return error.toString().replaceFirst('Exception: ', '').trim();
   }
 }

@@ -11,6 +11,7 @@ abstract class CounselorRepository {
   Future<Map<String, dynamic>> getGroupDetails(String groupId);
   Future<Map<String, dynamic>> createGroup(String name, String? accessCode);
   Future<Map<String, dynamic>> updateGroup(String groupId, {String? name, String? accessCode});
+  Future<void> deleteGroup(String groupId);
   
   // Students
   Future<List<StudentProfileEntity>> getGroupStudents(String groupId);
@@ -20,7 +21,7 @@ abstract class CounselorRepository {
   // Actions
   Future<void> registerSession(String studentId, Map<String, dynamic> sessionData);
   Future<void> assignTask(Map<String, dynamic> taskData);
-  Future<void> requestSupport(String message); // Método añadido
+  Future<void> requestSupport(String message);
   
   // Consultations
   Future<List<StudentConsultationEntity>> getConsultations();
@@ -33,4 +34,8 @@ abstract class CounselorRepository {
   Future<List<AppointmentEntity>> getAppointments();
   Future<void> scheduleAppointment(String studentId, DateTime date, String motive);
   Future<List<AppointmentEntity>> getCounselorAppointments();
+
+  // Availability
+  Future<List<dynamic>> getAvailability();
+  Future<void> saveAvailability(List<Map<String, dynamic>> slots);
 }

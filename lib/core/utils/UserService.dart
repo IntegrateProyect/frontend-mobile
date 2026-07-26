@@ -6,13 +6,9 @@ import '../../features/auth/data/datasources/models/user_model.dart';
 class UserService {
   final StorageService _storage;
 
-  static const String _userKey = 'user_data';
+  static const String _userKey = UserServiceKeys.userData;
 
   UserService(this._storage);
-
-  // =========================
-  // SAVE SESSION
-  // =========================
 
   Future<void> saveSession(
       String token,
@@ -26,24 +22,21 @@ class UserService {
 
     await _storage.saveToken(cleanToken);
 
-    final userJson = jsonEncode(
-      user.toJson(),
-    );
-
     await _storage.write(
       _userKey,
-      userJson,
+      jsonEncode(user.toJson()),
     );
   }
 
-  // =========================
-  // GET USER
-  // =========================
+  Future<void> updateStoredUser(UserModel user) async {
+    await _storage.write(
+      _userKey,
+      jsonEncode(user.toJson()),
+    );
+  }
 
   Future<UserModel?> getUser() async {
-    final userJson = await _storage.read(
-      _userKey,
-    );
+    final userJson = await _storage.read(_userKey);
 
     if (userJson == null || userJson.trim().isEmpty) {
       return null;
@@ -69,40 +62,27 @@ class UserService {
     }
   }
 
-  // =========================
-  // GET TOKEN
-  // =========================
-
-  Future<String?> getToken() async {
-    final token = await _storage.getToken();
-
-    if (token == null || token.trim().isEmpty) {
-      return null;
-    }
-
-    return token.trim();
+  Future<String?> getToken() {
+    return _storage.getToken();
   }
-
-  // =========================
-  // LOGOUT
-  // =========================
-
-  Future<void> logout() async {
-    await _storage.delete(_userKey);
-    await _storage.deleteToken();
-  }
-
-  // =========================
-  // CHECK LOGIN
-  // =========================
 
   Future<bool> isLoggedIn() async {
     final token = await getToken();
+    return token != null && token.isNotEmpty;
+  }
 
-    if (token == null || token.isEmpty) {
-      return false;
-    }
+  Future<void> completeOnboarding() {
+    return _storage.setOnboardingCompleted();
+  }
 
-    return true;
+  Future<bool> hasCompletedOnboarding() {
+    return _storage.isOnboardingCompleted();
+  }
+
+  Future<void> logout() async {
+    // Solamente elimina la sesión.
+    // No elimina onboarding_completed.
+    await _storage.delete(_userKey);
+    await _storage.deleteToken();
   }
 }
