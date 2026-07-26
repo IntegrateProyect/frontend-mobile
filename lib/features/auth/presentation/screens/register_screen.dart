@@ -1,13 +1,16 @@
+import 'dart:async';
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../providers/auth_provider.dart';
-import '../../../../core/utils/media_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/routes/AppRoutes.dart';
+import '../../../../core/utils/media_service.dart';
+import '../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String role;
@@ -18,75 +21,132 @@ class RegisterScreen extends StatefulWidget {
   });
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<RegisterScreen> createState() {
+    return _RegisterScreenState();
+  }
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  static const Color _primaryColor =
+  Color(0xFF311B92);
+
+  static const Color _darkTextColor =
+  Color(0xFF1D1B4B);
+
   int _currentStep = 0;
-  bool _acceptTerms = false;
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
   String? _selectedRole;
   Uint8List? _profileImage;
 
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController =
+  ScrollController();
 
-  // Paso 1: Información personal
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  // =========================================================
+  // INFORMACIÓN PERSONAL
+  // =========================================================
 
-  // Paso 2: Perfil Vocacional (Solo Estudiante)
-  final Set<String> _likes = {};
-  final Set<String> _dislikes = {};
-  final _groupCodeController = TextEditingController();
+  final TextEditingController _nameController =
+  TextEditingController();
 
-  // Paso 2 y 3: Orientador (Se mantiene intacto)
-  final _counselorAgeController = TextEditingController();
-  final _counselorInstController = TextEditingController();
-  final _counselorSpecController = TextEditingController();
-  final _counselorGroupNameController = TextEditingController();
-  final _counselorGroupCodeController = TextEditingController();
+  final TextEditingController _emailController =
+  TextEditingController();
 
-  final List<String> _subjectsList = [
-    'Matemáticas', 'Física', 'Química', 'Biología', 'Programación',
-    'Español', 'Historia', 'Inglés', 'Arte', 'Educación Física', 'Otra',
-  ];
+  final TextEditingController _passwordController =
+  TextEditingController();
 
-  bool get _isStudent => _selectedRole == 'estudiante';
-  bool get _isCounselor => _selectedRole == 'orientador';
-  bool get _isUniversity => _selectedRole == 'universidad';
-  bool get _isAlumni => _selectedRole == 'egresado';
+  final TextEditingController
+  _confirmPasswordController =
+  TextEditingController();
+
+  // =========================================================
+  // DATOS DEL ORIENTADOR
+  // =========================================================
+
+  final TextEditingController
+  _counselorAgeController =
+  TextEditingController();
+
+  final TextEditingController
+  _counselorInstController =
+  TextEditingController();
+
+  final TextEditingController
+  _counselorSpecController =
+  TextEditingController();
+
+  final TextEditingController
+  _counselorGroupNameController =
+  TextEditingController();
+
+  final TextEditingController
+  _counselorGroupCodeController =
+  TextEditingController();
+
+  bool get _isStudent =>
+      _selectedRole == 'estudiante';
+
+  bool get _isCounselor =>
+      _selectedRole == 'orientador';
+
+  bool get _isUniversity =>
+      _selectedRole == 'universidad';
+
+  bool get _isAlumni =>
+      _selectedRole == 'egresado' ||
+          _selectedRole == 'alumni';
 
   int get _totalSteps {
-    if (_isStudent) return 2;
-    if (_isCounselor) return 3;
+    /*
+     * El estudiante solamente tendrá un paso:
+     * crear sus datos de acceso.
+     *
+     * El perfil vocacional se llenará después
+     * de iniciar sesión.
+     */
+    if (_isStudent) {
+      return 1;
+    }
+
+    if (_isCounselor) {
+      return 3;
+    }
+
     return 1;
   }
 
-  bool get _isLastStep => _currentStep == _totalSteps - 1;
+  bool get _isLastStep {
+    return _currentStep == _totalSteps - 1;
+  }
 
   String get _appBarTitle {
-    switch (_selectedRole) {
-      case 'estudiante':
-        return 'Registro Estudiante';
-      case 'orientador':
-        return 'Registro Orientador';
-      case 'universidad':
-        return 'Registro Universidad';
-      case 'egresado':
-        return 'Registro Egresado';
-      default:
-        return 'Crea tu cuenta';
+    if (_isStudent) {
+      return 'Registro Estudiante';
     }
+
+    if (_isCounselor) {
+      return 'Registro Orientador';
+    }
+
+    if (_isUniversity) {
+      return 'Registro Universidad';
+    }
+
+    if (_isAlumni) {
+      return 'Registro Egresado';
+    }
+
+    return 'Crea tu cuenta';
   }
 
   @override
   void initState() {
     super.initState();
-    _selectedRole = widget.role;
+
+    _selectedRole =
+        widget.role.trim().toLowerCase();
   }
 
   @override
@@ -95,341 +155,1317 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _groupCodeController.dispose();
+
     _counselorAgeController.dispose();
     _counselorInstController.dispose();
     _counselorSpecController.dispose();
     _counselorGroupNameController.dispose();
     _counselorGroupCodeController.dispose();
+
     _scrollController.dispose();
+
     super.dispose();
   }
 
-  void _showMessage(String message, {bool isError = true}) {
+  // =========================================================
+  // MENSAJES
+  // =========================================================
+
+  void _showMessage(
+      String message, {
+        bool isError = true,
+      }) {
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.redAccent : const Color(0xFF311B92),
+        backgroundColor: isError
+            ? Colors.redAccent
+            : _primaryColor,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            14.r,
+          ),
+        ),
+        margin: EdgeInsets.all(16.w),
       ),
     );
   }
 
+  // =========================================================
+  // SELECCIONAR FOTO
+  // =========================================================
+
   Future<void> _pickImage() async {
+    FocusScope.of(context).unfocus();
+
     final mediaService = sl<MediaService>();
-    final bytes = await mediaService.pickImageFromGallery();
-    if (bytes != null) setState(() => _profileImage = bytes);
+
+    final bytes =
+    await mediaService.pickImageFromGallery();
+
+    if (!mounted || bytes == null) {
+      return;
+    }
+
+    setState(() {
+      _profileImage = bytes;
+    });
   }
 
-  bool _validateStep() {
+  // =========================================================
+  // VALIDACIONES
+  // =========================================================
+
+  bool _validateCurrentStep() {
     if (_currentStep == 0) {
-      if (_nameController.text.trim().isEmpty || _emailController.text.trim().isEmpty || _passwordController.text.isEmpty) {
-        _showMessage('Completa los campos obligatorios');
+      final name =
+      _nameController.text.trim();
+
+      final email =
+      _emailController.text.trim();
+
+      final password =
+          _passwordController.text;
+
+      final confirmPassword =
+          _confirmPasswordController.text;
+
+      if (name.isEmpty) {
+        _showMessage(
+          'Ingresa tu nombre completo',
+        );
         return false;
       }
-      if (_passwordController.text != _confirmPasswordController.text) {
-        _showMessage('Las contraseñas no coinciden');
+
+      if (name.replaceAll(' ', '').length < 3) {
+        _showMessage(
+          'El nombre debe tener mínimo 3 letras',
+        );
         return false;
       }
-      if (!_acceptTerms) {
-        _showMessage('Debes aceptar los términos');
+
+      final nameRegex = RegExp(
+        r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]+$',
+      );
+
+      if (!nameRegex.hasMatch(name)) {
+        _showMessage(
+          'El nombre solamente puede contener letras y espacios',
+        );
         return false;
       }
-    } else if (_currentStep == 1 && _isStudent) {
-      if (_likes.isEmpty || _dislikes.isEmpty) {
-        _showMessage('Por favor selecciona tus materias');
+
+      if (email.isEmpty) {
+        _showMessage(
+          'Ingresa tu correo electrónico',
+        );
+        return false;
+      }
+
+      final emailRegex = RegExp(
+        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+      );
+
+      if (!emailRegex.hasMatch(email)) {
+        _showMessage(
+          'Ingresa un correo electrónico válido',
+        );
+        return false;
+      }
+
+      if (password.isEmpty) {
+        _showMessage(
+          'Ingresa una contraseña',
+        );
+        return false;
+      }
+
+      if (password.length < 8) {
+        _showMessage(
+          'La contraseña debe tener mínimo 8 caracteres',
+        );
+        return false;
+      }
+
+      if (confirmPassword.isEmpty) {
+        _showMessage(
+          'Confirma tu contraseña',
+        );
+        return false;
+      }
+
+      if (password != confirmPassword) {
+        _showMessage(
+          'Las contraseñas no coinciden',
+        );
         return false;
       }
     }
+
+    if (_isCounselor &&
+        _currentStep == 1) {
+      if (_counselorAgeController.text
+          .trim()
+          .isEmpty) {
+        _showMessage(
+          'Ingresa tu edad',
+        );
+        return false;
+      }
+
+      if (_counselorInstController.text
+          .trim()
+          .isEmpty) {
+        _showMessage(
+          'Ingresa tu institución',
+        );
+        return false;
+      }
+
+      if (_counselorSpecController.text
+          .trim()
+          .isEmpty) {
+        _showMessage(
+          'Ingresa tu especialidad',
+        );
+        return false;
+      }
+    }
+
+    if (_isCounselor &&
+        _currentStep == 2) {
+      if (_counselorGroupNameController.text
+          .trim()
+          .isEmpty) {
+        _showMessage(
+          'Ingresa el nombre del grupo',
+        );
+        return false;
+      }
+
+      if (_counselorGroupCodeController.text
+          .trim()
+          .isEmpty) {
+        _showMessage(
+          'Ingresa el código de acceso',
+        );
+        return false;
+      }
+    }
+
     return true;
   }
 
-  Future<void> _handleRegister() async {
-    if (!_validateStep()) return;
+  // =========================================================
+  // REGISTRAR CUENTA
+  // =========================================================
 
-    final authProvider = context.read<AuthProvider>();
-    
-    Map<String, dynamic>? studentProfile;
-    if (_isStudent) {
-      studentProfile = {
-        'subjectsLiked': _likes.toList(),
-        'subjectsDisliked': _dislikes.toList(),
-        'interests': [],
-        'skills': [],
-        'needsScholarship': false,
-        'studyAbroad': false,
-        'vocationalClarity': 5,
-      };
+  Future<void> _handleRegister() async {
+    FocusScope.of(context).unfocus();
+
+    if (!_validateCurrentStep()) {
+      return;
     }
+
+    final authProvider =
+    context.read<AuthProvider>();
 
     Map<String, dynamic>? counselorData;
+
     if (_isCounselor) {
       counselorData = {
-        'age': int.tryParse(_counselorAgeController.text) ?? 0,
-        'institution': _counselorInstController.text,
-        'specialty': _counselorSpecController.text,
+        'age': int.tryParse(
+          _counselorAgeController.text.trim(),
+        ) ??
+            0,
+        'institution':
+        _counselorInstController.text.trim(),
+        'specialty':
+        _counselorSpecController.text.trim(),
         'group': {
-          'name': _counselorGroupNameController.text,
-          'accessCode': _counselorGroupCodeController.text,
-        }
+          'name':
+          _counselorGroupNameController.text
+              .trim(),
+          'accessCode':
+          _counselorGroupCodeController.text
+              .trim(),
+        },
       };
     }
 
-    final success = await authProvider.register(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
+    final success =
+    await authProvider.register(
+      email: _emailController.text
+          .trim()
+          .toLowerCase(),
+      password: _passwordController.text,
       name: _nameController.text.trim(),
-      role: _selectedRole!,
-      privacyAccepted: _acceptTerms,
+      role: _selectedRole ?? 'estudiante',
+
+      /*
+       * El usuario aceptó los términos desde
+       * la pantalla de selección de rol.
+       */
+      privacyAccepted: true,
+
       profileImage: _profileImage,
-      studentProfile: studentProfile,
-      accessCode: _isStudent && _groupCodeController.text.isNotEmpty ? _groupCodeController.text.trim() : null,
-      additionalData: _isCounselor ? counselorData : null,
+
+      /*
+       * Ya no se crea el perfil vocacional
+       * durante el registro del estudiante.
+       */
+      studentProfile: null,
+      accessCode: null,
+
+      additionalData:
+      _isCounselor ? counselorData : null,
     );
 
-    if (success && mounted) {
-      context.go('/login');
-      _showMessage('Cuenta creada con éxito.', isError: false);
-    } else if (mounted) {
-      _showMessage(authProvider.errorMessage ?? 'Error al registrar');
+    if (!mounted) {
+      return;
     }
+
+    if (!success) {
+      _showMessage(
+        authProvider.errorMessage ??
+            'No fue posible crear la cuenta',
+      );
+      return;
+    }
+
+    /*
+     * Muestra la felicitación y espera a que
+     * termine su animación.
+     */
+    await _showAccountCreatedDialog();
+
+    if (!mounted) {
+      return;
+    }
+
+    /*
+     * El registro interno hace un login automático
+     * para obtener el token. Como quieres que el
+     * usuario escriba sus datos en el Login, aquí
+     * cerramos esa sesión automática.
+     */
+    await authProvider.logout();
+
+    if (!mounted) {
+      return;
+    }
+
+    /*
+     * Redirección automática al Login.
+     */
+    context.go(
+      AppRoutes.login.path,
+    );
   }
+
+  // =========================================================
+  // ALERTA DE CUENTA CREADA
+  // =========================================================
+
+  Future<void> _showAccountCreatedDialog() async {
+    await showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'Cuenta creada',
+      barrierColor: Colors.black.withOpacity(0.45),
+      transitionDuration:
+      const Duration(milliseconds: 350),
+      pageBuilder: (
+          dialogContext,
+          animation,
+          secondaryAnimation,
+          ) {
+        return _AccountCreatedDialog(
+          onFinished: () {
+            if (Navigator.of(dialogContext)
+                .canPop()) {
+              Navigator.of(dialogContext).pop();
+            }
+          },
+        );
+      },
+      transitionBuilder: (
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+          ) {
+        final curvedAnimation =
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeIn,
+        );
+
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(
+              begin: 0.75,
+              end: 1,
+            ).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  // =========================================================
+  // UI
+  // =========================================================
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.watch<AuthProvider>().isLoading;
+    final authProvider =
+    context.watch<AuthProvider>();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => _currentStep > 0 ? setState(() => _currentStep--) : Navigator.pop(context),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.black,
+          ),
+          onPressed: authProvider.isLoading
+              ? null
+              : () {
+            if (_currentStep > 0) {
+              setState(() {
+                _currentStep--;
+              });
+
+              _scrollToTop();
+            } else {
+              context.pop();
+            }
+          },
         ),
         title: Text(
           _appBarTitle,
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18.sp),
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w800,
+            fontSize: 18.sp,
+          ),
         ),
       ),
-      body: Column(
-        children: [
-          _buildStepper(),
-          Expanded(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
-              child: _buildStepContent(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            if (_totalSteps > 1)
+              _buildStepper(),
+
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                keyboardDismissBehavior:
+                ScrollViewKeyboardDismissBehavior
+                    .onDrag,
+                padding: EdgeInsets.fromLTRB(
+                  24.w,
+                  18.h,
+                  24.w,
+                  20.h,
+                ),
+                child: _buildStepContent(),
+              ),
             ),
-          ),
-          _buildFooter(isLoading),
-        ],
+
+            _buildFooter(
+              authProvider.isLoading,
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  void _scrollToTop() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    _scrollController.animateTo(
+      0,
+      duration:
+      const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+  }
+
+  // =========================================================
+  // INDICADOR DE PASOS
+  // =========================================================
 
   Widget _buildStepper() {
-    int total = _totalSteps;
-    if (total <= 1) return const SizedBox.shrink();
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 40.w),
+      padding: EdgeInsets.symmetric(
+        vertical: 18.h,
+        horizontal: 42.w,
+      ),
       child: Row(
-        children: List.generate(total, (i) {
-          bool done = _currentStep > i;
-          bool active = _currentStep == i;
-          return Expanded(
-            child: Row(
-              children: [
-                _stepCircle(i, i == 0 ? Icons.person : (i == 1 && _isStudent ? Icons.lightbulb_outline : Icons.business)),
-                if (i < total - 1) Expanded(child: Container(height: 2, color: done ? const Color(0xFF311B92) : Colors.grey[200])),
-              ],
-            ),
-          );
-        }),
+        children: List.generate(
+          _totalSteps,
+              (index) {
+            final completed =
+                _currentStep > index;
+
+            final active =
+                _currentStep == index;
+
+            return Expanded(
+              child: Row(
+                children: [
+                  _stepCircle(
+                    icon: index == 0
+                        ? Icons.person
+                        : Icons.business,
+                    completed: completed,
+                    active: active,
+                  ),
+                  if (index <
+                      _totalSteps - 1)
+                    Expanded(
+                      child: Container(
+                        height: 2.h,
+                        color: completed
+                            ? _primaryColor
+                            : Colors.grey[200],
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _stepCircle(int step, IconData icon) {
-    bool done = _currentStep > step;
-    bool active = _currentStep == step;
+  Widget _stepCircle({
+    required IconData icon,
+    required bool completed,
+    required bool active,
+  }) {
     return Container(
-      width: 32.w, height: 32.w,
+      width: 34.w,
+      height: 34.w,
       decoration: BoxDecoration(
-        color: done ? const Color(0xFF311B92) : Colors.white,
+        color: completed
+            ? _primaryColor
+            : Colors.white,
         shape: BoxShape.circle,
-        border: Border.all(color: active || done ? const Color(0xFF311B92) : Colors.grey[200]!, width: 2),
+        border: Border.all(
+          color: active || completed
+              ? _primaryColor
+              : Colors.grey[200]!,
+          width: 2,
+        ),
       ),
-      child: Icon(done ? Icons.check : icon, size: 16.sp, color: done ? Colors.white : (active ? const Color(0xFF311B92) : Colors.grey[200])),
+      child: Icon(
+        completed ? Icons.check : icon,
+        size: 17.sp,
+        color: completed
+            ? Colors.white
+            : active
+            ? _primaryColor
+            : Colors.grey[300],
+      ),
     );
   }
+
+  // =========================================================
+  // CONTENIDO DE CADA PASO
+  // =========================================================
 
   Widget _buildStepContent() {
-    if (_currentStep == 0) return _buildPersonalStep();
-    if (_isStudent) return _buildVocationalStep();
-    if (_currentStep == 1) return _buildCounselorProfileStep();
-    return _buildCounselorGroupStep();
+    if (_currentStep == 0) {
+      return _buildPersonalStep();
+    }
+
+    if (_isCounselor &&
+        _currentStep == 1) {
+      return _buildCounselorProfileStep();
+    }
+
+    if (_isCounselor &&
+        _currentStep == 2) {
+      return _buildCounselorGroupStep();
+    }
+
+    return _buildPersonalStep();
   }
 
-  // PASO 1: Información personal (Imagen 1)
+  // =========================================================
+  // PASO PERSONAL
+  // =========================================================
+
   Widget _buildPersonalStep() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
       children: [
         Center(
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              CircleAvatar(
-                radius: 55.r,
-                backgroundColor: const Color(0xFFF3F4F6),
-                backgroundImage: _profileImage != null ? MemoryImage(_profileImage!) : null,
-                child: _profileImage == null ? Icon(Icons.person, size: 55.sp, color: Colors.grey[400]) : null,
+              Container(
+                width: 120.w,
+                height: 120.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(
+                    0xFFF3F4F6,
+                  ),
+                  image: _profileImage != null
+                      ? DecorationImage(
+                    image: MemoryImage(
+                      _profileImage!,
+                    ),
+                    fit: BoxFit.cover,
+                  )
+                      : null,
+                ),
+                child: _profileImage == null
+                    ? Icon(
+                  Icons.person,
+                  size: 58.sp,
+                  color: Colors.grey[400],
+                )
+                    : null,
               ),
               Positioned(
-                bottom: 0, right: 0,
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    padding: EdgeInsets.all(6.w),
-                    decoration: const BoxDecoration(color: Color(0xFF311B92), shape: BoxShape.circle),
-                    child: Icon(Icons.camera_alt, color: Colors.white, size: 16.sp),
+                right: -2.w,
+                bottom: 4.h,
+                child: Material(
+                  color: _primaryColor,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: _pickImage,
+                    customBorder:
+                    const CircleBorder(),
+                    child: Padding(
+                      padding: EdgeInsets.all(
+                        10.w,
+                      ),
+                      child: Icon(
+                        Icons.camera_alt_rounded,
+                        color: Colors.white,
+                        size: 20.sp,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
         ),
-        SizedBox(height: 32.h),
-        const Text('Información personal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        SizedBox(height: 24.h),
-        _input('Nombre completo *', 'Ej. Juan Pérez', _nameController, Icons.person_outline),
-        _input('Correo electrónico *', 'juan@gmail.com', _emailController, Icons.email_outlined),
-        _input('Contraseña *', 'Mínimo 8 caracteres', _passwordController, Icons.lock_outline, isPass: true, isObs: _obscurePassword, onToggle: () => setState(() => _obscurePassword = !_obscurePassword)),
-        _input('Confirmar contraseña *', 'Repite tu contraseña', _confirmPasswordController, Icons.lock_reset, isPass: true, isObs: _obscureConfirmPassword, onToggle: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword)),
-        Row(
-          children: [
-            Checkbox(value: _acceptTerms, onChanged: (v) => setState(() => _acceptTerms = v ?? false), activeColor: const Color(0xFF311B92)),
-            const Expanded(child: Text('Acepto los términos y condiciones')),
+
+        SizedBox(height: 34.h),
+
+        Text(
+          'Información personal',
+          style: TextStyle(
+            fontSize: 22.sp,
+            fontWeight: FontWeight.w800,
+            color: _darkTextColor,
+          ),
+        ),
+
+        SizedBox(height: 26.h),
+
+        _buildInput(
+          label: 'Nombre completo *',
+          hint: 'Ej. Juan Pérez',
+          controller: _nameController,
+          icon: Icons.person_outline,
+          keyboardType: TextInputType.name,
+          textInputAction:
+          TextInputAction.next,
+          capitalization:
+          TextCapitalization.words,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(
+              RegExp(
+                r'[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]',
+              ),
+            ),
           ],
         ),
-      ],
-    );
-  }
 
-  // PASO 2: Perfil Vocacional (Imagen 2)
-  Widget _buildVocationalStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Cuéntanos sobre ti', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1D1B4B))),
-        SizedBox(height: 24.h),
-        _chips('Materias que te gustan *', _subjectsList, _likes),
-        _chips('Materias que no te gustan *', _subjectsList, _dislikes),
-        
-        const Divider(height: 40),
-        
-        // Sección Unirse a un grupo (Opcional) con icono "chido"
-        Container(
-          padding: EdgeInsets.all(16.w),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F3FF),
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: const Color(0xFFDDD6FE)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.group_add_rounded, color: const Color(0xFF311B92), size: 24.sp),
-                  SizedBox(width: 12.w),
-                  Text('Unirse a un grupo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp, color: const Color(0xFF1D1B4B))),
-                  const Spacer(),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8.r)),
-                    child: Text('Opcional', style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: Colors.grey[600])),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12.h),
-              Text('Si tu orientador te dio un código, ingresalo aquí para vincularte.', style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
-              SizedBox(height: 16.h),
-              _input('Código del grupo', 'Ej. INV-69941', _groupCodeController, Icons.qr_code),
-            ],
+        _buildInput(
+          label: 'Correo electrónico *',
+          hint: 'juan@gmail.com',
+          controller: _emailController,
+          icon: Icons.email_outlined,
+          keyboardType:
+          TextInputType.emailAddress,
+          textInputAction:
+          TextInputAction.next,
+          inputFormatters: [
+            const _LowerCaseTextFormatter(),
+            FilteringTextInputFormatter.allow(
+              RegExp(r'[a-z0-9@._%+\-]'),
+            ),
+          ],
+        ),
+
+        _buildInput(
+          label: 'Contraseña *',
+          hint: 'Mínimo 8 caracteres',
+          controller: _passwordController,
+          icon: Icons.lock_outline,
+          obscureText: _obscurePassword,
+          textInputAction:
+          TextInputAction.next,
+          onToggleVisibility: () {
+            setState(() {
+              _obscurePassword =
+              !_obscurePassword;
+            });
+          },
+        ),
+
+        _buildInput(
+          label: 'Confirmar contraseña *',
+          hint: 'Repite tu contraseña',
+          controller:
+          _confirmPasswordController,
+          icon: Icons.lock_reset,
+          obscureText:
+          _obscureConfirmPassword,
+          textInputAction:
+          TextInputAction.done,
+          onSubmitted: (_) {
+            if (_isLastStep) {
+              _handleRegister();
+            }
+          },
+          onToggleVisibility: () {
+            setState(() {
+              _obscureConfirmPassword =
+              !_obscureConfirmPassword;
+            });
+          },
+        ),
+
+        Text(
+          'Al crear tu cuenta, aceptas nuestros Términos de Servicio y el Aviso de Privacidad.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 11.sp,
+            height: 1.4,
           ),
         ),
-        SizedBox(height: 20.h),
+
+        SizedBox(height: 8.h),
       ],
     );
   }
 
+  // =========================================================
+  // DATOS DEL ORIENTADOR
+  // =========================================================
+
   Widget _buildCounselorProfileStep() {
-    return Column(children: [ _input('Edad', 'Ej. 35', _counselorAgeController, Icons.calendar_today), _input('Institución', 'Ej. Prepa Sur', _counselorInstController, Icons.business), _input('Especialidad', 'Ej. Orientación', _counselorSpecController, Icons.badge)]);
+    return Column(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Datos profesionales',
+          style: TextStyle(
+            fontSize: 22.sp,
+            fontWeight: FontWeight.w800,
+            color: _darkTextColor,
+          ),
+        ),
+
+        SizedBox(height: 8.h),
+
+        Text(
+          'Completa la información relacionada con tu trabajo como orientador.',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 13.sp,
+            height: 1.4,
+          ),
+        ),
+
+        SizedBox(height: 26.h),
+
+        _buildInput(
+          label: 'Edad *',
+          hint: 'Ej. 35',
+          controller:
+          _counselorAgeController,
+          icon: Icons.calendar_today_outlined,
+          keyboardType: TextInputType.number,
+          textInputAction:
+          TextInputAction.next,
+        ),
+
+        _buildInput(
+          label: 'Institución *',
+          hint: 'Ej. Preparatoria del Sur',
+          controller:
+          _counselorInstController,
+          icon: Icons.business_outlined,
+          textInputAction:
+          TextInputAction.next,
+          capitalization:
+          TextCapitalization.words,
+        ),
+
+        _buildInput(
+          label: 'Especialidad *',
+          hint: 'Ej. Orientación vocacional',
+          controller:
+          _counselorSpecController,
+          icon: Icons.badge_outlined,
+          textInputAction:
+          TextInputAction.done,
+          capitalization:
+          TextCapitalization.sentences,
+        ),
+      ],
+    );
   }
 
   Widget _buildCounselorGroupStep() {
-    return Column(children: [_input('Nombre del grupo', 'Ej. 6to A', _counselorGroupNameController, Icons.groups), _input('Código de acceso', 'Ej. GRUPO-123', _counselorGroupCodeController, Icons.vpn_key)]);
-  }
-
-  Widget _input(String l, String h, TextEditingController c, IconData i, {bool isPass = false, bool isObs = false, VoidCallback? onToggle}) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
       children: [
-        Text(l, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-        SizedBox(height: 6.h),
-        TextFormField(
-          controller: c, obscureText: isPass && isObs,
-          decoration: InputDecoration(
-            hintText: h, prefixIcon: Icon(i, size: 18),
-            suffixIcon: isPass ? IconButton(icon: Icon(isObs ? Icons.visibility : Icons.visibility_off), onPressed: onToggle) : null,
-            filled: true, fillColor: const Color(0xFFF9FAFB),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+        Text(
+          'Crea tu primer grupo',
+          style: TextStyle(
+            fontSize: 22.sp,
+            fontWeight: FontWeight.w800,
+            color: _darkTextColor,
           ),
         ),
-        SizedBox(height: 16.h),
+
+        SizedBox(height: 8.h),
+
+        Text(
+          'Podrás invitar estudiantes utilizando el código de acceso.',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 13.sp,
+            height: 1.4,
+          ),
+        ),
+
+        SizedBox(height: 26.h),
+
+        _buildInput(
+          label: 'Nombre del grupo *',
+          hint: 'Ej. 6.º A',
+          controller:
+          _counselorGroupNameController,
+          icon: Icons.groups_outlined,
+          textInputAction:
+          TextInputAction.next,
+          capitalization:
+          TextCapitalization.words,
+        ),
+
+        _buildInput(
+          label: 'Código de acceso *',
+          hint: 'Ej. GRUPO-123',
+          controller:
+          _counselorGroupCodeController,
+          icon: Icons.vpn_key_outlined,
+          textInputAction:
+          TextInputAction.done,
+          capitalization:
+          TextCapitalization.characters,
+        ),
       ],
     );
   }
 
-  Widget _chips(String title, List<String> opts, Set<String> selection) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
-        SizedBox(height: 12.h),
-        Wrap(
-          spacing: 8.w, runSpacing: 8.h,
-          children: opts.map((o) {
-            bool s = selection.contains(o);
-            return FilterChip(
-              label: Text(o, style: TextStyle(fontSize: 11.sp, color: s ? Colors.white : Colors.black87)),
-              selected: s, onSelected: (v) => setState(() => v ? selection.add(o) : selection.remove(o)),
-              selectedColor: const Color(0xFF311B92), checkmarkColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-              side: BorderSide(color: s ? const Color(0xFF311B92) : Colors.grey[300]!),
-            );
-          }).toList(),
-        ),
-        SizedBox(height: 20.h),
-      ],
+  // =========================================================
+  // CAMPO DE TEXTO
+  // =========================================================
+
+  Widget _buildInput({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required IconData icon,
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    TextCapitalization capitalization =
+        TextCapitalization.none,
+    bool obscureText = false,
+    VoidCallback? onToggleVisibility,
+    ValueChanged<String>? onSubmitted,
+    List<TextInputFormatter>? inputFormatters,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 18.h),
+      child: Column(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+
+          SizedBox(height: 8.h),
+
+          TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            textInputAction:
+            textInputAction,
+            textCapitalization:
+            capitalization,
+            obscureText: obscureText,
+            autocorrect: false,
+            enableSuggestions:
+            !obscureText,
+            onFieldSubmitted:
+            onSubmitted,
+            inputFormatters: inputFormatters,
+            decoration: InputDecoration(
+              hintText: hint,
+              prefixIcon: Icon(
+                icon,
+                color: Colors.grey[600],
+                size: 21.sp,
+              ),
+              suffixIcon:
+              onToggleVisibility == null
+                  ? null
+                  : IconButton(
+                onPressed:
+                onToggleVisibility,
+                icon: Icon(
+                  obscureText
+                      ? Icons
+                      .visibility_rounded
+                      : Icons
+                      .visibility_off_rounded,
+                  color:
+                  Colors.grey[700],
+                ),
+              ),
+              filled: true,
+              fillColor:
+              const Color(0xFFF9FAFB),
+              contentPadding:
+              EdgeInsets.symmetric(
+                horizontal: 16.w,
+                vertical: 18.h,
+              ),
+              border: OutlineInputBorder(
+                borderRadius:
+                BorderRadius.circular(
+                  16.r,
+                ),
+                borderSide:
+                const BorderSide(
+                  color: Color(0xFFE5E7EB),
+                ),
+              ),
+              enabledBorder:
+              OutlineInputBorder(
+                borderRadius:
+                BorderRadius.circular(
+                  16.r,
+                ),
+                borderSide:
+                const BorderSide(
+                  color: Color(0xFFE5E7EB),
+                ),
+              ),
+              focusedBorder:
+              OutlineInputBorder(
+                borderRadius:
+                BorderRadius.circular(
+                  16.r,
+                ),
+                borderSide:
+                const BorderSide(
+                  color: _primaryColor,
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+
+  // =========================================================
+  // BOTÓN INFERIOR
+  // =========================================================
 
   Widget _buildFooter(bool loading) {
-    bool isLast = _isLastStep;
+    final buttonText = _isLastStep
+        ? 'Crear cuenta'
+        : 'Siguiente';
+
     return Container(
-      padding: EdgeInsets.all(24.w),
-      child: ElevatedButton(
-        onPressed: loading ? null : () {
-          if (isLast) _handleRegister();
-          else if (_validateStep()) setState(() => _currentStep++);
-        },
-        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF311B92), foregroundColor: Colors.white, minimumSize: Size.fromHeight(56.h), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r))),
-        child: loading ? const CircularProgressIndicator(color: Colors.white) : Text(isLast ? 'Finalizar' : 'Siguiente'),
+      padding: EdgeInsets.fromLTRB(
+        24.w,
+        14.h,
+        24.w,
+        20.h,
       ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color:
+            Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56.h,
+        child: ElevatedButton(
+          onPressed: loading
+              ? null
+              : () {
+            if (_isLastStep) {
+              _handleRegister();
+              return;
+            }
+
+            if (_validateCurrentStep()) {
+              setState(() {
+                _currentStep++;
+              });
+
+              _scrollToTop();
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor:
+            _primaryColor,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor:
+            _primaryColor.withOpacity(0.55),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius:
+              BorderRadius.circular(
+                16.r,
+              ),
+            ),
+          ),
+          child: loading
+              ? SizedBox(
+            width: 24.w,
+            height: 24.w,
+            child:
+            const CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2.5,
+            ),
+          )
+              : Text(
+            buttonText,
+            style: TextStyle(
+              fontSize: 17.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ===========================================================
+// ALERTA ANIMADA: CUENTA CREADA
+// ===========================================================
+
+class _AccountCreatedDialog
+    extends StatefulWidget {
+  final VoidCallback onFinished;
+
+  const _AccountCreatedDialog({
+    required this.onFinished,
+  });
+
+  @override
+  State<_AccountCreatedDialog> createState() {
+    return _AccountCreatedDialogState();
+  }
+}
+
+class _AccountCreatedDialogState
+    extends State<_AccountCreatedDialog>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController
+  _animationController;
+
+  late final Animation<double>
+  _trumpetScale;
+
+  Timer? _closeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController =
+        AnimationController(
+          vsync: this,
+          duration:
+          const Duration(milliseconds: 900),
+        );
+
+    _trumpetScale = TweenSequence<double>(
+      [
+        TweenSequenceItem(
+          tween: Tween<double>(
+            begin: 0.4,
+            end: 1.15,
+          ).chain(
+            CurveTween(
+              curve: Curves.easeOutBack,
+            ),
+          ),
+          weight: 70,
+        ),
+        TweenSequenceItem(
+          tween: Tween<double>(
+            begin: 1.15,
+            end: 1,
+          ),
+          weight: 30,
+        ),
+      ],
+    ).animate(_animationController);
+
+    _animationController.forward();
+
+    /*
+     * Se cierra automáticamente y después
+     * RegisterScreen manda al Login.
+     */
+    _closeTimer = Timer(
+      const Duration(milliseconds: 900),
+      widget.onFinished,
+    );
+  }
+
+  @override
+  void dispose() {
+    _closeTimer?.cancel();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 0.84.sw,
+          padding: EdgeInsets.fromLTRB(
+            24.w,
+            28.h,
+            24.w,
+            25.h,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius:
+            BorderRadius.circular(26.r),
+            boxShadow: [
+              BoxShadow(
+                color:
+                Colors.black.withOpacity(0.16),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 150.w,
+                height: 105.h,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned(
+                      left: 5.w,
+                      top: 12.h,
+                      child: _sparkle(
+                        color:
+                        const Color(0xFFFFC107),
+                        size: 25.sp,
+                      ),
+                    ),
+                    Positioned(
+                      right: 8.w,
+                      top: 7.h,
+                      child: _sparkle(
+                        color:
+                        const Color(0xFFFF8A65),
+                        size: 22.sp,
+                      ),
+                    ),
+                    Positioned(
+                      left: 24.w,
+                      bottom: 4.h,
+                      child: _sparkle(
+                        color:
+                        const Color(0xFF7C4DFF),
+                        size: 17.sp,
+                      ),
+                    ),
+                    Positioned(
+                      right: 20.w,
+                      bottom: 8.h,
+                      child: _sparkle(
+                        color:
+                        const Color(0xFF26C6DA),
+                        size: 18.sp,
+                      ),
+                    ),
+                    ScaleTransition(
+                      scale: _trumpetScale,
+                      child: Container(
+                        width: 80.w,
+                        height: 80.w,
+                        decoration:
+                        const BoxDecoration(
+                          color:
+                          Color(0xFFF2EFFF),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.campaign_rounded,
+                          color: const Color(
+                            0xFF311B92,
+                          ),
+                          size: 46.sp,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 12.h),
+
+              Text(
+                '¡Felicidades!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color:
+                  const Color(0xFF1D1B4B),
+                  fontSize: 25.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+
+              SizedBox(height: 8.h),
+
+              Text(
+                'Tu cuenta fue creada correctamente',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey[700],
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+
+              SizedBox(height: 10.h),
+
+              Text(
+                'Ahora inicia sesión para completar tu perfil vocacional.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12.sp,
+                  height: 1.4,
+                ),
+              ),
+
+              SizedBox(height: 18.h),
+
+              SizedBox(
+                width: 25.w,
+                height: 25.w,
+                child:
+                const CircularProgressIndicator(
+                  color: Color(0xFF311B92),
+                  strokeWidth: 2.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sparkle({
+    required Color color,
+    required double size,
+  }) {
+    return Icon(
+      Icons.auto_awesome_rounded,
+      color: color,
+      size: size,
+    );
+  }
+}
+
+class _LowerCaseTextFormatter extends TextInputFormatter {
+  const _LowerCaseTextFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    final lowerCaseText = newValue.text.toLowerCase();
+
+    return newValue.copyWith(
+      text: lowerCaseText,
+      selection: TextSelection.collapsed(
+        offset: lowerCaseText.length,
+      ),
+      composing: TextRange.empty,
     );
   }
 }

@@ -37,6 +37,18 @@ class _GroupStudentsScreenState
   bool _loading = true;
   String? _error;
 
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  List<StudentProfileEntity> get _filteredStudents {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return _groupStudents;
+    return _groupStudents.where((student) {
+      return student.name.toLowerCase().contains(query) ||
+          student.email.toLowerCase().contains(query);
+    }).toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +56,12 @@ class _GroupStudentsScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadStudents();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadStudents() async {
@@ -160,28 +178,95 @@ class _GroupStudentsScreenState
       return _buildEmptyState();
     }
 
-    return RefreshIndicator(
-      color: _primaryColor,
-      onRefresh: _loadStudents,
-      child: ListView.separated(
-        physics:
-        const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(
-          20.w,
-          20.h,
-          20.w,
-          32.h,
+    // El buscador ahora vive FUERA del ListView, como header fijo.
+    // Antes estaba como itemBuilder(index == 0) dentro de la lista,
+    // lo que provocaba que Flutter reconstruyera un TextField nuevo
+    // en cada rebuild y el usuario perdiera el foco/cursor al escribir.
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 8.h),
+          child: _buildSearchField(),
         ),
-        itemCount: _groupStudents.length,
-        separatorBuilder: (_, __) {
-          return SizedBox(height: 14.h);
-        },
-        itemBuilder: (context, index) {
-          return _buildStudentCard(
-            _groupStudents[index],
-          );
-        },
+        Expanded(
+          child: RefreshIndicator(
+            color: _primaryColor,
+            onRefresh: _loadStudents,
+            child: _filteredStudents.isEmpty
+                ? _buildNoResultsState()
+                : ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(
+                20.w,
+                4.h,
+                20.w,
+                32.h,
+              ),
+              itemCount: _filteredStudents.length,
+              separatorBuilder: (_, __) {
+                return SizedBox(height: 14.h);
+              },
+              itemBuilder: (context, index) {
+                return _buildStudentCard(_filteredStudents[index]);
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      onChanged: (value) {
+        setState(() => _searchQuery = value);
+      },
+      decoration: InputDecoration(
+        hintText: 'Buscar por nombre o correo',
+        prefixIcon: const Icon(Icons.search_rounded),
+        suffixIcon: _searchQuery.isEmpty
+            ? null
+            : IconButton(
+          onPressed: () {
+            _searchController.clear();
+            setState(() => _searchQuery = '');
+          },
+          icon: const Icon(Icons.close_rounded),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.r),
+          borderSide: BorderSide.none,
+        ),
       ),
+    );
+  }
+
+  Widget _buildNoResultsState() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.symmetric(vertical: 50.h),
+      children: [
+        Column(
+          children: [
+            Icon(
+              Icons.person_search_outlined,
+              size: 52.sp,
+              color: Colors.grey.shade300,
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              'No se encontró ningún alumno',
+              style: TextStyle(
+                color: _darkText,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

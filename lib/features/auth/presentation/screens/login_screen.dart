@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -317,6 +318,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         controller: _emailController,
                         enabled: !authProvider.isLoading,
+                        inputFormatters: [
+                          const _LowerCaseTextFormatter(),
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'[a-z0-9@._%+\-]'),
+                          ),
+                        ],
                         keyboardType:
                         TextInputType.emailAddress,
                         textInputAction:
@@ -398,12 +405,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: authProvider.isLoading
                               ? null
                               : () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => const ForgotPasswordScreen(),
-                                    ),
-                                  );
-                                },
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
                           child: Text(
                             '¿Olvidaste tu contraseña?',
                             style: TextStyle(
@@ -650,6 +657,26 @@ class _LoginScreenState extends State<LoginScreen> {
           width: 1.5,
         ),
       ),
+    );
+  }
+}
+
+class _LowerCaseTextFormatter extends TextInputFormatter {
+  const _LowerCaseTextFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    final lowerCaseText = newValue.text.toLowerCase();
+
+    return newValue.copyWith(
+      text: lowerCaseText,
+      selection: TextSelection.collapsed(
+        offset: lowerCaseText.length,
+      ),
+      composing: TextRange.empty,
     );
   }
 }

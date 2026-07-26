@@ -1188,7 +1188,7 @@ class API implements IApi {
       String gameId,
       String token,
       String sessionId,
-    ) async {
+      ) async {
     final result = await _request(
       method: 'POST',
       path: '/games/$gameId/finish',
@@ -1494,7 +1494,133 @@ class API implements IApi {
       token: token,
     );
   }
+// ============================================================
+// ORIENTADOR - ELIMINAR GRUPO
+// ============================================================
 
+  @override
+  Future<void> deleteGroup(
+      String token,
+      String groupId,
+      ) async {
+    final cleanGroupId = groupId.trim();
+
+    if (cleanGroupId.isEmpty) {
+      throw Exception(
+        'El identificador del grupo está vacío.',
+      );
+    }
+
+    await _request(
+      method: 'DELETE',
+      path: '/counselors/groups/$cleanGroupId',
+      token: token,
+    );
+  }
+
+// ============================================================
+// ORIENTADOR - OBTENER DISPONIBILIDAD
+// ============================================================
+
+  @override
+  Future<List<dynamic>> getCounselorAvailability(
+      String token,
+      ) async {
+    final dynamic result = await _request(
+      method: 'GET',
+      path: '/counselors/availability',
+      token: token,
+    );
+
+    return _asList(
+      result,
+      keys: const [
+        'data',
+        'slots',
+        'availability',
+      ],
+    );
+  }
+
+// ============================================================
+// ORIENTADOR - GUARDAR DISPONIBILIDAD
+// ============================================================
+
+  @override
+  Future<Map<String, dynamic>> saveCounselorAvailability(
+      String token,
+      List<Map<String, dynamic>> slots,
+      ) async {
+    final List<Map<String, dynamic>> cleanSlots =
+    slots.map((slot) {
+      return {
+        'dayOfWeek': slot['dayOfWeek'],
+        'startTime': _normalizeTime(
+          slot['startTime'],
+        ),
+        'endTime': _normalizeTime(
+          slot['endTime'],
+        ),
+      };
+    }).toList();
+
+    final dynamic result = await _request(
+      method: 'POST',
+      path: '/counselors/availability',
+      token: token,
+      body: {
+        'slots': cleanSlots,
+      },
+    );
+
+    return _asMap(result);
+  }
+
+// ============================================================
+// ESTUDIANTE - DISPONIBILIDAD DE SU ORIENTADOR
+// ============================================================
+
+  @override
+  Future<List<dynamic>> getStudentCounselorAvailability(
+      String token,
+      ) async {
+    final dynamic result = await _request(
+      method: 'GET',
+      path: '/students/counselor/availability',
+      token: token,
+    );
+
+    return _asList(
+      result,
+      keys: const [
+        'data',
+        'slots',
+        'availability',
+      ],
+    );
+  }
+
+// ============================================================
+// UTILIDAD PARA HORARIOS
+// ============================================================
+
+  String _normalizeTime(dynamic value) {
+    final String time = (value ?? '')
+        .toString()
+        .trim();
+
+    if (time.isEmpty) {
+      return '';
+    }
+
+    // El backend recibe HH:mm.
+    // Si devuelve HH:mm:ss, se eliminan los segundos.
+    if (time.length >= 5) {
+      return time.substring(0, 5);
+    }
+
+    return time;
+  }
   @override
   Future<Map<String, dynamic>> createPaymentPreference(String token, Map<String, dynamic> data) async {
     final result = await _request(

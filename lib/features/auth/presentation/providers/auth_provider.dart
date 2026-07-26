@@ -2,15 +2,16 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/api/IApi.dart';
+import '../../../../core/utils/UserService.dart';
+import '../../../../core/utils/media_service.dart';
+
+import '../../data/datasources/models/user_model.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/update_avatar_usecase.dart';
-
-import '../../../../core/api/IApi.dart';
-import '../../../../core/utils/UserService.dart';
-import '../../../../core/utils/media_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUseCase;
@@ -23,6 +24,7 @@ class AuthProvider extends ChangeNotifier {
 
   UserEntity? _user;
   bool _isLoading = false;
+  bool _sessionChecked = false;
   String? _errorMessage;
 
   AuthProvider({
@@ -41,11 +43,105 @@ class AuthProvider extends ChangeNotifier {
         _userService = userService,
         _mediaService = mediaService;
 
+  // =========================================================
+  // GETTERS
+  // =========================================================
+
   UserEntity? get user => _user;
 
   bool get isLoading => _isLoading;
 
+  bool get sessionChecked => _sessionChecked;
+
+  bool get isAuthenticated => _user != null;
+
   String? get errorMessage => _errorMessage;
+
+  // =========================================================
+  // RESTAURAR SESIÓN
+  // =========================================================
+
+  Future<bool> restoreSession() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final token = await _userService.getToken();
+
+      if (token == null || token.trim().isEmpty) {
+        _user = null;
+        return false;
+      }
+
+      /*
+       * Comprueba en el backend que el token guardado
+       * todavía sea válido.
+       */
+      final response = await _api.getMe(token);
+
+      final restoredUser = UserModel.fromJson(
+        response,
+      );
+
+      if (restoredUser.id.trim().isEmpty ||
+          restoredUser.email.trim().isEmpty) {
+        throw Exception(
+          'Los datos de la sesión almacenada no son válidos',
+        );
+      }
+
+      _user = restoredUser;
+
+      /*
+       * Conserva el token y actualiza los datos locales
+       * del usuario.
+       */
+      await _userService.saveSession(
+        token,
+        restoredUser,
+      );
+
+      return true;
+    } catch (error) {
+      debugPrint(
+        'No fue posible restaurar la sesión: $error',
+      );
+
+      /*
+       * Si el token venció o fue revocado,
+       * elimina solamente la sesión.
+       *
+       * No elimina la marca del onboarding.
+       */
+      await _userService.logout();
+
+      _user = null;
+      _errorMessage = null;
+
+      return false;
+    } finally {
+      _sessionChecked = true;
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // =========================================================
+  // ONBOARDING
+  // =========================================================
+
+  Future<bool> hasCompletedOnboarding() {
+    return _userService.hasCompletedOnboarding();
+  }
+
+  Future<void> completeOnboarding() {
+    return _userService.completeOnboarding();
+  }
+
+  // =========================================================
+  // UTILIDADES
+  // =========================================================
 
   String _cleanError(Object error) {
     return error
@@ -71,6 +167,10 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+
+  // =========================================================
+  // VALIDACIONES
+  // =========================================================
 
   String? _validateName(String name) {
     final value = name.trim();
@@ -126,8 +226,34 @@ class AuthProvider extends ChangeNotifier {
     return null;
   }
 
-  String? _validateRole(String role) {
+  String _normalizeRole(String role) {
     final value = role.trim().toLowerCase();
+
+    /*
+     * En la interfaz se utiliza "egresado",
+     * pero el backend utiliza "alumni".
+     */
+    if (value == 'egresado') {
+      return 'alumni';
+    }
+
+    if (value == 'student') {
+      return 'estudiante';
+    }
+
+    if (value == 'counselor') {
+      return 'orientador';
+    }
+
+    if (value == 'university') {
+      return 'universidad';
+    }
+
+    return value;
+  }
+
+  String? _validateRole(String role) {
+    final value = _normalizeRole(role);
 
     const validRoles = [
       'estudiante',
@@ -155,13 +281,23 @@ class AuthProvider extends ChangeNotifier {
       return 'Faltan los datos del perfil vocacional';
     }
 
-    final subjectsLiked = profile['subjectsLiked'];
-    final subjectsDisliked = profile['subjectsDisliked'];
-    final interests = profile['interests'];
-    final skills = profile['skills'];
-    final vocationalClarity = profile['vocationalClarity'];
+    final subjectsLiked =
+    profile['subjectsLiked'];
 
-    if (subjectsLiked is! List || subjectsLiked.isEmpty) {
+    final subjectsDisliked =
+    profile['subjectsDisliked'];
+
+    final interests =
+    profile['interests'];
+
+    final skills =
+    profile['skills'];
+
+    final vocationalClarity =
+    profile['vocationalClarity'];
+
+    if (subjectsLiked is! List ||
+        subjectsLiked.isEmpty) {
       return 'Selecciona al menos una materia que te gusta';
     }
 
@@ -170,11 +306,13 @@ class AuthProvider extends ChangeNotifier {
       return 'Selecciona al menos una materia que no te gusta';
     }
 
-    if (interests is! List || interests.isEmpty) {
+    if (interests is! List ||
+        interests.isEmpty) {
       return 'Selecciona al menos un área de interés';
     }
 
-    if (skills is! List || skills.isEmpty) {
+    if (skills is! List ||
+        skills.isEmpty) {
       return 'Selecciona al menos una habilidad';
     }
 
@@ -198,12 +336,17 @@ class AuthProvider extends ChangeNotifier {
       return 'El código del grupo debe tener mínimo 4 caracteres';
     }
 
-    if (!RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(value)) {
+    if (!RegExp(r'^[a-zA-Z0-9\-_]+$')
+        .hasMatch(value)) {
       return 'El código solo puede tener letras, números, guion o guion bajo';
     }
 
     return null;
   }
+
+  // =========================================================
+  // INICIAR SESIÓN
+  // =========================================================
 
   Future<bool> login(
       String email,
@@ -214,7 +357,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final normalizedEmail = email.trim().toLowerCase();
+      final normalizedEmail =
+      email.trim().toLowerCase();
 
       final emailError = _validateEmail(
         normalizedEmail,
@@ -230,20 +374,36 @@ class AuthProvider extends ChangeNotifier {
         );
       }
 
+      /*
+       * El AuthRemoteDataSource guarda automáticamente
+       * el token y los datos del usuario.
+       */
       _user = await _loginUseCase(
         normalizedEmail,
         password,
       );
 
+      if (_user == null) {
+        throw Exception(
+          'No fue posible obtener los datos del usuario',
+        );
+      }
+
       return true;
     } catch (error) {
+      _user = null;
       _errorMessage = _cleanError(error);
+
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
+
+  // =========================================================
+  // REGISTRO
+  // =========================================================
 
   Future<bool> register({
     required String email,
@@ -264,10 +424,11 @@ class AuthProvider extends ChangeNotifier {
       final normalizedEmail =
       email.trim().toLowerCase();
 
-      final normalizedName = name.trim();
+      final normalizedName =
+      name.trim();
 
       final normalizedRole =
-      role.trim().toLowerCase();
+      _normalizeRole(role);
 
       final nameError = _validateName(
         normalizedName,
@@ -308,9 +469,8 @@ class AuthProvider extends ChangeNotifier {
       }
 
       /*
-       * Solamente crea la cuenta.
-       * El perfil vocacional del estudiante se crea
-       * después de iniciar sesión.
+       * El registro hace login automático.
+       * Por eso también guarda el token.
        */
       _user = await _registerUseCase(
         email: normalizedEmail,
@@ -322,7 +482,8 @@ class AuthProvider extends ChangeNotifier {
         additionalData: additionalData,
       );
 
-      final token = await _userService.getToken();
+      final token =
+      await _userService.getToken();
 
       if (token == null || token.isEmpty) {
         throw Exception(
@@ -331,7 +492,8 @@ class AuthProvider extends ChangeNotifier {
       }
 
       /*
-       * El flujo del orientador se conserva.
+       * Si es orientador y proporcionó los datos
+       * de un grupo, se crea después del registro.
        */
       if (normalizedRole == 'orientador') {
         if (additionalData == null) {
@@ -340,12 +502,13 @@ class AuthProvider extends ChangeNotifier {
           );
         }
 
-        final group = additionalData['group'];
+        final group =
+        additionalData['group'];
 
-        if (group != null) {
+        if (group is Map) {
           await _api.createGroup(
             token,
-            group,
+            Map<String, dynamic>.from(group),
           );
         }
       }
@@ -365,26 +528,18 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /*
-   * Comprueba si el alumno tiene perfil vocacional.
-   *
-   * true:
-   *   Ya tiene perfil y puede entrar al Home.
-   *
-   * false:
-   *   Todavía no tiene perfil y debe ir a
-   *   StudentProfileSetupScreen.
-   *
-   * null:
-   *   Ocurrió un error real de conexión o sesión.
-   */
+  // =========================================================
+  // COMPROBAR PERFIL VOCACIONAL
+  // =========================================================
+
   Future<bool?> studentProfileExists() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final token = await _userService.getToken();
+      final token =
+      await _userService.getToken();
 
       if (token == null || token.isEmpty) {
         throw Exception(
@@ -396,21 +551,16 @@ class AuthProvider extends ChangeNotifier {
 
       return true;
     } catch (error) {
-      final cleanError = _cleanError(error);
+      final cleanError =
+      _cleanError(error);
 
-      final normalizedError = _normalizeError(
-        cleanError,
-      );
+      final normalizedError =
+      _normalizeError(cleanError);
 
       debugPrint(
         'Comprobación de perfil vocacional: $cleanError',
       );
 
-      /*
-       * Esta condición reconoce exactamente mensajes como:
-       *
-       * "No se encontró el perfil vocacional para el usuario..."
-       */
       final profileNotFound =
           normalizedError.contains('404') ||
               normalizedError.contains(
@@ -428,27 +578,24 @@ class AuthProvider extends ChangeNotifier {
               normalizedError.contains(
                 'vocational profile not found',
               ) ||
-              (
-                  normalizedError.contains('perfil') &&
-                      normalizedError.contains('no se encontro')
-              ) ||
-              (
-                  normalizedError.contains('perfil') &&
-                      normalizedError.contains('no encontrado')
-              );
+              (normalizedError.contains('perfil') &&
+                  normalizedError.contains(
+                    'no se encontro',
+                  )) ||
+              (normalizedError.contains('perfil') &&
+                  normalizedError.contains(
+                    'no encontrado',
+                  ));
 
       if (profileNotFound) {
         /*
-         * No es un error.
-         * El alumno simplemente debe completar su perfil.
+         * No es un error real.
+         * El estudiante debe completar el perfil.
          */
         _errorMessage = null;
         return false;
       }
 
-      /*
-       * Cualquier otro mensaje sí representa un error real.
-       */
       _errorMessage = cleanError;
       return null;
     } finally {
@@ -456,6 +603,10 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // =========================================================
+  // CREAR PERFIL VOCACIONAL
+  // =========================================================
 
   Future<bool> createStudentVocationalProfile(
       Map<String, dynamic> profile,
@@ -472,7 +623,8 @@ class AuthProvider extends ChangeNotifier {
         throw Exception(validationError);
       }
 
-      final token = await _userService.getToken();
+      final token =
+      await _userService.getToken();
 
       if (token == null || token.isEmpty) {
         throw Exception(
@@ -500,6 +652,10 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // =========================================================
+  // UNIRSE A GRUPO
+  // =========================================================
+
   Future<bool> joinStudentGroup(
       String accessCode,
       ) async {
@@ -511,15 +667,15 @@ class AuthProvider extends ChangeNotifier {
       final normalizedCode =
       accessCode.trim();
 
-      final codeError = _validateGroupCode(
-        normalizedCode,
-      );
+      final codeError =
+      _validateGroupCode(normalizedCode);
 
       if (codeError != null) {
         throw Exception(codeError);
       }
 
-      final token = await _userService.getToken();
+      final token =
+      await _userService.getToken();
 
       if (token == null || token.isEmpty) {
         throw Exception(
@@ -546,6 +702,10 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // =========================================================
+  // ACTUALIZAR AVATAR
+  // =========================================================
 
   Future<bool> updateAvatar(
       Uint8List imageBytes,
@@ -591,6 +751,10 @@ class AuthProvider extends ChangeNotifier {
     return updateAvatar(bytes);
   }
 
+  // =========================================================
+  // CERRAR SESIÓN
+  // =========================================================
+
   Future<void> logout() async {
     _isLoading = true;
     _errorMessage = null;
@@ -598,14 +762,34 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       await _logoutUseCase();
-      _user = null;
     } catch (error) {
+      /*
+       * Aunque falle la petición al backend,
+       * la sesión local debe eliminarse.
+       */
+      debugPrint(
+        'Error notificando logout al backend: $error',
+      );
+
       _errorMessage = _cleanError(error);
     } finally {
+      /*
+       * Se vuelve a limpiar localmente por seguridad.
+       * UserService.logout no elimina onboarding_completed.
+       */
+      await _userService.logout();
+
+      _user = null;
+      _sessionChecked = true;
       _isLoading = false;
+
       notifyListeners();
     }
   }
+
+  // =========================================================
+  // RECUPERAR CONTRASEÑA
+  // =========================================================
 
   Future<bool> recoverPassword(String email) async {
     _isLoading = true;
@@ -613,13 +797,20 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final normalizedEmail = email.trim().toLowerCase();
-      final emailError = _validateEmail(normalizedEmail);
+      final normalizedEmail =
+      email.trim().toLowerCase();
+
+      final emailError =
+      _validateEmail(normalizedEmail);
+
       if (emailError != null) {
         throw Exception(emailError);
       }
 
-      await _api.recoverPassword(normalizedEmail);
+      await _api.recoverPassword(
+        normalizedEmail,
+      );
+
       return true;
     } catch (error) {
       _errorMessage = _cleanError(error);
@@ -630,20 +821,39 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> resetPassword(String token, String newPassword) async {
+  // =========================================================
+  // RESTABLECER CONTRASEÑA
+  // =========================================================
+
+  Future<bool> resetPassword(
+      String token,
+      String newPassword,
+      ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      if (token.trim().isEmpty) {
-        throw Exception('El token es obligatorio');
-      }
-      if (newPassword.length < 6) {
-        throw Exception('La contraseña debe tener al menos 6 caracteres');
+      final cleanToken = token.trim();
+
+      if (cleanToken.isEmpty) {
+        throw Exception(
+          'El token es obligatorio',
+        );
       }
 
-      await _api.resetPassword(token.trim(), newPassword);
+      final passwordError =
+      _validatePassword(newPassword);
+
+      if (passwordError != null) {
+        throw Exception(passwordError);
+      }
+
+      await _api.resetPassword(
+        cleanToken,
+        newPassword,
+      );
+
       return true;
     } catch (error) {
       _errorMessage = _cleanError(error);
@@ -654,28 +864,59 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> createPaymentPreference(double amount, {String paymentMethod = 'card'}) async {
+  // =========================================================
+  // CREAR PREFERENCIA DE PAGO
+  // =========================================================
+
+  Future<String?> createPaymentPreference(
+      double amount, {
+        String paymentMethod = 'card',
+      }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final token = await _userService.getToken();
+      if (amount <= 0) {
+        throw Exception(
+          'El monto del pago debe ser mayor a cero',
+        );
+      }
+
+      final token =
+      await _userService.getToken();
+
       if (token == null || token.isEmpty) {
-        throw Exception('Usuario no autenticado.');
+        throw Exception(
+          'Usuario no autenticado.',
+        );
       }
 
-      final response = await _api.createPaymentPreference(token, {
-        'title': 'Suscripción Universitaria Premium - Oriéntate+',
-        'price': amount,
-        'paymentMethod': paymentMethod,
-      });
+      final response =
+      await _api.createPaymentPreference(
+        token,
+        {
+          'title':
+          'Suscripción Universitaria Premium - Oriéntate+',
+          'price': amount,
+          'paymentMethod': paymentMethod,
+        },
+      );
 
-      if (response['status'] == 'success' && response['data'] != null) {
-        return response['data']['initPoint'] as String?;
-      } else {
-        throw Exception(response['message'] ?? 'Error al generar la preferencia de pago');
+      final status =
+      response['status']?.toString();
+
+      final data = response['data'];
+
+      if (status == 'success' &&
+          data is Map) {
+        return data['initPoint']?.toString();
       }
+
+      throw Exception(
+        response['message'] ??
+            'Error al generar la preferencia de pago',
+      );
     } catch (error) {
       _errorMessage = _cleanError(error);
       return null;
@@ -685,20 +926,31 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  void setPremium(bool val) {
-    if (_user != null) {
-      _user = UserEntity(
-        id: _user!.id,
-        email: _user!.email,
-        name: _user!.name,
-        photoUrl: _user!.photoUrl,
-        avatarUrl: _user!.avatarUrl,
-        role: _user!.role,
-        verificationStatus: _user!.verificationStatus,
-        universityName: _user!.universityName,
-        isPremium: val,
-      );
-      notifyListeners();
+  // =========================================================
+  // ACTUALIZAR PREMIUM LOCALMENTE
+  // =========================================================
+
+  void setPremium(bool value) {
+    final currentUser = _user;
+
+    if (currentUser == null) {
+      return;
     }
+
+    _user = UserEntity(
+      id: currentUser.id,
+      email: currentUser.email,
+      name: currentUser.name,
+      photoUrl: currentUser.photoUrl,
+      avatarUrl: currentUser.avatarUrl,
+      role: currentUser.role,
+      verificationStatus:
+      currentUser.verificationStatus,
+      universityName:
+      currentUser.universityName,
+      isPremium: value,
+    );
+
+    notifyListeners();
   }
 }
