@@ -15,6 +15,8 @@ import '../../domain/usecases/get_student_profile_usecase.dart';
 import '../../domain/usecases/get_vocational_results_usecase.dart';
 import '../../domain/usecases/get_student_appointments_usecase.dart';
 import '../../domain/usecases/schedule_appointment_usecase.dart';
+import '../../domain/entities/event_entity.dart';
+import '../../domain/usecases/get_events_usecase.dart';
 
 class StudentHomeProvider extends ChangeNotifier {
   final GetStudentProfileUseCase _getProfileUseCase;
@@ -22,6 +24,7 @@ class StudentHomeProvider extends ChangeNotifier {
   final GetAvailableGamesUseCase _getGamesUseCase;
   final GetStudentAppointmentsUseCase _getAppointmentsUseCase;
   final ScheduleAppointmentUseCase _scheduleAppointmentUseCase;
+  final GetEventsUseCase _getEventsUseCase;
   final UserService _userService;
   final IApi _api;
 
@@ -31,6 +34,7 @@ class StudentHomeProvider extends ChangeNotifier {
     required GetAvailableGamesUseCase getGamesUseCase,
     required GetStudentAppointmentsUseCase getAppointmentsUseCase,
     required ScheduleAppointmentUseCase scheduleAppointmentUseCase,
+    required GetEventsUseCase getEventsUseCase,
     required UserService userService,
     required IApi api,
   })  : _getProfileUseCase = getProfileUseCase,
@@ -38,6 +42,7 @@ class StudentHomeProvider extends ChangeNotifier {
         _getGamesUseCase = getGamesUseCase,
         _getAppointmentsUseCase = getAppointmentsUseCase,
         _scheduleAppointmentUseCase = scheduleAppointmentUseCase,
+        _getEventsUseCase = getEventsUseCase,
         _userService = userService,
         _api = api;
 
@@ -48,6 +53,7 @@ class StudentHomeProvider extends ChangeNotifier {
   List<dynamic> _availableGames = [];
   List<dynamic> _studentGroups = [];
   List<AppointmentEntity> _appointments = [];
+  List<EventEntity> _events = [];
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -67,6 +73,9 @@ class StudentHomeProvider extends ChangeNotifier {
 
   List<AppointmentEntity> get appointments =>
       List.unmodifiable(_appointments);
+
+  List<EventEntity> get events =>
+      List.unmodifiable(_events);
 
   bool get isLoading => _isLoading;
 
@@ -257,6 +266,7 @@ class StudentHomeProvider extends ChangeNotifier {
       _results = await _loadResultsSafely();
       _availableGames = await _loadGamesSafely();
       _appointments = await _loadAppointmentsSafely();
+      _events = await _loadEventsSafely();
     } catch (error, stackTrace) {
       debugPrint(
         'Error cargando inicio del estudiante: $error',
@@ -449,6 +459,18 @@ class StudentHomeProvider extends ChangeNotifier {
     } catch (error) {
       debugPrint(
         'No se pudieron cargar las citas: $error',
+      );
+
+      return [];
+    }
+  }
+
+  Future<List<EventEntity>> _loadEventsSafely() async {
+    try {
+      return await _getEventsUseCase();
+    } catch (error) {
+      debugPrint(
+        'No se pudieron cargar los eventos: $error',
       );
 
       return [];

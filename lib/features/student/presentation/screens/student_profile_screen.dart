@@ -103,7 +103,7 @@ class _StudentProfileScreenState
         ),
         bottomNavigationBar:
         const StudentBottomNavigationBar(
-          currentIndex: 3,
+          currentIndex: 4,
         ),
       ),
     );

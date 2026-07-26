@@ -11,10 +11,11 @@ class EventModel extends EventEntity {
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
+    final rawDate = json['date'] ?? json['eventDate'];
     return EventModel(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
-      date: DateTime.parse(json['date']),
+      date: rawDate != null ? DateTime.parse(rawDate.toString()) : DateTime.now(),
       location: json['location'] ?? '',
       description: json['description'] ?? '',
     );

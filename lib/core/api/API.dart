@@ -1088,10 +1088,11 @@ class API implements IApi {
   }
 
   @override
-  Future<List<dynamic>> getGames() async {
+  Future<List<dynamic>> getGames(String token) async {
     final result = await _request(
       method: 'GET',
       path: '/games',
+      token: token,
     );
 
     return _asList(
@@ -1375,6 +1376,16 @@ class API implements IApi {
     final result = await _request(
       method: 'GET',
       path: '/catalog/universities/events',
+      token: token,
+    );
+    return _asList(result, keys: const ['data']);
+  }
+
+  @override
+  Future<List<dynamic>> getAllCatalogEvents(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/catalog/events',
       token: token,
     );
     return _asList(result, keys: const ['data']);

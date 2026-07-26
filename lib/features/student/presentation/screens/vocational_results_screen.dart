@@ -118,7 +118,7 @@ class _VocationalResultsScreenState
         body: _buildBody(provider),
         bottomNavigationBar:
         const StudentBottomNavigationBar(
-          currentIndex: 2,
+          currentIndex: 3,
         ),
       ),
     );

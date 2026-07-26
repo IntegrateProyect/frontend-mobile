@@ -20,7 +20,8 @@ class VocationalGamesRepositoryImpl implements VocationalGamesRepository {
 
   @override
   Future<List<GameEntity>> getAvailableGames() async {
-    final data = await api.getGames();
+    final token = await userService.getToken();
+    final data = await api.getGames(token ?? '');
 
     return data
         .map((item) => GameModel.fromJson(Map<String, dynamic>.from(item)))
