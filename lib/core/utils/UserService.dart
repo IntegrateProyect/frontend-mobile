@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'StorageService.dart';
 import '../../features/auth/data/datasources/models/user_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserService {
   final StorageService _storage;
@@ -9,6 +10,18 @@ class UserService {
   static const String _userKey = UserServiceKeys.userData;
 
   UserService(this._storage);
+
+  Future<void> _clearGameProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys();
+      for (final key in keys) {
+        if (key.startsWith('game_')) {
+          await prefs.remove(key);
+        }
+      }
+    } catch (_) {}
+  }
 
   Future<void> saveSession(
       String token,
@@ -20,6 +33,7 @@ class UserService {
       throw Exception('Token inválido');
     }
 
+    await _clearGameProgress();
     await _storage.saveToken(cleanToken);
 
     await _storage.write(
@@ -84,5 +98,6 @@ class UserService {
     // No elimina onboarding_completed.
     await _storage.delete(_userKey);
     await _storage.deleteToken();
+    await _clearGameProgress();
   }
 }

@@ -336,13 +336,25 @@ class TallerFlameGame extends FlameGame {
           return;
         }
 
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => GameResultScreen(
-              result: result,
+        if (provider.areAllGamesCompleted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => GameResultScreen(
+                result: result,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text('¡Minijuego completado! Completa los demás para ver tus resultados.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+        }
       }
     } catch (error, stackTrace) {
       debugPrint('Error al enviar la respuesta: $error');

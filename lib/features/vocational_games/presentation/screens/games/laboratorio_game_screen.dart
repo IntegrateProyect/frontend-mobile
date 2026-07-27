@@ -399,9 +399,21 @@ class LaboratorioFlameGame extends FlameGame {
         final result = await provider.finishGame(gameEntity.id, statusKey: miniGameKey);
         if (!context.mounted) return;
 
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => GameResultScreen(result: result)),
-        );
+        if (provider.areAllGamesCompleted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => GameResultScreen(result: result)),
+          );
+        } else {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text('¡Minijuego completado! Completa los demás para ver tus resultados.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+        }
       }
     } catch (error, stackTrace) {
       debugPrint('Error al guardar el nivel de interacción: $error');

@@ -85,6 +85,15 @@ class GamesProvider extends ChangeNotifier {
 
   String? get sessionId => _sessionId;
 
+  bool get areAllGamesCompleted {
+    if (_miniGames.isEmpty) {
+      return false;
+    }
+    return _miniGames.every(
+      (game) => getMiniGameStatus(game.statusKey) == MiniGameStatus.completed,
+    );
+  }
+
   bool get isRateLimited {
     final blockedUntil = _rateLimitBlockedUntil;
 
@@ -776,6 +785,16 @@ class GamesProvider extends ChangeNotifier {
 
       rethrow;
     }
+  }
+
+  Future<void> markAllAsCompleted() async {
+    final preferences = await SharedPreferences.getInstance();
+    for (final miniGame in _miniGames) {
+      final key = miniGame.statusKey;
+      await preferences.setBool('game_completed_$key', true);
+      _miniGameStatus[key] = MiniGameStatus.completed;
+    }
+    notifyListeners();
   }
 
   Future<void> resetMiniGameProgress(
