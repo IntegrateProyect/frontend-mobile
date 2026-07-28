@@ -168,7 +168,11 @@ Future<void> init() async {
   sl.registerLazySingleton<GetStudentFileUseCase>(() => GetStudentFileUseCase(sl<CounselorRepository>()));
   sl.registerLazySingleton<GetCounselorAppointmentsUseCase>(() => GetCounselorAppointmentsUseCase(sl<CounselorRepository>()));
   sl.registerLazySingleton<GetGroupStudentsUseCase>(() => GetGroupStudentsUseCase(sl<CounselorRepository>()));
-  sl.registerLazySingleton<ScheduleCounselorAppointmentUseCase>(() => ScheduleCounselorAppointmentUseCase(sl<CounselorRepository>()));
+  sl.registerLazySingleton<ScheduleCounselorAppointmentUseCase>(
+        () => ScheduleCounselorAppointmentUseCase(
+      repository: sl<CounselorRepository>(),
+    ),
+  );
 
   sl.registerFactory<CounselorProvider>(() => CounselorProvider(
     getGroupsUseCase: sl<GetGroupsUseCase>(),
@@ -204,7 +208,7 @@ Future<void> init() async {
   // UNIVERSITY
   // ==========================================================
   sl.registerLazySingleton<UniversityRepository>(() => UniversityRepositoryImpl(api: sl<IApi>(), userService: sl<UserService>()));
-  
+
   // UseCases
   sl.registerLazySingleton<GetUniversityProfileUseCase>(() => GetUniversityProfileUseCase(sl<UniversityRepository>()));
   sl.registerLazySingleton<GetUniversityCareersUseCase>(() => GetUniversityCareersUseCase(sl<UniversityRepository>()));
@@ -308,7 +312,7 @@ Future<void> init() async {
   // ALUMNI
   // ==========================================================
   sl.registerLazySingleton<AlumniRepository>(() => AlumniRepositoryImpl(api: sl<IApi>(), userService: sl<UserService>()));
-  
+
   sl.registerLazySingleton<GetAlumniProfileUseCase>(() => GetAlumniProfileUseCase(sl<AlumniRepository>()));
   sl.registerLazySingleton<UpdateAlumniProfileUseCase>(() => UpdateAlumniProfileUseCase(sl<AlumniRepository>()));
   sl.registerLazySingleton<ManageStoriesUseCase>(() => ManageStoriesUseCase(sl<AlumniRepository>()));

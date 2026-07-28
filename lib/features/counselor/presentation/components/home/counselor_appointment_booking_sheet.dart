@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../../student/domain/entities/student_profile_entity.dart';
-
 import '../../../domain/entities/availability_slot_entity.dart';
 import '../../providers/counselor_provider.dart';
 
@@ -49,28 +48,6 @@ class _CounselorAppointmentBookingSheetState
     _motiveController.dispose();
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectTime() async {
-    final TimeOfDay initialTime =
-        _selectedTime ?? TimeOfDay.now();
-
-    final TimeOfDay? result =
-    await showTimePicker(
-      context: context,
-      initialTime: initialTime,
-      helpText: 'Selecciona la hora de la cita',
-      cancelText: 'Cancelar',
-      confirmText: 'Aceptar',
-    );
-
-    if (result == null || !mounted) {
-      return;
-    }
-
-    setState(() {
-      _selectedTime = result;
-    });
   }
 
   Future<void> _submit() async {
@@ -291,7 +268,9 @@ class _CounselorAppointmentBookingSheetState
                       dayAvailability,
                     ),
                     SizedBox(height: 12.h),
-                    _buildTimeSelector(),
+                    _buildTimeSelector(
+                      dayAvailability,
+                    ),
                     SizedBox(height: 24.h),
                     _buildStepTitle(
                       number: '3',
@@ -662,53 +641,104 @@ class _CounselorAppointmentBookingSheetState
     );
   }
 
-  Widget _buildTimeSelector() {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(15.r),
-      child: InkWell(
-        onTap: _selectedDay == null
-            ? null
-            : _selectTime,
-        borderRadius: BorderRadius.circular(15.r),
-        child: Container(
-          padding: EdgeInsets.all(16.w),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15.r),
-            border: Border.all(
-              color: const Color(0xFFECECF3),
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.access_time_rounded,
-                color: _primaryColor,
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Text(
-                  _selectedDay == null
-                      ? 'Primero selecciona una fecha'
-                      : _selectedTime == null
-                      ? 'Seleccionar hora'
-                      : _selectedTime!.format(context),
-                  style: TextStyle(
-                    color: _selectedTime == null
-                        ? Colors.grey.shade600
-                        : _darkText,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-              ),
-            ],
-          ),
+  Widget _buildTimeSelector(
+      List<AvailabilitySlotEntity> availability,
+      ) {
+    final times = _availableTimes(availability);
+
+    if (_selectedDay == null || times.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(15.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15.r),
         ),
+        child: Text(
+          _selectedDay == null
+              ? 'Primero selecciona una fecha.'
+              : 'No hay horas disponibles para este día.',
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: const Color(0xFFECECF3)),
+      ),
+      child: Wrap(
+        spacing: 9.w,
+        runSpacing: 9.h,
+        children: times.map((time) {
+          final selected = _selectedTime?.hour == time.hour &&
+              _selectedTime?.minute == time.minute;
+          return ChoiceChip(
+            selected: selected,
+            label: Text(time.format(context)),
+            selectedColor: _primaryColor.withOpacity(.14),
+            side: BorderSide(
+              color: selected
+                  ? _primaryColor
+                  : const Color(0xFFE2E2EA),
+            ),
+            onSelected: (_) {
+              setState(() => _selectedTime = time);
+            },
+          );
+        }).toList(),
       ),
     );
+  }
+
+  List<TimeOfDay> _availableTimes(
+      List<AvailabilitySlotEntity> availability,
+      ) {
+    if (_selectedDay == null) return [];
+
+    final result = <TimeOfDay>[];
+    final now = DateTime.now();
+
+    for (final slot in availability) {
+      final start = _minutes(slot.startTime);
+      final end = _minutes(slot.endTime);
+      if (start < 0 || end <= start) continue;
+
+      for (int value = start;
+      value + 60 <= end;
+      value += 60) {
+        final candidate = DateTime(
+          _selectedDay!.year,
+          _selectedDay!.month,
+          _selectedDay!.day,
+          value ~/ 60,
+          value % 60,
+        );
+
+        if (!candidate.isAfter(now)) continue;
+
+        result.add(
+          TimeOfDay(
+            hour: candidate.hour,
+            minute: candidate.minute,
+          ),
+        );
+      }
+    }
+
+    return result;
+  }
+
+  int _minutes(String value) {
+    final parts = value.split(':');
+    if (parts.length < 2) return -1;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return -1;
+    return hour * 60 + minute;
   }
 
   Widget _buildMotiveField() {

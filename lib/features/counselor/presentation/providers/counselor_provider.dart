@@ -104,7 +104,7 @@ class CounselorProvider extends ChangeNotifier {
   List<StudentConsultationEntity> get consultations => List<StudentConsultationEntity>.unmodifiable(_consultations);
 
   List<AppointmentEntity> get appointments => List<AppointmentEntity>.unmodifiable(_appointments);
-  
+
   List<AvailabilitySlotEntity> get availability => List<AvailabilitySlotEntity>.unmodifiable(_availability);
 
   StudentFileEntity? get currentStudentFile => _currentStudentFile;
@@ -325,7 +325,7 @@ class CounselorProvider extends ChangeNotifier {
   List<AvailabilitySlotEntity> availabilityForDate(DateTime date) {
     // dayOfWeek en DateTime: 1 (Lunes) a 7 (Domingo)
     // dayOfWeek en Entity: 0 (Domingo) a 6 (Sábado)
-    final day = date.weekday % 7; 
+    final day = date.weekday % 7;
     return _availability.where((s) => s.dayOfWeek == day).toList();
   }
 
@@ -339,7 +339,7 @@ class CounselorProvider extends ChangeNotifier {
     for (final slot in daySlots) {
       final startParts = slot.startTime.split(':');
       final endParts = slot.endTime.split(':');
-      
+
       if (startParts.length < 2 || endParts.length < 2) continue;
 
       final startMinutes = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
@@ -356,10 +356,10 @@ class CounselorProvider extends ChangeNotifier {
   // =========================================================
 
   Future<bool> scheduleAppointment(
-    String studentId,
-    DateTime date,
-    String motive,
-  ) async {
+      String studentId,
+      DateTime date,
+      String motive,
+      ) async {
     final String cleanStudentId = studentId.trim();
     final String cleanMotive = motive.trim();
 
@@ -460,6 +460,43 @@ class CounselorProvider extends ChangeNotifier {
   }
 
   String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '').trim();
+    final String message = error
+        .toString()
+        .replaceFirst('Exception: ', '')
+        .trim();
+
+    final String normalized = message.toLowerCase();
+
+    if (normalized.contains('cannot post')) {
+      return 'El servicio para agendar citas no está disponible.';
+    }
+
+    if (normalized.contains('pertenece') ||
+        normalized.contains('does not belong') ||
+        normalized.contains('not belong')) {
+      return 'El alumno seleccionado no pertenece a uno de tus grupos.';
+    }
+
+    if (normalized.contains('availability') ||
+        normalized.contains('disponibilidad') ||
+        normalized.contains('outside')) {
+      return 'La fecha y hora están fuera de tu disponibilidad.';
+    }
+
+    if (normalized.contains('overlap') ||
+        normalized.contains('solapamiento') ||
+        normalized.contains('conflict') ||
+        normalized.contains('already has')) {
+      return 'El orientador o el alumno ya tiene otra cita cercana a ese horario.';
+    }
+
+    if (normalized.contains('<!doctype html>') ||
+        normalized.contains('<html')) {
+      return 'El servidor no pudo procesar la solicitud.';
+    }
+
+    return message.isEmpty
+        ? 'No fue posible completar la solicitud.'
+        : message;
   }
 }
