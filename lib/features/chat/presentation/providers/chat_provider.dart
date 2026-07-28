@@ -6,12 +6,13 @@ import '../../domain/repositories/chat_repository.dart';
 
 class ChatProvider extends ChangeNotifier {
   final ChatRepository repository;
-  
+
   List<ChatContactEntity> _contacts = [];
   List<ChatMessageEntity> _messages = [];
   bool _isLoading = false;
   String? _activeChatPartnerId;
   bool _isConnected = false;
+  bool _isConnecting = false;
 
   List<ChatContactEntity> get contacts => _contacts;
   List<ChatMessageEntity> get messages => _messages;
@@ -21,12 +22,10 @@ class ChatProvider extends ChangeNotifier {
   ChatProvider({required this.repository}) {
     repository.onMessageReceived().listen((message) {
       debugPrint('XXX CHAT PROVIDER: New message received: ${message.text}');
-      
-      // Si el mensaje es de la conversación actual, lo añadimos
+
       if (message.senderId == _activeChatPartnerId || message.receiverId == _activeChatPartnerId) {
-        // Reemplazar mensaje optimista si existe o añadir nuevo
         final index = _messages.indexWhere((m) => m.id == message.id || (m.text == message.text && m.id.startsWith('temp_')));
-        
+
         if (index != -1) {
           _messages[index] = message;
         } else {
@@ -34,24 +33,36 @@ class ChatProvider extends ChangeNotifier {
         }
         notifyListeners();
       }
-      loadContacts(); 
+      loadContacts();
+    });
+
+    // La conexión real ahora se refleja desde eventos del socket (onConnect/onDisconnect),
+    // no desde que repository.connect() haya simplemente retornado.
+    repository.onConnectionChanged.listen((connected) {
+      debugPrint('XXX CHAT PROVIDER: Estado de conexión actualizado -> $connected');
+      _isConnected = connected;
+      notifyListeners();
     });
   }
 
   Future<void> connect() async {
-    if (_isConnected) return;
-    
-    String apiUrl = dotenv.env['API_URL'] ?? 'https://orientate-backend.shop/api/v1';
-    String socketUrl = apiUrl.replaceAll('/api/v1', '');
-    
+    if (_isConnected || _isConnecting) return;
+    _isConnecting = true;
+
+    final apiUrl = dotenv.env['API_URL'] ?? 'https://orientate-backend.shop/api/v1';
+    final socketUrl = apiUrl.replaceAll('/api/v1', '');
+    // Nota: ya NO se hace conversión wss/puerto aquí; eso vive solo en el repositorio.
+
     try {
       await repository.connect(socketUrl);
-      _isConnected = true;
-      notifyListeners();
+      // No seteamos _isConnected aquí: se actualizará vía onConnectionChanged
+      // cuando el socket realmente dispare 'connect'.
     } catch (e) {
       debugPrint('XXX CHAT PROVIDER: Connection failed: $e');
       _isConnected = false;
       notifyListeners();
+    } finally {
+      _isConnecting = false;
     }
   }
 
@@ -87,7 +98,7 @@ class ChatProvider extends ChangeNotifier {
 
   void sendMessage(String receiverId, String text, String currentUserId) {
     debugPrint('XXX CHAT PROVIDER: Entrada a sendMessage. Conectado = $_isConnected');
-    // ACTUALIZACIÓN OPTIMISTA: Añadir mensaje a la UI de inmediato
+
     final tempMessage = ChatMessageEntity(
       id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
       senderId: currentUserId,
@@ -97,33 +108,16 @@ class ChatProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
 
-    try {
-      debugPrint('XXX CHAT PROVIDER: Añadiendo mensaje temporal a la lista');
-      _messages.add(tempMessage);
-      notifyListeners();
-      debugPrint('XXX CHAT PROVIDER: Notificación exitosa.');
-    } catch (e, stack) {
-      debugPrint('XXX CHAT PROVIDER: EXCEPCIÓN al añadir/notificar: $e\n$stack');
-    }
+    _messages.add(tempMessage);
+    notifyListeners();
 
-    try {
-      if (!_isConnected) {
-        debugPrint('XXX CHAT PROVIDER: No conectado. Conectando primero...');
-        connect().then((_) {
-          try {
-            debugPrint('XXX CHAT PROVIDER: Conexión completada. Llamando a repository.sendMessage...');
-            repository.sendMessage(receiverId, text);
-          } catch (e, stack) {
-            debugPrint('XXX CHAT PROVIDER: EXCEPCIÓN en callback sendMessage: $e\n$stack');
-          }
-        });
-      } else {
-        debugPrint('XXX CHAT PROVIDER: Ya conectado. Llamando a repository.sendMessage...');
-        repository.sendMessage(receiverId, text);
-      }
-    } catch (e, stack) {
-      debugPrint('XXX CHAT PROVIDER: EXCEPCIÓN al llamar al repositorio: $e\n$stack');
+    // El repositorio ahora encola el mensaje internamente si el socket no está listo,
+    // así que ya no es necesario esperar a connect() antes de llamar a sendMessage.
+    if (!_isConnected) {
+      debugPrint('XXX CHAT PROVIDER: No conectado. Disparando connect() en paralelo...');
+      connect();
     }
+    repository.sendMessage(receiverId, text);
   }
 
   void clearMessages() {

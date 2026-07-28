@@ -398,6 +398,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
             label: 'Alumnos',
             icon: Icons.people_alt_outlined,
             color: const Color(0xFF1597D4),
+            onTap: () => context.push(AppRoutes.counselorStudents.path),
           ),
           _metricDivider(),
           _metric(
@@ -405,6 +406,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
             label: 'Grupos',
             icon: Icons.groups_2_outlined,
             color: const Color(0xFF9C27B0),
+            onTap: () => setState(() => _selectedIndex = 1),
           ),
           _metricDivider(),
           _metric(
@@ -412,6 +414,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
             label: 'Citas hoy',
             icon: Icons.event_outlined,
             color: _primary,
+            onTap: () => setState(() => _selectedIndex = 2),
           ),
           _metricDivider(),
           _metric(
@@ -419,6 +422,7 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
             label: 'Pendientes',
             icon: Icons.notifications_active_outlined,
             color: const Color(0xFFF59E0B),
+            onTap: () => _showNotifications(provider),
           ),
         ],
       ),
@@ -430,31 +434,39 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
     required String label,
     required IconData icon,
     required Color color,
+    VoidCallback? onTap,
   }) {
     return Expanded(
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 12.h),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 21.sp),
-            SizedBox(height: 5.h),
-            Text(
-              '$value',
-              style: TextStyle(
-                color: _dark,
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w900,
-              ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(15.r),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.h),
+            child: Column(
+              children: [
+                Icon(icon, color: color, size: 21.sp),
+                SizedBox(height: 5.h),
+                Text(
+                  '$value',
+                  style: TextStyle(
+                    color: _dark,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 8.5.sp,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 8.5.sp,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1218,8 +1230,6 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
       elevation: 8,
       onTap: (index) {
         if (index == 3) {
-          context.push(AppRoutes.chatContacts.path);
-        } else if (index == 4) {
           context.push(AppRoutes.counselorProfile.path);
         } else {
           setState(() => _selectedIndex = index);
@@ -1240,10 +1250,6 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
           icon: Icon(Icons.calendar_month_outlined),
           activeIcon: Icon(Icons.calendar_month_rounded),
           label: 'Agenda',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline_rounded),
-          label: 'Mensajes',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline_rounded),

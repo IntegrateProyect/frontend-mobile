@@ -38,6 +38,7 @@ enum AppRoutes {
   vocationalMap('/vocational-map'),
   studentFile('/student-file'),
   groupStudents('/group-students'),
+  counselorStudents('/counselor-students'),
 
   // University
   universityHome('/university-home'),
