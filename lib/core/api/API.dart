@@ -941,13 +941,17 @@ class API implements IApi {
   }
 
   @override
-  Future<Map<String, dynamic>> counselorScheduleAppointment(String token, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> counselorScheduleAppointment(
+      String token,
+      Map<String, dynamic> data,
+      ) async {
     final result = await _request(
       method: 'POST',
       path: '/counselors/appointments',
       token: token,
       body: data,
     );
+
     return _asMap(result);
   }
 

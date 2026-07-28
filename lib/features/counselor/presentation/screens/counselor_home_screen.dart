@@ -10,6 +10,7 @@ import '../../domain/entities/appointment_entity.dart';
 import '../../domain/entities/student_consultation_entity.dart';
 import '../components/home/availability_editor_sheet.dart';
 import '../components/home/counselor_appointment_booking_sheet.dart';
+import '../components/home/counselor_weekly_calendar.dart';
 import '../providers/counselor_provider.dart';
 
 class CounselorHomeScreen extends StatefulWidget {
@@ -1017,19 +1018,16 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
             ),
           ),
           SizedBox(height: 18.h),
-          if (appointments.isEmpty)
-            _emptyFocusCard(
-              icon: Icons.event_busy_outlined,
-              color: _primary,
-              title: 'No hay citas programadas',
-              subtitle: 'Crea una cita para comenzar a organizar tu agenda.',
-              button: 'Agendar',
-              onTap: () => showCounselorBookingSheet(context),
-            )
-          else
-            ...appointments.map(
-                  (item) => _appointmentCard(provider, item),
-            ),
+          CounselorWeeklyCalendar(
+            appointments: appointments,
+            availability: provider.availability,
+            studentName: (studentId) {
+              return _studentName(provider, studentId);
+            },
+            onSchedule: () {
+              showCounselorBookingSheet(context);
+            },
+          ),
         ],
       ),
     );

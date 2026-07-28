@@ -369,11 +369,42 @@ class CounselorRepositoryImpl implements CounselorRepository {
       String motive,
       ) async {
     final String token = await _getToken();
-    await api.counselorScheduleAppointment(token, {
-      'studentId': studentId,
-      'sessionDate': date.toIso8601String(),
-      'motive': motive.trim(),
-    });
+    final String cleanStudentId = studentId.trim();
+    final String cleanMotive = motive.trim();
+
+    if (cleanStudentId.isEmpty) {
+      throw Exception('Selecciona un alumno.');
+    }
+
+    if (cleanMotive.isEmpty) {
+      throw Exception('Ingresa el motivo de la cita.');
+    }
+
+    if (!date.isAfter(DateTime.now())) {
+      throw Exception(
+        'La fecha y hora de la cita deben ser futuras.',
+      );
+    }
+
+    // El backend compara la hora ISO directamente contra el bloque
+    // configurado (por ejemplo, 08:00–14:00). Se construye en UTC
+    // conservando la hora elegida para enviar 10:00 como 10:00Z.
+    final DateTime backendDate = DateTime.utc(
+      date.year,
+      date.month,
+      date.day,
+      date.hour,
+      date.minute,
+    );
+
+    await api.counselorScheduleAppointment(
+      token,
+      <String, dynamic>{
+        'studentId': cleanStudentId,
+        'sessionDate': backendDate.toIso8601String(),
+        'motive': cleanMotive,
+      },
+    );
   }
 
   // =========================================================
