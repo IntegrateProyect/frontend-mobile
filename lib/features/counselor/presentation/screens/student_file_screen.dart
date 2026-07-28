@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/routes/AppRoutes.dart';
 import '../../domain/entities/student_alert_entity.dart';
 import '../components/home/counselor_appointment_booking_sheet.dart';
 import '../providers/counselor_provider.dart';
-
 
 class StudentFileScreen extends StatefulWidget {
   final String studentId;
@@ -69,6 +70,22 @@ class _StudentFileScreenState extends State<StudentFileScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Enviar mensaje',
+            onPressed: () {
+              context.push(
+                AppRoutes.realChat.path,
+                extra: {
+                  'contactId': widget.studentId,
+                  'contactName': widget.studentName,
+                },
+              );
+            },
+            icon: const Icon(
+              Icons.chat_bubble_outline_rounded,
+              color: _primary,
+            ),
+          ),
+          IconButton(
             tooltip: 'Actualizar',
             onPressed: provider.isLoadingFile
                 ? null
@@ -86,24 +103,62 @@ class _StudentFileScreenState extends State<StudentFileScreen> {
           : SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 12.h),
-          child: SizedBox(
-            height: 52.h,
-            child: ElevatedButton.icon(
-              onPressed: () => showCounselorBookingSheet(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16.r),
+          child: Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 52.h,
+                  child: ElevatedButton.icon(
+                    onPressed: () => showCounselorBookingSheet(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: _primary,
+                      elevation: 0,
+                      side: const BorderSide(color: _primary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16.r),
+                      ),
+                    ),
+                    icon: const Icon(Icons.event_available_rounded),
+                    label: const Text(
+                      'Cita',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
                 ),
               ),
-              icon: const Icon(Icons.event_available_rounded),
-              label: const Text(
-                'Agendar sesión de asesoría',
-                style: TextStyle(fontWeight: FontWeight.w800),
+              SizedBox(width: 12.w),
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: 52.h,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      context.push(
+                        AppRoutes.realChat.path,
+                        extra: {
+                          'contactId': widget.studentId,
+                          'contactName': widget.studentName,
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16.r),
+                      ),
+                    ),
+                    icon: const Icon(Icons.chat_bubble_rounded),
+                    label: const Text(
+                      'Enviar mensaje',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -255,7 +310,7 @@ class _StudentHeader extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 11.sp,
                   ),
                 ),
@@ -264,7 +319,7 @@ class _StudentHeader extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 9.sp,
                   ),
                 ),
@@ -468,13 +523,17 @@ class AlertCard extends StatelessWidget {
         ? 'Necesidad de beca'
         : 'Seguimiento necesario';
 
+    return _buildAlertContent(alert, color, title);
+  }
+
+  Widget _buildAlertContent(StudentAlertEntity alert, Color color, String title) {
     return Container(
       margin: EdgeInsets.only(bottom: 11.h),
       padding: EdgeInsets.all(15.w),
       decoration: BoxDecoration(
-        color: color.withOpacity(.07),
+        color: color.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: color.withOpacity(.13)),
+        border: Border.all(color: color.withValues(alpha: 0.13)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,7 +554,7 @@ class AlertCard extends StatelessWidget {
               Text(
                 DateFormat('dd/MM/yyyy').format(alert.createdAt.toLocal()),
                 style: TextStyle(
-                  color: color.withOpacity(.65),
+                  color: color.withValues(alpha: 0.65),
                   fontSize: 9.sp,
                 ),
               ),
@@ -506,7 +565,7 @@ class AlertCard extends StatelessWidget {
             alert.details.trim().isEmpty
                 ? 'Este alumno requiere seguimiento.'
                 : alert.details,
-            style: TextStyle(color: color.withOpacity(.85)),
+            style: TextStyle(color: color.withValues(alpha: 0.85)),
           ),
           SizedBox(height: 12.h),
           SizedBox(

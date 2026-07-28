@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:orientate/core/api/IApi.dart';
@@ -15,8 +14,14 @@ class ChatRepositoryImpl implements ChatRepository {
   final UserService userService;
   io.Socket? _socket;
   final _messageController = StreamController<ChatMessageEntity>.broadcast();
+  final _connectionController = StreamController<bool>.broadcast();
+
+  // Mensajes que se intentaron enviar antes de que el socket estuviera listo
+  final List<Map<String, String>> _pendingMessages = [];
 
   ChatRepositoryImpl({required this.api, required this.userService});
+
+  Stream<bool> get onConnectionChanged => _connectionController.stream;
 
   @override
   Future<void> connect(String url) async {
@@ -28,22 +33,49 @@ class ChatRepositoryImpl implements ChatRepository {
       return;
     }
 
-    // El servidor requiere el token sin "Bearer "
+    // Fix socket_io_client port 0 parsing bug by explicitly specifying wss/ws and ports
+    String normalizedUrl = url;
+    if (normalizedUrl.startsWith('https://')) {
+      normalizedUrl = normalizedUrl.replaceFirst('https://', 'wss://');
+      if (!normalizedUrl.contains(':', 6)) {
+        normalizedUrl = '$normalizedUrl:443';
+      }
+    } else if (normalizedUrl.startsWith('http://')) {
+      normalizedUrl = normalizedUrl.replaceFirst('http://', 'ws://');
+      if (!normalizedUrl.contains(':', 5)) {
+        normalizedUrl = '$normalizedUrl:80';
+      }
+    }
+
     final cleanToken = token.replaceFirst('Bearer ', '').trim();
-    debugPrint('XXX CHAT: Intentando conectar a $url');
+    debugPrint('XXX CHAT: Intentando conectar a $normalizedUrl');
 
-    _socket = io.io(url, io.OptionBuilder()
-      .setTransports(['websocket', 'polling'])
-      .setAuth({'token': cleanToken})
-      .enableForceNew()
-      .setReconnectionAttempts(10)
-      .setReconnectionDelay(3000)
-      .build());
+    _socket = io.io(normalizedUrl, io.OptionBuilder()
+        .setTransports(['websocket', 'polling'])
+        .setAuth({'token': cleanToken})
+        .enableForceNew()
+        .setReconnectionAttempts(10)
+        .setReconnectionDelay(3000)
+        .build());
 
-    _socket!.onConnect((_) => debugPrint('XXX CHAT: ¡Conectado al Socket!'));
-    _socket!.onConnectError((data) => debugPrint('XXX CHAT: Error de conexión: $data'));
+    _socket!.onConnect((_) {
+      debugPrint('XXX CHAT: ¡Conectado al Socket!');
+      _connectionController.add(true);
+      _flushPendingMessages();
+    });
+
+    _socket!.onDisconnect((_) {
+      debugPrint('XXX CHAT: Desconectado del Socket');
+      _connectionController.add(false);
+    });
+
+    _socket!.onConnectError((data) {
+      debugPrint('XXX CHAT: Error de conexión: $data');
+      _connectionController.add(false);
+    });
+
     _socket!.onError((data) => debugPrint('XXX CHAT: Error de servidor: $data'));
-    
+
     // Escuchar mensajes de otros (Receptor)
     _socket!.on('new_message', (data) {
       debugPrint('XXX CHAT: Nuevo mensaje recibido: $data');
@@ -70,11 +102,21 @@ class ChatRepositoryImpl implements ChatRepository {
     }
   }
 
+  void _flushPendingMessages() {
+    if (_pendingMessages.isEmpty) return;
+    debugPrint('XXX CHAT: Reenviando ${_pendingMessages.length} mensaje(s) pendiente(s)');
+    for (final payload in _pendingMessages) {
+      _socket!.emit('send_message', payload);
+    }
+    _pendingMessages.clear();
+  }
+
   @override
   void disconnect() {
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;
+    _connectionController.add(false);
   }
 
   @override
@@ -97,17 +139,17 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   void sendMessage(String receiverId, String text) {
+    final payload = {'receiverId': receiverId, 'text': text};
+
     if (_socket == null || !_socket!.connected) {
-      debugPrint('XXX CHAT: Socket no listo. Intentando conectar...');
+      debugPrint('XXX CHAT: Socket no listo. Encolando mensaje y reintentando conexión...');
+      _pendingMessages.add(payload);
       _socket?.connect();
       return;
     }
-    
+
     debugPrint('XXX CHAT: Emitiendo event send_message a $receiverId con texto: "$text"');
-    _socket!.emit('send_message', {
-      'receiverId': receiverId,
-      'text': text,
-    });
+    _socket!.emit('send_message', payload);
   }
 
   @override

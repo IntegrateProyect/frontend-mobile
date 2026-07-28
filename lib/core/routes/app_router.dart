@@ -53,6 +53,7 @@ import '../../features/counselor/presentation/screens/counselor_profile_screen.d
 import '../../features/counselor/presentation/screens/vocational_map_screen.dart';
 import '../../features/counselor/presentation/screens/student_file_screen.dart';
 import '../../features/counselor/presentation/screens/group_students_screen.dart';
+import '../../features/counselor/presentation/screens/counselor_students_screen.dart';
 
 // =========================================================
 // OTROS ROLES
@@ -280,6 +281,13 @@ final GoRouter appRouter = GoRouter(
           args['groupName']?.toString() ??
               'Grupo',
         );
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.counselorStudents.path,
+      builder: (context, state) {
+        return const CounselorStudentsScreen();
       },
     ),
 

@@ -178,10 +178,6 @@ class _GroupStudentsScreenState
       return _buildEmptyState();
     }
 
-    // El buscador ahora vive FUERA del ListView, como header fijo.
-    // Antes estaba como itemBuilder(index == 0) dentro de la lista,
-    // lo que provocaba que Flutter reconstruyera un TextField nuevo
-    // en cada rebuild y el usuario perdiera el foco/cursor al escribir.
     return Column(
       children: [
         Padding(
@@ -501,20 +497,40 @@ class _GroupStudentsScreenState
                 ),
               ),
               SizedBox(width: 8.w),
-              Container(
-                width: 42.w,
-                height: 42.w,
-                decoration: BoxDecoration(
-                  color:
-                  _primaryColor.withOpacity(0.08),
-                  borderRadius:
-                  BorderRadius.circular(13.r),
-                ),
-                child: Icon(
-                  Icons.description_outlined,
-                  color: _primaryColor,
-                  size: 22.sp,
-                ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      context.push(
+                        AppRoutes.realChat.path,
+                        extra: {
+                          'contactId': student.id,
+                          'contactName': cleanName,
+                        },
+                      );
+                    },
+                    icon: Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: _primaryColor,
+                      size: 22.sp,
+                    ),
+                  ),
+                  Container(
+                    width: 42.w,
+                    height: 42.w,
+                    decoration: BoxDecoration(
+                      color:
+                      _primaryColor.withOpacity(0.08),
+                      borderRadius:
+                      BorderRadius.circular(13.r),
+                    ),
+                    child: Icon(
+                      Icons.description_outlined,
+                      color: _primaryColor,
+                      size: 22.sp,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
