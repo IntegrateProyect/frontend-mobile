@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:orientate/core/routes/AppRoutes.dart';
 import 'package:orientate/features/student/presentation/components/common/student_bottom_navigation_bar.dart';
+import 'package:orientate/features/student/presentation/providers/student_results_provider.dart';
 
 import '../../domain/entities/vocational_game_kind.dart';
 import '../../domain/entities/vocational_mini_game_entity.dart';
@@ -47,13 +48,13 @@ class _GamesListScreenState
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback(
-          (_) {
+      (_) async {
         if (!mounted) {
           return;
         }
 
-        final provider =
-        context.read<GamesProvider>();
+        final provider = context.read<GamesProvider>();
+        final resultsProvider = context.read<StudentResultsProvider>();
 
         /*
          * No vuelve a consultar el backend cuando
@@ -62,9 +63,24 @@ class _GamesListScreenState
         if (provider.miniGames.isEmpty &&
             !provider.isLoading &&
             !provider.isLoadingQuestions) {
-          provider.fetchGames();
+          await provider.fetchGames();
         } else {
           provider.refreshLocalStatuses();
+        }
+
+        if (!mounted) {
+          return;
+        }
+
+        await resultsProvider.fetchResults();
+
+        if (!mounted) {
+          return;
+        }
+
+        if (resultsProvider.results.isNotEmpty &&
+            !provider.areAllGamesCompleted) {
+          await provider.markAllAsCompleted();
         }
       },
     );

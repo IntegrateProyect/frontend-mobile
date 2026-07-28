@@ -20,7 +20,8 @@ class VocationalGamesRepositoryImpl implements VocationalGamesRepository {
 
   @override
   Future<List<GameEntity>> getAvailableGames() async {
-    final data = await api.getGames();
+    final token = await userService.getToken();
+    final data = await api.getGames(token ?? '');
 
     return data
         .map((item) => GameModel.fromJson(Map<String, dynamic>.from(item)))
@@ -53,7 +54,7 @@ class VocationalGamesRepositoryImpl implements VocationalGamesRepository {
   @override
   Future<Map<String, dynamic>> finishGame(String gameId, String sessionId) async {
     final token = await userService.getToken();
-    return api.finishGame(token ?? '', gameId, sessionId);
+    return api.finishGame(gameId, token ?? '', sessionId);
   }
 
   @override

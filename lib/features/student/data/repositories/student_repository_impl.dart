@@ -22,6 +22,7 @@ import '../datasources/models/student_profile_model.dart';
 import '../datasources/models/university_catalog_page_model.dart';
 import '../datasources/models/vocational_result_model.dart';
 import '../datasources/models/appointment_model.dart';
+import '../datasources/models/event_model.dart';
 
 class StudentRepositoryImpl implements StudentRepository {
   final IApi api;
@@ -168,7 +169,21 @@ class StudentRepositoryImpl implements StudentRepository {
 
   @override
   Future<List<EventEntity>> getEvents() async {
-    return [];
+    final token = await userService.getToken();
+    if (token == null || token.trim().isEmpty) {
+      return [];
+    }
+
+    final response = await api.getAllCatalogEvents(token.trim());
+
+    return response
+        .whereType<Map>()
+        .map(
+          (item) => EventModel.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
+        )
+        .toList();
   }
 
   @override

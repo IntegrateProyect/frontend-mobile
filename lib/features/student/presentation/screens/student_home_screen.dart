@@ -603,8 +603,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               );
             },
             onEventsTap: () {
-              _showMessage(
-                'Eventos próximamente',
+              context.push(
+                AppRoutes.events.path,
               );
             },
           ),

@@ -28,6 +28,7 @@ import '../../features/student/presentation/screens/vocational_results_screen.da
 import '../../features/student/presentation/screens/CareersScreen.dart';
 import '../../features/student/presentation/screens/universities_screen.dart';
 import '../../features/student/presentation/screens/student_agenda_screen.dart';
+import '../../features/student/presentation/screens/events_screen.dart';
 
 // =========================================================
 // MINIJUEGOS
@@ -170,6 +171,13 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.studentAgenda.path,
       builder: (context, state) {
         return const StudentAgendaScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.events.path,
+      builder: (context, state) {
+        return const EventsScreen();
       },
     ),
 

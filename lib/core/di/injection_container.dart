@@ -79,6 +79,7 @@ import '../../features/student/domain/usecases/get_vocational_results_usecase.da
 import '../../features/student/domain/usecases/update_student_profile_usecase.dart';
 import '../../features/student/domain/usecases/get_student_appointments_usecase.dart';
 import '../../features/student/domain/usecases/schedule_appointment_usecase.dart';
+import '../../features/student/domain/usecases/get_events_usecase.dart';
 import '../../features/student/presentation/providers/student_home_provider.dart';
 import '../../features/student/presentation/providers/student_profile_provider.dart';
 import '../../features/student/presentation/providers/student_results_provider.dart';
@@ -285,6 +286,7 @@ Future<void> init() async {
   sl.registerLazySingleton<GetStudentProfileUseCase>(() => GetStudentProfileUseCase(sl<StudentRepository>()));
   sl.registerLazySingleton<UpdateStudentProfileUseCase>(() => UpdateStudentProfileUseCase(sl<StudentRepository>()));
   sl.registerLazySingleton<GetVocationalResultsUseCase>(() => GetVocationalResultsUseCase(sl<StudentRepository>()));
+  sl.registerLazySingleton<GetEventsUseCase>(() => GetEventsUseCase(sl<StudentRepository>()));
 
   sl.registerLazySingleton<GetStudentAppointmentsUseCase>(() => GetStudentAppointmentsUseCase(sl<CounselorRepository>()));
   sl.registerLazySingleton<ScheduleAppointmentUseCase>(() => ScheduleAppointmentUseCase(sl<CounselorRepository>()));
@@ -297,6 +299,7 @@ Future<void> init() async {
     api: sl<IApi>(),
     getAppointmentsUseCase: sl<GetStudentAppointmentsUseCase>(),
     scheduleAppointmentUseCase: sl<ScheduleAppointmentUseCase>(),
+    getEventsUseCase: sl<GetEventsUseCase>(),
   ));
   sl.registerFactory<StudentProfileProvider>(() => StudentProfileProvider(getProfileUseCase: sl<GetStudentProfileUseCase>(), updateProfileUseCase: sl<UpdateStudentProfileUseCase>()));
   sl.registerFactory<StudentResultsProvider>(() => StudentResultsProvider(getResultsUseCase: sl<GetVocationalResultsUseCase>()));

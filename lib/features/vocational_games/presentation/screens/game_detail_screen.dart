@@ -280,7 +280,20 @@ class _GameDetailScreenState extends State<GameDetailScreen>
         return;
       }
 
-      _openResultScreen(result);
+      if (provider.areAllGamesCompleted) {
+        _openResultScreen(result);
+      } else {
+        Navigator.of(context).pop();
+        provider.clearQuestions();
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('¡Minijuego completado! Completa los demás para ver tus resultados.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+      }
     } catch (error, stackTrace) {
       debugPrint(
         'Error al guardar la respuesta: '

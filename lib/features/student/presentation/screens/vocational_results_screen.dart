@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'package:orientate/core/routes/AppRoutes.dart';
 import 'package:orientate/features/student/presentation/providers/student_results_provider.dart';
+import '../../../vocational_games/presentation/providers/games_provider.dart';
 
 import '../components/common/student_bottom_navigation_bar.dart';
 import '../components/common/student_ui_colors.dart';
@@ -24,10 +25,19 @@ class _VocationalResultsScreenState
   void initState() {
     super.initState();
 
-    Future.microtask(() {
+    Future.microtask(() async {
       if (!mounted) return;
 
-      context.read<StudentResultsProvider>().fetchResults();
+      final resultsProvider = context.read<StudentResultsProvider>();
+      final gamesProvider = context.read<GamesProvider>();
+
+      await resultsProvider.fetchResults();
+      await gamesProvider.fetchGames();
+
+      if (resultsProvider.results.isNotEmpty &&
+          !gamesProvider.areAllGamesCompleted) {
+        await gamesProvider.markAllAsCompleted();
+      }
     });
   }
 
@@ -53,6 +63,36 @@ class _VocationalResultsScreenState
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<StudentResultsProvider>();
+    final gamesProvider = context.watch<GamesProvider>();
+
+    if (gamesProvider.isLoading && gamesProvider.miniGames.isEmpty) {
+      return Scaffold(
+        backgroundColor: StudentUiColors.background,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            'Tus Resultados',
+            style: TextStyle(
+              color: StudentUiColors.darkText,
+              fontWeight: FontWeight.w900,
+              fontSize: 18.sp,
+            ),
+          ),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(
+            color: StudentUiColors.primary,
+          ),
+        ),
+        bottomNavigationBar: const StudentBottomNavigationBar(
+          currentIndex: 3,
+        ),
+      );
+    }
+
+    final allCompleted = gamesProvider.areAllGamesCompleted;
 
     return PopScope(
       /*
@@ -115,10 +155,10 @@ class _VocationalResultsScreenState
             ),
           ],
         ),
-        body: _buildBody(provider),
+        body: allCompleted ? _buildBody(provider) : _buildIncompleteGamesState(),
         bottomNavigationBar:
         const StudentBottomNavigationBar(
-          currentIndex: 2,
+          currentIndex: 3,
         ),
       ),
     );
@@ -727,6 +767,68 @@ class _VocationalResultsScreenState
             ),
           ],
         ),
+    )
+    );
+  }
+
+  Widget _buildIncompleteGamesState() {
+    return Center(
+      child: ListView(
+        shrinkWrap: true,
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        children: [
+          Icon(
+            Icons.sports_esports_outlined,
+            size: 80.sp,
+            color: StudentUiColors.primary.withOpacity(0.8),
+          ),
+          SizedBox(height: 20.h),
+          Text(
+            '¡Continúa tu aventura vocacional!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: StudentUiColors.darkText,
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            'Aún no has completado todos los minijuegos. Para poder analizar tus habilidades, intereses y darte tus resultados finales con las carreras recomendadas, debes completar todas las áreas.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 13.5.sp,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 28.h),
+          SizedBox(
+            width: double.infinity,
+            height: 52.h,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: StudentUiColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () {
+                context.go(AppRoutes.games.path);
+              },
+              child: Text(
+                'Ir a los Minijuegos',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
