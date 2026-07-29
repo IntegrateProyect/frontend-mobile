@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 
 import 'package:orientate/core/routes/AppRoutes.dart';
 import 'package:orientate/features/student/presentation/providers/student_results_provider.dart';
+import 'package:orientate/features/student/presentation/providers/careers_provider.dart';
 import '../../../vocational_games/presentation/providers/games_provider.dart';
+import '../../domain/entities/career_entity.dart';
 
 import '../components/common/student_bottom_navigation_bar.dart';
 import '../components/common/student_ui_colors.dart';
@@ -30,6 +32,7 @@ class _VocationalResultsScreenState
 
       final resultsProvider = context.read<StudentResultsProvider>();
       final gamesProvider = context.read<GamesProvider>();
+      final careersProvider = context.read<CareersProvider>();
 
       await resultsProvider.fetchResults();
       await gamesProvider.fetchGames();
@@ -37,6 +40,15 @@ class _VocationalResultsScreenState
       if (resultsProvider.results.isNotEmpty &&
           !gamesProvider.areAllGamesCompleted) {
         await gamesProvider.markAllAsCompleted();
+      }
+
+      if (!mounted) return;
+
+      if (gamesProvider.areAllGamesCompleted &&
+          resultsProvider.results.isNotEmpty) {
+        await careersProvider.fetchRecommendedCareers(
+          topN: 5,
+        );
       }
     });
   }
@@ -64,6 +76,7 @@ class _VocationalResultsScreenState
   Widget build(BuildContext context) {
     final provider = context.watch<StudentResultsProvider>();
     final gamesProvider = context.watch<GamesProvider>();
+    final careersProvider = context.watch<CareersProvider>();
 
     if (gamesProvider.isLoading && gamesProvider.miniGames.isEmpty) {
       return Scaffold(
@@ -155,7 +168,12 @@ class _VocationalResultsScreenState
             ),
           ],
         ),
-        body: allCompleted ? _buildBody(provider) : _buildIncompleteGamesState(),
+        body: allCompleted
+            ? _buildBody(
+          provider,
+          careersProvider,
+        )
+            : _buildIncompleteGamesState(),
         bottomNavigationBar:
         const StudentBottomNavigationBar(
           currentIndex: 3,
@@ -166,6 +184,7 @@ class _VocationalResultsScreenState
 
   Widget _buildBody(
       StudentResultsProvider provider,
+      CareersProvider careersProvider,
       ) {
     if (provider.isLoading &&
         provider.results.isEmpty) {
@@ -178,7 +197,13 @@ class _VocationalResultsScreenState
 
     return RefreshIndicator(
       color: StudentUiColors.primary,
-      onRefresh: provider.fetchResults,
+      onRefresh: () async {
+        await provider.fetchResults();
+        await careersProvider.fetchRecommendedCareers(
+          topN: 5,
+          force: true,
+        );
+      },
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
@@ -197,6 +222,12 @@ class _VocationalResultsScreenState
           ],
 
           _buildMainResultCard(provider),
+
+          SizedBox(height: 22.h),
+
+          _buildRecommendedCareers(
+            careersProvider,
+          ),
 
           SizedBox(height: 22.h),
 
@@ -262,6 +293,202 @@ class _VocationalResultsScreenState
           SizedBox(height: 28.h),
 
           _buildCareersButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendedCareers(
+      CareersProvider provider,
+      ) {
+    return Container(
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Carreras recomendadas',
+            style: TextStyle(
+              color: StudentUiColors.darkText,
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 5.h),
+          Text(
+            'Opciones calculadas con tus resultados y factores personales.',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 11.sp,
+              height: 1.3,
+            ),
+          ),
+          SizedBox(height: 16.h),
+          if (provider.isLoading)
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 24.h,
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: StudentUiColors.primary,
+                ),
+              ),
+            )
+          else if (provider.errorMessage != null)
+            Column(
+              children: [
+                Text(
+                  provider.errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.red[700],
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    provider.fetchRecommendedCareers(
+                      topN: 5,
+                      force: true,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.refresh_rounded,
+                  ),
+                  label: const Text(
+                    'Intentar nuevamente',
+                  ),
+                ),
+              ],
+            )
+          else if (provider.careers.isEmpty)
+              Text(
+                'Todavía no hay recomendaciones disponibles.',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12.sp,
+                ),
+              )
+            else
+              ...provider.careers
+                  .asMap()
+                  .entries
+                  .map(
+                    (entry) => Padding(
+                  padding: EdgeInsets.only(
+                    bottom:
+                    entry.key ==
+                        provider.careers.length - 1
+                        ? 0
+                        : 12.h,
+                  ),
+                  child: _buildCareerItem(
+                    position: entry.key + 1,
+                    career: entry.value,
+                  ),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCareerItem({
+    required int position,
+    required CareerEntity career,
+  }) {
+    final double score =
+    career.score.clamp(0.0, 1.0);
+    final String? universityName =
+        career.universityName;
+
+    return Container(
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: StudentUiColors.primary
+            .withOpacity(0.055),
+        borderRadius: BorderRadius.circular(17.r),
+        border: Border.all(
+          color: StudentUiColors.primary
+              .withOpacity(0.13),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 20.r,
+            backgroundColor: StudentUiColors.primary,
+            foregroundColor: Colors.white,
+            child: Text(
+              '$position',
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  career.name.toString(),
+                  style: TextStyle(
+                    color: StudentUiColors.darkText,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (universityName != null &&
+                    universityName.trim().isNotEmpty) ...[
+                  SizedBox(height: 5.h),
+                  Text(
+                    universityName,
+                    style: TextStyle(
+                      color: Colors.grey[650],
+                      fontSize: 10.5.sp,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+                SizedBox(height: 9.h),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: LinearProgressIndicator(
+                    value: score,
+                    minHeight: 7.h,
+                    backgroundColor: const Color(0xFFEDE9FE),
+                    color: StudentUiColors.primary,
+                  ),
+                ),
+                SizedBox(height: 5.h),
+                Text(
+                  '${(score * 100).round()}% de compatibilidad',
+                  style: TextStyle(
+                    color: StudentUiColors.primary,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -736,38 +963,38 @@ class _VocationalResultsScreenState
 
   Widget _buildCareersButton() {
     return SizedBox(
-      width: double.infinity,
-      height: 58.h,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: StudentUiColors.primary,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18.r),
+        width: double.infinity,
+        height: 58.h,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: StudentUiColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18.r),
+            ),
+            elevation: 0,
           ),
-          elevation: 0,
-        ),
-        onPressed: () {
-          context.push(AppRoutes.careers.path);
-        },
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Ver carreras recomendadas',
-              style: TextStyle(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w900,
+          onPressed: () {
+            context.push(AppRoutes.careers.path);
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Ver carreras recomendadas',
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
-            SizedBox(width: 12.w),
-            Icon(
-              Icons.arrow_forward_rounded,
-              size: 22.sp,
-            ),
-          ],
-        ),
-    )
+              SizedBox(width: 12.w),
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 22.sp,
+              ),
+            ],
+          ),
+        )
     );
   }
 

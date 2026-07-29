@@ -19,25 +19,53 @@ class StudentResultsProvider extends ChangeNotifier {
   }
 
   VocationalResultEntity? get latestResult {
-    return _results.isEmpty ? null : _results.first;
+    return _results.isEmpty
+        ? null
+        : _results.first;
   }
 
   bool get isLoading => _isLoading;
+
+  bool get hasResults => _results.isNotEmpty;
+
   String? get errorMessage => _errorMessage;
 
   Future<void> fetchResults() async {
+    if (_isLoading) {
+      return;
+    }
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       _results = await _getResultsUseCase();
-    } catch (error) {
-      debugPrint('Error al cargar resultados: $error');
-      _errorMessage = 'No se pudieron cargar los resultados.';
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Error al cargar resultados vocacionales: $error',
+      );
+
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+
+      _errorMessage =
+      'No se pudieron cargar los resultados vocacionales.';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> refresh() {
+    return fetchResults();
+  }
+
+  void clear() {
+    _results = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
   }
 }

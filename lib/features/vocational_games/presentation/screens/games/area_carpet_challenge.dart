@@ -35,6 +35,7 @@ class AreaCarpetChallengeComponent extends PositionComponent {
   int _covered = 0;
   int _hintIndex = 0;
   bool _locked = false;
+  bool _completionShown = false;
   final DateTime _startedAt = DateTime.now();
 
   static const List<String> _areaFacts = <String>[
@@ -221,11 +222,35 @@ class AreaCarpetChallengeComponent extends PositionComponent {
     }
 
     if (_covered >= total) {
-      _showMessage('¡Cuarto terminado! ${config.columns} × ${config.rows} = $total m²');
+      _showMessage(
+        '\u00A1Cuarto terminado! ${config.columns} \u00D7 ${config.rows} = $total m\u00B2',
+      );
       Future<void>.delayed(const Duration(milliseconds: 850), () {
-        if (isMounted) _finish('completed');
+        if (isMounted && !_locked) {
+          _showCompletionModal();
+        }
       });
     }
+  }
+
+  void _showCompletionModal() {
+    if (_locked || _completionShown) return;
+
+    _completionShown = true;
+    _message?.removeFromParent();
+    _message = null;
+
+    add(
+      _AreaCompletionModal(
+        imageAsset: 'carpet_area_girl.png',
+        area: total,
+        columns: config.columns,
+        rows: config.rows,
+        position: Vector2.zero(),
+        size: size.clone(),
+        onContinue: () => _finish('completed'),
+      ),
+    );
   }
 
   void _showHint() {
@@ -295,6 +320,242 @@ class AreaCarpetChallengeComponent extends PositionComponent {
       'completionTimeSeconds': DateTime.now().difference(_startedAt).inSeconds,
       'endReason': reason,
     });
+  }
+}
+
+class _AreaCompletionModal extends PositionComponent
+    with TapCallbacks {
+  final String imageAsset;
+  final int area;
+  final int columns;
+  final int rows;
+  final VoidCallback onContinue;
+
+  _AreaCompletionModal({
+    required this.imageAsset,
+    required this.area,
+    required this.columns,
+    required this.rows,
+    required Vector2 position,
+    required Vector2 size,
+    required this.onContinue,
+  }) : super(
+    position: position,
+    size: size,
+    priority: 2000,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    final modalWidth = size.x - 42;
+    final modalHeight =
+    (size.y - 80).clamp(370.0, 470.0).toDouble();
+    final modalSize = Vector2(modalWidth, modalHeight);
+    final modalTopLeft = Vector2(
+      (size.x - modalWidth) / 2,
+      (size.y - modalHeight) / 2,
+    );
+
+    add(
+      _AreaModalBackground(
+        position: modalTopLeft,
+        size: modalSize,
+      ),
+    );
+
+    add(
+      TextBoxComponent(
+        text: '\u00A1Felicidades!',
+        position: Vector2(
+          modalTopLeft.x + modalWidth / 2,
+          modalTopLeft.y + 28,
+        ),
+        size: Vector2(modalWidth - 36, 52),
+        anchor: Anchor.topCenter,
+        align: Anchor.topCenter,
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFFFC857),
+            fontSize: 29,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+
+    final characterCenter = Vector2(
+      modalTopLeft.x + modalWidth * 0.28,
+      modalTopLeft.y + modalHeight * 0.53,
+    );
+
+    try {
+      final character = await Sprite.load(imageAsset);
+      add(
+        SpriteComponent(
+          sprite: character,
+          position: characterCenter,
+          size: Vector2(
+            modalWidth * 0.43,
+            modalHeight * 0.65,
+          ),
+          anchor: Anchor.center,
+          priority: 3,
+        ),
+      );
+    } catch (error) {
+      debugPrint('No se pudo cargar $imageAsset: $error');
+      add(
+        TextComponent(
+          text: '\u{1F469}\u200D\u{1F3D7}\uFE0F\u{1F4D0}',
+          position: characterCenter,
+          anchor: Anchor.center,
+          priority: 3,
+          textRenderer: TextPaint(
+            style: const TextStyle(fontSize: 58),
+          ),
+        ),
+      );
+    }
+
+    add(
+      TextBoxComponent(
+        text:
+        '\u00A1Excelente trabajo!\n\nCubriste correctamente todas las casillas y completaste esta actividad.\n\n$columns \u00D7 $rows = $area m\u00B2 de alfombra.',
+        position: Vector2(
+          modalTopLeft.x + modalWidth * 0.50,
+          modalTopLeft.y + modalHeight * 0.27,
+        ),
+        size: Vector2(
+          modalWidth * 0.44,
+          modalHeight * 0.48,
+        ),
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFF4F8FC),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            height: 1.25,
+          ),
+        ),
+      ),
+    );
+
+    add(
+      _AreaContinueButton(
+        position: Vector2(
+          modalTopLeft.x + modalWidth / 2,
+          modalTopLeft.y + modalHeight - 48,
+        ),
+        width: modalWidth - 52,
+        onPressed: onContinue,
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()..color = const Color(0xFF020B1E).withOpacity(0.90),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+  }
+}
+
+class _AreaModalBackground extends PositionComponent {
+  _AreaModalBackground({
+    required Vector2 position,
+    required Vector2 size,
+  }) : super(
+    position: position,
+    size: size,
+    priority: 1,
+  );
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final shape = RRect.fromRectAndRadius(
+      rect,
+      const Radius.circular(30),
+    );
+
+    canvas.drawRRect(
+      shape,
+      Paint()..color = const Color(0xFF123450),
+    );
+
+    canvas.drawRRect(
+      shape,
+      Paint()
+        ..color = const Color(0xFFFFC857)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+  }
+}
+
+class _AreaContinueButton extends PositionComponent
+    with TapCallbacks {
+  final VoidCallback onPressed;
+
+  _AreaContinueButton({
+    required Vector2 position,
+    required double width,
+    required this.onPressed,
+  }) : super(
+    position: position,
+    size: Vector2(width, 58),
+    anchor: Anchor.center,
+    priority: 10,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    add(
+      TextComponent(
+        text: 'Continuar',
+        position: size / 2,
+        anchor: Anchor.center,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF08233B),
+            fontSize: 19,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final shape = RRect.fromRectAndRadius(
+      rect,
+      Radius.circular(size.y / 2),
+    );
+
+    canvas.drawRRect(
+      shape,
+      Paint()..color = const Color(0xFFFFC857),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+    onPressed();
   }
 }
 

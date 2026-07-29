@@ -404,15 +404,11 @@ class LaboratorioFlameGame extends FlameGame {
             MaterialPageRoute(builder: (_) => GameResultScreen(result: result)),
           );
         } else {
+          await _showIncompleteGamesDialog();
+
+          if (!context.mounted) return;
+
           Navigator.of(context).pop();
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              const SnackBar(
-                content: Text('¡Minijuego completado! Completa los demás para ver tus resultados.'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
         }
       }
     } catch (error, stackTrace) {
@@ -430,6 +426,122 @@ class LaboratorioFlameGame extends FlameGame {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+  }
+
+  Future<void> _showIncompleteGamesDialog() async {
+    if (!context.mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: const Color(0xCC010817),
+      builder: (dialogContext) {
+        return PopScope(
+          canPop: false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 26),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 420),
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+              decoration: BoxDecoration(
+                color: const Color(0xFF102A43),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: _kNeon,
+                  width: 2.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _kNeon.withOpacity(0.25),
+                    blurRadius: 24,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 82,
+                    height: 82,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _kNeon.withOpacity(0.16),
+                      border: Border.all(
+                        color: _kNeon,
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.science_rounded,
+                      color: _kNeon,
+                      size: 46,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    '\u00A1Secci\u00F3n completada!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF67E8FF),
+                      fontSize: 27,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Terminaste todas las actividades del Laboratorio.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      height: 1.35,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Completa los dem\u00E1s juegos para obtener tus resultados.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFFB9E4FF),
+                      fontSize: 15,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _kNeon,
+                        foregroundColor: const Color(0xFF061B2D),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
+                      child: const Text(
+                        'Continuar con los juegos',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

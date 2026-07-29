@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../domain/entities/appointment_entity.dart';
 import '../../../domain/entities/availability_slot_entity.dart';
+import 'appointment_detail_sheet.dart';
 
 class CounselorWeeklyCalendar extends StatefulWidget {
   final List<AppointmentEntity> appointments;
@@ -325,74 +326,89 @@ class _CounselorWeeklyCalendarState
 
   Widget _appointmentCard(AppointmentEntity appointment) {
     final local = appointment.sessionDate.toLocal();
+    final sName = widget.studentName(appointment.studentId);
+    
     return Container(
       margin: EdgeInsets.only(bottom: 9.h),
-      padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(17.r),
         border: Border.all(color: const Color(0xFFECECF3)),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 61.w,
-            padding: EdgeInsets.symmetric(vertical: 11.h),
-            decoration: BoxDecoration(
-              color: _primary.withOpacity(.08),
-              borderRadius: BorderRadius.circular(13.r),
-            ),
-            child: Column(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => showAppointmentDetailSheet(context, appointment, sName),
+          borderRadius: BorderRadius.circular(17.r),
+          child: Padding(
+            padding: EdgeInsets.all(14.w),
+            child: Row(
               children: [
-                Text(
-                  DateFormat('hh:mm').format(local),
-                  style: TextStyle(
-                    color: _primary,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w900,
+                Container(
+                  width: 61.w,
+                  padding: EdgeInsets.symmetric(vertical: 11.h),
+                  decoration: BoxDecoration(
+                    color: _primary.withOpacity(.08),
+                    borderRadius: BorderRadius.circular(13.r),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        DateFormat('hh:mm').format(local),
+                        style: TextStyle(
+                          color: _primary,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        DateFormat('a').format(local),
+                        style: TextStyle(
+                          color: _primary,
+                          fontSize: 8.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  DateFormat('a').format(local),
-                  style: TextStyle(
-                    color: _primary,
-                    fontSize: 8.sp,
-                    fontWeight: FontWeight.w800,
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _dark,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        appointment.motive.trim().isEmpty
+                            ? 'Sesión de orientación'
+                            : appointment.motive,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 10.5.sp,
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade300,
                 ),
               ],
             ),
           ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.studentName(appointment.studentId),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _dark,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  appointment.motive.trim().isEmpty
-                      ? 'Sesión de orientación'
-                      : appointment.motive,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 10.5.sp,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

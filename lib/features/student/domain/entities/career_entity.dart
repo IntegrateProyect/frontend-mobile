@@ -3,11 +3,21 @@ class CareerEntity {
   final String name;
   final String description;
   final List<String> fields;
+  final double score;
+  final String? universityName;
+  final int? clusterId;
 
-  CareerEntity({
+  const CareerEntity({
     required this.id,
     required this.name,
-    required this.description,
-    required this.fields,
+    this.description = '',
+    this.fields = const [],
+    this.score = 0,
+    this.universityName,
+    this.clusterId,
   });
+
+  int get compatibilityPercentage {
+    return (score.clamp(0.0, 1.0) * 100).round();
+  }
 }

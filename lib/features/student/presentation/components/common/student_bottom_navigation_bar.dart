@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:orientate/core/routes/AppRoutes.dart';
 
+import 'student_group_required_dialog.dart';
 import 'student_ui_colors.dart';
 
 class StudentBottomNavigationBar extends StatelessWidget {
@@ -14,88 +14,78 @@ class StudentBottomNavigationBar extends StatelessWidget {
     required this.currentIndex,
   });
 
-  static final List<_StudentNavigationItem> _destinations = [
-    _StudentNavigationItem(
-      label: 'Inicio',
-      icon: Icons.home_rounded,
-      path: AppRoutes.home.path,
-    ),
-    _StudentNavigationItem(
-      label: 'Minijuegos',
-      icon: Icons.sports_esports_outlined,
-      path: AppRoutes.games.path,
-    ),
-    _StudentNavigationItem(
-      label: 'Agenda',
-      icon: Icons.calendar_month_outlined,
-      path: AppRoutes.studentAgenda.path,
-    ),
-    _StudentNavigationItem(
-      label: 'Resultados',
-      icon: Icons.bar_chart_outlined,
-      path: AppRoutes.vocationalResults.path,
-    ),
-    _StudentNavigationItem(
-      label: 'Perfil',
-      icon: Icons.person_outline,
-      path: AppRoutes.studentProfile.path,
-    ),
-  ];
+  Future<void> _navigate(BuildContext context, int index) async {
+    if (index == currentIndex) return;
+
+    // Inicio y Perfil permanecen disponibles sin grupo.
+    final requiresGroup = index == 1 || index == 2 || index == 3;
+
+    if (requiresGroup) {
+      final canContinue = await requireStudentGroup(context: context);
+
+      if (!canContinue || !context.mounted) return;
+    }
+
+    if (!context.mounted) return;
+
+    switch (index) {
+      case 0:
+        context.go(AppRoutes.home.path);
+        break;
+      case 1:
+        context.go(AppRoutes.games.path);
+        break;
+      case 2:
+        context.go(AppRoutes.studentAgenda.path);
+        break;
+      case 3:
+        context.go(AppRoutes.vocationalResults.path);
+        break;
+      case 4:
+        context.go(AppRoutes.studentProfile.path);
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
+      currentIndex: currentIndex,
       type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      elevation: 10,
-      currentIndex: _safeCurrentIndex,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       selectedItemColor: StudentUiColors.primary,
-      unselectedItemColor: Colors.grey[400],
-      selectedFontSize: 10.sp,
-      unselectedFontSize: 10.sp,
+      unselectedItemColor: Colors.grey.shade500,
+      selectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w800,
+      ),
       onTap: (index) => _navigate(context, index),
-      items: _destinations.map((destination) {
-        return BottomNavigationBarItem(
-          icon: Icon(destination.icon),
-          label: destination.label,
-        );
-      }).toList(),
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home_rounded),
+          label: 'Inicio',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.sports_esports_outlined),
+          activeIcon: Icon(Icons.sports_esports_rounded),
+          label: 'Minijuegos',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.calendar_month_outlined),
+          activeIcon: Icon(Icons.calendar_month_rounded),
+          label: 'Agenda',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.bar_chart_outlined),
+          activeIcon: Icon(Icons.bar_chart_rounded),
+          label: 'Resultados',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline_rounded),
+          activeIcon: Icon(Icons.person_rounded),
+          label: 'Perfil',
+        ),
+      ],
     );
   }
-
-  int get _safeCurrentIndex {
-    if (currentIndex < 0 ||
-        currentIndex >= _destinations.length) {
-      return 0;
-    }
-
-    return currentIndex;
-  }
-
-  void _navigate(BuildContext context, int index) {
-    if (index < 0 || index >= _destinations.length) {
-      return;
-    }
-
-    final destination = _destinations[index];
-    final currentPath = GoRouterState.of(context).uri.path;
-
-    if (currentPath == destination.path) {
-      return;
-    }
-
-    context.go(destination.path);
-  }
-}
-
-class _StudentNavigationItem {
-  final String label;
-  final IconData icon;
-  final String path;
-
-  const _StudentNavigationItem({
-    required this.label,
-    required this.icon,
-    required this.path,
-  });
 }

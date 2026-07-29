@@ -39,6 +39,7 @@ class AtomicEnergyChallengeComponent extends PositionComponent {
   int _electronCount = 0;
   int _touches = 0;
   bool _locked = false;
+  bool _completionShown = false;
   final DateTime _startedAt = DateTime.now();
 
   AtomicEnergyChallengeComponent({
@@ -203,11 +204,31 @@ class AtomicEnergyChallengeComponent extends PositionComponent {
     _message = null;
     _updateCounters();
     if (_isComplete) {
-      _showMessage('¡Átomo completado! El núcleo y las órbitas tienen las cantidades correctas.', const Color(0xFF67E8FF));
+      _showMessage(
+        '\u00A1\u00C1tomo completado! El n\u00FAcleo y las \u00F3rbitas tienen las cantidades correctas.',
+        const Color(0xFF67E8FF),
+      );
       Future<void>.delayed(const Duration(milliseconds: 900), () {
-        if (!_locked) _finish('completed');
+        if (!_locked) _showCompletionModal();
       });
     }
+  }
+
+  void _showCompletionModal() {
+    if (_locked || _completionShown) return;
+
+    _completionShown = true;
+    _message?.removeFromParent();
+    _message = null;
+
+    add(
+      _AtomicCompletionModal(
+        imageAsset: 'atomic_energy_girl.png',
+        position: Vector2.zero(),
+        size: size.clone(),
+        onContinue: () => _finish('completed'),
+      ),
+    );
   }
 
   void _updateCounters() {
@@ -286,6 +307,236 @@ class AtomicEnergyChallengeComponent extends PositionComponent {
       'completionTimeSeconds': elapsed,
       'endReason': reason,
     });
+  }
+}
+
+class _AtomicCompletionModal extends PositionComponent
+    with TapCallbacks {
+  final String imageAsset;
+  final VoidCallback onContinue;
+
+  _AtomicCompletionModal({
+    required this.imageAsset,
+    required Vector2 position,
+    required Vector2 size,
+    required this.onContinue,
+  }) : super(
+    position: position,
+    size: size,
+    priority: 2000,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    final modalWidth = size.x - 42;
+    final modalHeight =
+    (size.y - 80).clamp(370.0, 470.0).toDouble();
+    final modalSize = Vector2(modalWidth, modalHeight);
+    final modalTopLeft = Vector2(
+      (size.x - modalWidth) / 2,
+      (size.y - modalHeight) / 2,
+    );
+
+    add(
+      _AtomicModalBackground(
+        position: modalTopLeft,
+        size: modalSize,
+      ),
+    );
+
+    add(
+      TextBoxComponent(
+        text: '\u00A1Felicidades!',
+        position: Vector2(
+          modalTopLeft.x + modalWidth / 2,
+          modalTopLeft.y + 28,
+        ),
+        size: Vector2(modalWidth - 36, 52),
+        anchor: Anchor.topCenter,
+        align: Anchor.topCenter,
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF67E8FF),
+            fontSize: 29,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+
+    final characterCenter = Vector2(
+      modalTopLeft.x + modalWidth * 0.28,
+      modalTopLeft.y + modalHeight * 0.53,
+    );
+
+    try {
+      final character = await Sprite.load(imageAsset);
+      add(
+        SpriteComponent(
+          sprite: character,
+          position: characterCenter,
+          size: Vector2(
+            modalWidth * 0.43,
+            modalHeight * 0.65,
+          ),
+          anchor: Anchor.center,
+          priority: 3,
+        ),
+      );
+    } catch (error) {
+      debugPrint('No se pudo cargar $imageAsset: $error');
+      add(
+        TextComponent(
+          text: '\u{1F469}\u200D\u{1F52C}\u269B\uFE0F',
+          position: characterCenter,
+          anchor: Anchor.center,
+          priority: 3,
+          textRenderer: TextPaint(
+            style: const TextStyle(fontSize: 58),
+          ),
+        ),
+      );
+    }
+
+    add(
+      TextBoxComponent(
+        text:
+        '\u00A1Excelente trabajo!\n\nConstruiste correctamente el \u00E1tomo y completaste esta actividad.\n\nColocaste todos los protones, neutrones y electrones en su lugar.',
+        position: Vector2(
+          modalTopLeft.x + modalWidth * 0.50,
+          modalTopLeft.y + modalHeight * 0.27,
+        ),
+        size: Vector2(
+          modalWidth * 0.44,
+          modalHeight * 0.48,
+        ),
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFF4F6FF),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            height: 1.25,
+          ),
+        ),
+      ),
+    );
+
+    add(
+      _AtomicContinueButton(
+        position: Vector2(
+          modalTopLeft.x + modalWidth / 2,
+          modalTopLeft.y + modalHeight - 48,
+        ),
+        width: modalWidth - 52,
+        onPressed: onContinue,
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()..color = const Color(0xFF020824).withOpacity(0.90),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+  }
+}
+
+class _AtomicModalBackground extends PositionComponent {
+  _AtomicModalBackground({
+    required Vector2 position,
+    required Vector2 size,
+  }) : super(
+    position: position,
+    size: size,
+    priority: 1,
+  );
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final shape = RRect.fromRectAndRadius(
+      rect,
+      const Radius.circular(30),
+    );
+
+    canvas.drawRRect(
+      shape,
+      Paint()..color = const Color(0xFF171A46),
+    );
+
+    canvas.drawRRect(
+      shape,
+      Paint()
+        ..color = const Color(0xFF67E8FF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+  }
+}
+
+class _AtomicContinueButton extends PositionComponent
+    with TapCallbacks {
+  final VoidCallback onPressed;
+
+  _AtomicContinueButton({
+    required Vector2 position,
+    required double width,
+    required this.onPressed,
+  }) : super(
+    position: position,
+    size: Vector2(width, 58),
+    anchor: Anchor.center,
+    priority: 10,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    add(
+      TextComponent(
+        text: 'Continuar',
+        position: size / 2,
+        anchor: Anchor.center,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF101538),
+            fontSize: 19,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final shape = RRect.fromRectAndRadius(
+      rect,
+      Radius.circular(size.y / 2),
+    );
+
+    canvas.drawRRect(
+      shape,
+      Paint()..color = const Color(0xFF67E8FF),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+    onPressed();
   }
 }
 

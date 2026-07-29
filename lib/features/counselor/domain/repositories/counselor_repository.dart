@@ -34,6 +34,9 @@ abstract class CounselorRepository {
   Future<List<AppointmentEntity>> getAppointments();
   Future<void> scheduleAppointment(String studentId, DateTime date, String motive);
   Future<List<AppointmentEntity>> getCounselorAppointments();
+  Future<AppointmentEntity> getAppointmentDetail(String appointmentId);
+  Future<void> updateAppointment(String appointmentId, Map<String, dynamic> data);
+  Future<void> deleteAppointment(String appointmentId);
 
   // Availability
   Future<List<dynamic>> getAvailability();
