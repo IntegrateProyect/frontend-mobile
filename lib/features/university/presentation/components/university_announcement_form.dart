@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../domain/entities/university_announcement_entity.dart';
 import '../providers/university_announcements_provider.dart';
 
@@ -85,6 +87,9 @@ class UniversityAnnouncementForm extends StatelessWidget {
                   if (val != null) provider.setCategory(val);
                 },
               ),
+              SizedBox(height: 16.h),
+              _buildFieldLabel('BANNER DEL ANUNCIO'),
+              _buildImagePicker(provider),
               SizedBox(height: 32.h),
               SizedBox(
                 width: double.infinity,
@@ -92,7 +97,10 @@ class UniversityAnnouncementForm extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: provider.isSubmitting ? null : () async {
                     if (formKey.currentState!.validate()) {
-                      await provider.submitForm(id: announcement?.id);
+                      await provider.submitForm(
+                        id: announcement?.id,
+                        existingImageUrl: announcement?.imageUrl,
+                      );
                       onSuccess();
                     }
                   },
@@ -153,4 +161,22 @@ class UniversityAnnouncementForm extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildImagePicker(UniversityAnnouncementsProvider provider) => InkWell(
+    onTap: () async {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      if (image != null) provider.setAnnouncementImage(image);
+    },
+    borderRadius: BorderRadius.circular(16.r),
+    child: Container(
+      height: 120.h, width: double.infinity,
+      decoration: BoxDecoration(color: const Color(0xFFF8F9FE), borderRadius: BorderRadius.circular(16.r), border: Border.all(color: const Color(0xFFE5E7EB))),
+      child: provider.imageFile != null 
+        ? ClipRRect(borderRadius: BorderRadius.circular(16.r), child: Image.file(File(provider.imageFile!.path), fit: BoxFit.cover))
+        : (announcement?.imageUrl != null && announcement!.imageUrl!.isNotEmpty)
+          ? ClipRRect(borderRadius: BorderRadius.circular(16.r), child: Image.network(announcement!.imageUrl!, fit: BoxFit.cover))
+          : Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_photo_alternate_outlined, color: Colors.grey[400], size: 32.sp), SizedBox(height: 8.h), Text('Subir Imagen', style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]))])),
+    ),
+  );
 }

@@ -590,7 +590,8 @@ Future<void> init() async {
       sl<UpdateUniversityAnnouncementUseCase>(),
       deleteAnnouncementUseCase:
       sl<DeleteUniversityAnnouncementUseCase>(),
-    ),
+          uploadImageUseCase: sl<UploadEventImageUseCase>(),
+        ),
   );
 
   sl.registerFactory<UniversityAlumniProvider>(
