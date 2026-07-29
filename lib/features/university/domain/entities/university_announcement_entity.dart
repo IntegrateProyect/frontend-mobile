@@ -4,6 +4,7 @@ class UniversityAnnouncementEntity {
   final String description;
   final String category;
   final String? universityName;
+  final String? imageUrl;
 
   UniversityAnnouncementEntity({
     required this.id,
@@ -11,5 +12,6 @@ class UniversityAnnouncementEntity {
     required this.description,
     required this.category,
     this.universityName,
+    this.imageUrl,
   });
 }

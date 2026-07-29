@@ -49,14 +49,27 @@ class UniversityAnnouncementCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: EdgeInsets.all(24.r),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+            if (announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty)
+              Image.network(
+                announcement.imageUrl!,
+                height: 150.h,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (ctx, err, stack) => const SizedBox.shrink(),
+              ),
+            Padding(
+              padding: EdgeInsets.all(24.r),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
@@ -118,6 +131,6 @@ class UniversityAnnouncementCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ]),
+  ));}
 }

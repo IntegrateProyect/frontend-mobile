@@ -7,6 +7,7 @@ class UniversityAnnouncementModel extends UniversityAnnouncementEntity {
     required super.description,
     required super.category,
     super.universityName,
+    super.imageUrl,
   });
 
   factory UniversityAnnouncementModel.fromJson(Map<String, dynamic> json) {
@@ -16,6 +17,7 @@ class UniversityAnnouncementModel extends UniversityAnnouncementEntity {
       description: json['description'] ?? '',
       category: json['category'] ?? 'General',
       universityName: json['universityName']?.toString(),
+      imageUrl: json['imageUrl'] ?? json['image_url'],
     );
   }
 
@@ -26,6 +28,7 @@ class UniversityAnnouncementModel extends UniversityAnnouncementEntity {
       'description': description,
       'category': category,
       'universityName': universityName,
+      'imageUrl': imageUrl,
     };
   }
 }

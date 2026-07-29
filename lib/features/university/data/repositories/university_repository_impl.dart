@@ -205,6 +205,7 @@ class UniversityRepositoryImpl implements UniversityRepository {
       title: announcement.title,
       description: announcement.description,
       category: announcement.category,
+      imageUrl: announcement.imageUrl,
     );
     await api.createUniversityAnnouncement(token, model.toJson());
   }
@@ -218,6 +219,7 @@ class UniversityRepositoryImpl implements UniversityRepository {
       title: announcement.title,
       description: announcement.description,
       category: announcement.category,
+      imageUrl: announcement.imageUrl,
     );
     await api.updateUniversityAnnouncement(token, announcement.id, model.toJson());
   }
