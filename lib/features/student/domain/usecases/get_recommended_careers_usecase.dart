@@ -6,7 +6,11 @@ class GetRecommendedCareersUseCase {
 
   GetRecommendedCareersUseCase(this.repository);
 
-  Future<List<CareerEntity>> call() {
-    return repository.getRecommendedCareers();
+  Future<List<CareerEntity>> call({
+    int topN = 5,
+  }) {
+    return repository.getRecommendedCareers(
+      topN: topN,
+    );
   }
 }

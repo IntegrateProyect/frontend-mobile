@@ -386,25 +386,34 @@ class CounselorRepositoryImpl implements CounselorRepository {
       );
     }
 
-    // El backend compara la hora ISO directamente contra el bloque
-    // configurado (por ejemplo, 08:00–14:00). Se construye en UTC
-    // conservando la hora elegida para enviar 10:00 como 10:00Z.
-    final DateTime backendDate = DateTime.utc(
-      date.year,
-      date.month,
-      date.day,
-      date.hour,
-      date.minute,
-    );
-
+    // El backend recibe ISO con la hora local que se desea agendar
     await api.counselorScheduleAppointment(
       token,
       <String, dynamic>{
         'studentId': cleanStudentId,
-        'sessionDate': backendDate.toIso8601String(),
+        'sessionDate': date.toIso8601String(),
         'motive': cleanMotive,
       },
     );
+  }
+
+  @override
+  Future<AppointmentEntity> getAppointmentDetail(String appointmentId) async {
+    final String token = await _getToken();
+    final response = await api.getAppointmentDetail(token, appointmentId);
+    return AppointmentModel.fromJson(response);
+  }
+
+  @override
+  Future<void> updateAppointment(String appointmentId, Map<String, dynamic> data) async {
+    final String token = await _getToken();
+    await api.updateAppointment(token, appointmentId, data);
+  }
+
+  @override
+  Future<void> deleteAppointment(String appointmentId) async {
+    final String token = await _getToken();
+    await api.deleteAppointment(token, appointmentId);
   }
 
   // =========================================================

@@ -119,6 +119,15 @@ abstract class IApi {
       String token,
       );
 
+  /// POST /recommendations/?top_n=5
+  ///
+  /// Consume el microservicio de recomendaciones usando
+  /// el mismo JWT del alumno autenticado.
+  Future<Map<String, dynamic>> generateRecommendations(
+      String token, {
+        int topN = 5,
+      });
+
   // ============================================================
   // CITAS DEL ESTUDIANTE
   // ============================================================
@@ -204,7 +213,7 @@ abstract class IApi {
       );
 
   // ============================================================
-  // CITAS DEL ORIENTADOR
+  // CITAS DEL ORIENTADOR (CRUD)
   // ============================================================
 
   Future<List<dynamic>> getCounselorAppointments(
@@ -214,6 +223,22 @@ abstract class IApi {
   Future<Map<String, dynamic>> counselorScheduleAppointment(
       String token,
       Map<String, dynamic> data,
+      );
+
+  Future<Map<String, dynamic>> getAppointmentDetail(
+      String token,
+      String appointmentId,
+      );
+
+  Future<Map<String, dynamic>> updateAppointment(
+      String token,
+      String appointmentId,
+      Map<String, dynamic> data,
+      );
+
+  Future<void> deleteAppointment(
+      String token,
+      String appointmentId,
       );
 
   // ============================================================

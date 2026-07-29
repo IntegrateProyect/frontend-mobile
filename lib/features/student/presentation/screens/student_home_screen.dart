@@ -7,16 +7,18 @@ import 'package:orientate/core/routes/AppRoutes.dart';
 import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
 
 import '../components/common/student_bottom_navigation_bar.dart';
+import '../components/common/student_group_required_dialog.dart';
 import '../components/common/student_ui_colors.dart';
 import '../components/home/career_recommendations_carousel.dart';
-import '../components/home/quick_access_grid.dart' as quick_access;
-import '../components/home/student_account_sheet.dart' as account_sheet;
+import '../components/home/quick_access_grid.dart'
+as quick_access;
+import '../components/home/student_account_sheet.dart'
+as account_sheet;
 import '../components/home/student_appointments_section.dart';
 import '../components/home/student_greeting.dart';
 import '../components/home/student_home_app_bar.dart';
 import '../components/home/student_recommendations_card.dart';
 import '../components/home/vocational_route_card.dart';
-
 import '../providers/student_home_provider.dart';
 
 class StudentHomeScreen extends StatefulWidget {
@@ -30,35 +32,23 @@ class StudentHomeScreen extends StatefulWidget {
   }
 }
 
-class _StudentHomeScreenState extends State<StudentHomeScreen> {
-  final GlobalKey _chatFabKey = GlobalKey();
-
-  OverlayEntry? _chatCoachMarkEntry;
-
+class _StudentHomeScreenState
+    extends State<StudentHomeScreen> {
   @override
   void initState() {
     super.initState();
 
     Future.microtask(() {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
-      context.read<StudentHomeProvider>().loadHomeData();
+      context
+          .read<StudentHomeProvider>()
+          .loadHomeData();
     });
   }
 
-  @override
-  void dispose() {
-    _hideChatbotCoachMark();
-
-    super.dispose();
-  }
-
   void _showMessage(String message) {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -70,180 +60,106 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       );
   }
 
-  /// Abre directamente la pantalla de minijuegos.
-  void _openVocationalGames() {
+  /// Comprueba si el estudiante pertenece a un grupo.
+  ///
+  /// Si no pertenece, muestra el diálogo para ingresar
+  /// el código del grupo.
+  Future<bool> _validateStudentGroup() async {
+    final bool canContinue =
+    await requireStudentGroup(
+      context: context,
+    );
+
+    return canContinue && mounted;
+  }
+
+  Future<void> _openVocationalGames() async {
+    final bool canContinue =
+    await _validateStudentGroup();
+
+    if (!canContinue || !mounted) return;
+
     context.push(
       AppRoutes.games.path,
     );
   }
 
-  void _openChatbot() {
-    _hideChatbotCoachMark();
+  Future<void> _openChatbot() async {
+    final bool canContinue =
+    await _validateStudentGroup();
+
+    if (!canContinue || !mounted) return;
+
+    final StudentHomeProvider provider =
+    context.read<StudentHomeProvider>();
+
+    // Guarda que este estudiante ya utilizó el chatbot.
+    await provider.markChatbotInteraction();
+
+    if (!mounted) return;
 
     context.push(
       AppRoutes.chat.path,
     );
   }
 
-  Future<void> _showChatbotInformation() async {
-    final action =
-    await showModalBottomSheet<_ChatbotInformationAction>(
-      context: context,
-      useSafeArea: true,
-      showDragHandle: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(28.r),
-        ),
-      ),
-      builder: (bottomSheetContext) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            24.w,
-            4.h,
-            24.w,
-            28.h,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 76.w,
-                height: 76.w,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE7F8F7),
-                  borderRadius: BorderRadius.circular(24.r),
-                ),
-                child: Icon(
-                  Icons.smart_toy_rounded,
-                  color: StudentUiColors.teal,
-                  size: 40.sp,
-                ),
-              ),
-              SizedBox(height: 18.h),
-              Text(
-                'Chatbot vocacional',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: StudentUiColors.darkText,
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              SizedBox(height: 10.h),
-              Text(
-                'Habla con el chatbot para resolver dudas, '
-                    'explorar carreras y buscar universidades '
-                    'relacionadas con tus intereses.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w500,
-                  height: 1.45,
-                ),
-              ),
-              SizedBox(height: 22.h),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(
-                      bottomSheetContext,
-                      _ChatbotInformationAction.locate,
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.location_searching_rounded,
-                  ),
-                  label: const Text(
-                    'Mostrarme dónde está',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                    StudentUiColors.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: Size.fromHeight(52.h),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                      BorderRadius.circular(16.r),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 10.h),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(
-                      bottomSheetContext,
-                      _ChatbotInformationAction.open,
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.smart_toy_outlined,
-                  ),
-                  label: const Text(
-                    'Abrir chatbot',
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor:
-                    StudentUiColors.teal,
-                    minimumSize: Size.fromHeight(50.h),
-                    side: BorderSide(
-                      color: StudentUiColors.teal
-                          .withOpacity(0.4),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                      BorderRadius.circular(16.r),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  Future<void> _openResults() async {
+    final bool canContinue =
+    await _validateStudentGroup();
+
+    if (!canContinue || !mounted) return;
+
+    final StudentHomeProvider provider =
+    context.read<StudentHomeProvider>();
+
+    if (provider.hasVocationalResults) {
+      context.push(
+        AppRoutes.vocationalResults.path,
+      );
+      return;
+    }
+
+    await _showResultsInformation();
+  }
+
+  Future<void> _openMessages() async {
+    final bool canContinue =
+    await _validateStudentGroup();
+
+    if (!canContinue || !mounted) return;
+
+    context.push(
+      AppRoutes.chatContacts.path,
     );
-
-    if (!mounted || action == null) {
-      return;
-    }
-
-    if (action == _ChatbotInformationAction.open) {
-      _openChatbot();
-      return;
-    }
-
-    await Future<void>.delayed(
-      const Duration(milliseconds: 200),
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    _showChatbotCoachMark();
   }
 
   Future<void> _showResultsInformation() async {
+    final bool isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     await showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
       showDragHandle: true,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark
+          ? const Color(0xFF1A1B2E)
+          : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(28.r),
         ),
       ),
       builder: (bottomSheetContext) {
+        final Color titleColor = isDark
+            ? Colors.white
+            : StudentUiColors.darkText;
+
+        final Color secondaryColor = isDark
+            ? Colors.grey.shade400
+            : Colors.grey.shade600;
+
         return Padding(
           padding: EdgeInsets.fromLTRB(
             24.w,
@@ -258,50 +174,67 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 width: 76.w,
                 height: 76.w,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0EEFA),
-                  borderRadius: BorderRadius.circular(24.r),
+                  color: isDark
+                      ? const Color(0xFF282443)
+                      : const Color(0xFFF0EEFA),
+                  borderRadius:
+                  BorderRadius.circular(24.r),
                 ),
                 child: Icon(
                   Icons.bar_chart_rounded,
-                  color: const Color(0xFF756EB2),
+                  color: isDark
+                      ? const Color(0xFFB59AFF)
+                      : const Color(0xFF756EB2),
                   size: 40.sp,
                 ),
               ),
+
               SizedBox(height: 18.h),
+
               Text(
                 'Resultados vocacionales',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: StudentUiColors.darkText,
+                  color: titleColor,
                   fontSize: 22.sp,
                   fontWeight: FontWeight.w900,
                 ),
               ),
+
               SizedBox(height: 10.h),
+
               Text(
                 'Tus resultados se desbloquearán cuando '
                     'completes todos los minijuegos vocacionales.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: secondaryColor,
                   fontSize: 13.sp,
                   fontWeight: FontWeight.w500,
                   height: 1.4,
                 ),
               ),
+
               SizedBox(height: 22.h),
+
               _buildResultInfoItem(
+                context: bottomSheetContext,
                 number: '1',
                 text:
                 'Completa todos los minijuegos disponibles.',
               ),
+
               SizedBox(height: 10.h),
+
               _buildResultInfoItem(
+                context: bottomSheetContext,
                 number: '2',
                 text:
                 'Obtendrás tus áreas de afinidad y carreras sugeridas.',
               ),
+
               SizedBox(height: 22.h),
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -314,7 +247,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     backgroundColor:
                     StudentUiColors.primary,
                     foregroundColor: Colors.white,
-                    minimumSize: Size.fromHeight(52.h),
+                    minimumSize:
+                    Size.fromHeight(52.h),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius:
@@ -337,35 +271,51 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 
   Widget _buildResultInfoItem({
+    required BuildContext context,
     required String number,
     required String text,
   }) {
+    final bool isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F8FB),
+        color: isDark
+            ? const Color(0xFF242539)
+            : const Color(0xFFF8F8FB),
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 12.r,
-            backgroundColor: const Color(0xFFEDEDF3),
+            radius: 13.r,
+            backgroundColor: isDark
+                ? const Color(0xFF34304E)
+                : const Color(0xFFEDEDF3),
             child: Text(
               number,
               style: TextStyle(
                 fontSize: 10.sp,
-                color: Colors.grey,
+                color: isDark
+                    ? Colors.white
+                    : Colors.grey.shade700,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
+
           SizedBox(width: 12.w),
+
           Expanded(
             child: Text(
               text,
               style: TextStyle(
+                color: isDark
+                    ? Colors.white70
+                    : StudentUiColors.darkText,
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
               ),
@@ -376,118 +326,20 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
   }
 
-  void _showChatbotCoachMark() {
-    _hideChatbotCoachMark();
-
-    final renderObject =
-    _chatFabKey.currentContext?.findRenderObject();
-
-    if (renderObject is! RenderBox) {
-      return;
-    }
-
-    final offset = renderObject.localToGlobal(
-      Offset.zero,
-    );
-
-    final rect = offset & renderObject.size;
-
-    _chatCoachMarkEntry = OverlayEntry(
-      builder: (overlayContext) {
-        return Material(
-          color: Colors.black54,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _hideChatbotCoachMark,
-                ),
-              ),
-              Positioned(
-                right: 20.w,
-                bottom: 110.h,
-                child: Container(
-                  width: 260.w,
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius:
-                    BorderRadius.circular(16.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 18,
-                        offset: const Offset(0, 7),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '¡Aquí está!',
-                        style: TextStyle(
-                          color: StudentUiColors.darkText,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.sp,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      const Text(
-                        'Usa este botón para hablar con el '
-                            'chatbot en cualquier momento.',
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 6.h),
-                      TextButton(
-                        onPressed: _hideChatbotCoachMark,
-                        child: const Text(
-                          'Entendido',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned.fromRect(
-                rect: rect.inflate(8),
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 4,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    Overlay.of(
-      context,
-      rootOverlay: true,
-    ).insert(_chatCoachMarkEntry!);
-  }
-
-  void _hideChatbotCoachMark() {
-    _chatCoachMarkEntry?.remove();
-    _chatCoachMarkEntry = null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final provider =
+    final StudentHomeProvider provider =
     context.watch<StudentHomeProvider>();
 
+    final bool isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Scaffold(
-      backgroundColor: StudentUiColors.background,
+      backgroundColor: isDark
+          ? const Color(0xFF0F1020)
+          : StudentUiColors.background,
+
       appBar: StudentHomeAppBar(
         onNotificationsPressed: () {
           _showMessage(
@@ -503,9 +355,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           );
         },
       ),
-      body: _buildBody(provider),
-      floatingActionButton: FloatingActionButton(
-        key: _chatFabKey,
+
+      body: _buildBody(
+        provider: provider,
+      ),
+
+      floatingActionButton:
+      FloatingActionButton(
         backgroundColor: StudentUiColors.teal,
         foregroundColor: Colors.white,
         elevation: 8,
@@ -514,6 +370,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           Icons.smart_toy_rounded,
         ),
       ),
+
       bottomNavigationBar:
       const StudentBottomNavigationBar(
         currentIndex: 0,
@@ -521,9 +378,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
   }
 
-  Widget _buildBody(
-      StudentHomeProvider provider,
-      ) {
+  Widget _buildBody({
+    required StudentHomeProvider provider,
+  }) {
     if (provider.isLoading &&
         provider.profile == null) {
       return const Center(
@@ -552,20 +409,30 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 ? provider.currentGroupName
                 : null,
             counselorName:
-            provider.currentCounselorName,
+            provider.hasGroup
+                ? provider.currentCounselorName
+                : null,
           ),
+
           SizedBox(height: 18.h),
 
-          // ACTIVIDADES VOCACIONALES ABREN LOS JUEGOS.
           VocationalRouteCard(
-            onTap: _openVocationalGames,
-            onChatTap:
-            _showChatbotInformation,
-            onResultsTap:
-            _showResultsInformation,
+            hasGroup: provider.hasGroup,
+            gamesStarted:
+            provider.hasStartedGames,
+            gamesCompleted:
+            provider.hasCompletedGames,
+            chatbotCompleted:
+            provider.hasChatbotInteraction,
+            resultsCompleted:
+            provider.hasVocationalResults,
+            onGamesTap: _openVocationalGames,
+            onChatTap: _openChatbot,
+            onResultsTap: _openResults,
           ),
 
           SizedBox(height: 20.h),
+
           StudentRecommendationsCard(
             onCareersTap: () {
               context.push(
@@ -578,20 +445,24 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               );
             },
           ),
+
           SizedBox(height: 20.h),
+
           StudentAppointmentsSection(
-            appointments: provider.appointments,
+            appointments: provider.hasGroup
+                ? provider.appointments
+                : const [],
             onRefresh: provider.loadHomeData,
           ),
+
           SizedBox(height: 20.h),
+
           const CareerRecommendationsCarousel(),
+
           SizedBox(height: 20.h),
+
           quick_access.QuickAccessGrid(
-            onMessagesTap: () {
-              context.push(
-                AppRoutes.chatContacts.path,
-              );
-            },
+            onMessagesTap: _openMessages,
             onCareersTap: () {
               context.push(
                 AppRoutes.careers.path,
@@ -608,13 +479,83 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               );
             },
           ),
+
+          if (provider.errorMessage != null) ...[
+            SizedBox(height: 20.h),
+            _HomeErrorMessage(
+              message: provider.errorMessage!,
+              onRetry: provider.loadHomeData,
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-enum _ChatbotInformationAction {
-  locate,
-  open,
+class _HomeErrorMessage extends StatelessWidget {
+  final String message;
+  final Future<void> Function() onRetry;
+
+  const _HomeErrorMessage({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF3A2026)
+            : Colors.red.shade50,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFF74343F)
+              : Colors.red.shade100,
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Colors.redAccent,
+          ),
+
+          SizedBox(width: 10.w),
+
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: isDark
+                    ? Colors.red.shade200
+                    : Colors.red.shade700,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
+          IconButton(
+            tooltip: 'Reintentar',
+            onPressed: () {
+              onRetry();
+            },
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: Colors.redAccent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

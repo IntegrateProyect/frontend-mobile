@@ -22,6 +22,9 @@ import '../../domain/usecases/get_student_file_usecase.dart';
 import '../../domain/usecases/register_session_usecase.dart';
 import '../../domain/usecases/schedule_counselor_appointment_usecase.dart';
 import '../../domain/usecases/update_group_usecase.dart';
+import '../../domain/usecases/get_appointment_detail_usecase.dart';
+import '../../domain/usecases/update_appointment_usecase.dart';
+import '../../domain/usecases/delete_appointment_usecase.dart';
 import '../../domain/repositories/counselor_repository.dart';
 
 class CounselorProvider extends ChangeNotifier {
@@ -39,6 +42,9 @@ class CounselorProvider extends ChangeNotifier {
   final GetCounselorAppointmentsUseCase _getAppointmentsUseCase;
   final GetGroupStudentsUseCase _getGroupStudentsUseCase;
   final ScheduleCounselorAppointmentUseCase _scheduleAppointmentUseCase;
+  final GetAppointmentDetailUseCase _getAppointmentDetailUseCase;
+  final UpdateAppointmentUseCase _updateAppointmentUseCase;
+  final DeleteAppointmentUseCase _deleteAppointmentUseCase;
   final CounselorRepository _repository;
 
   CounselorProvider({
@@ -56,6 +62,9 @@ class CounselorProvider extends ChangeNotifier {
     required GetCounselorAppointmentsUseCase getAppointmentsUseCase,
     required GetGroupStudentsUseCase getGroupStudentsUseCase,
     required ScheduleCounselorAppointmentUseCase scheduleAppointmentUseCase,
+    required GetAppointmentDetailUseCase getAppointmentDetailUseCase,
+    required UpdateAppointmentUseCase updateAppointmentUseCase,
+    required DeleteAppointmentUseCase deleteAppointmentUseCase,
     required CounselorRepository repository,
   })  : _getGroupsUseCase = getGroupsUseCase,
         _createGroupUseCase = createGroupUseCase,
@@ -71,6 +80,9 @@ class CounselorProvider extends ChangeNotifier {
         _getAppointmentsUseCase = getAppointmentsUseCase,
         _getGroupStudentsUseCase = getGroupStudentsUseCase,
         _scheduleAppointmentUseCase = scheduleAppointmentUseCase,
+        _getAppointmentDetailUseCase = getAppointmentDetailUseCase,
+        _updateAppointmentUseCase = updateAppointmentUseCase,
+        _deleteAppointmentUseCase = deleteAppointmentUseCase,
         _repository = repository;
 
   CounselorProfileEntity? _profile;
@@ -394,6 +406,58 @@ class CounselorProvider extends ChangeNotifier {
 
       _appointments = await _loadAppointmentsSafely();
       notifyListeners();
+      return true;
+    } catch (error) {
+      _errorMessage = _cleanError(error);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<AppointmentEntity?> getAppointmentDetail(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      return await _getAppointmentDetailUseCase.call(id);
+    } catch (error) {
+      _errorMessage = _cleanError(error);
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateAppointment(String id, Map<String, dynamic> data) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _updateAppointmentUseCase.call(id, data);
+      await loadDashboardData();
+      return true;
+    } catch (error) {
+      _errorMessage = _cleanError(error);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteAppointment(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _deleteAppointmentUseCase.call(id);
+      await loadDashboardData();
       return true;
     } catch (error) {
       _errorMessage = _cleanError(error);

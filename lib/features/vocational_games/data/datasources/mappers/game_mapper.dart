@@ -8,6 +8,9 @@ import '../models/game_model.dart';
 class GameMapper {
   const GameMapper._();
 
+  /// Cantidad máxima de retos por cada minijuego.
+  static const int _maxChallengesPerGame = 10;
+
   static GameEntity toEntity(GameModel model) {
     return GameEntity(
       id: model.id,
@@ -18,67 +21,126 @@ class GameMapper {
     );
   }
 
-  static VocationalCategory detectCategory(String text) {
+  static VocationalCategory detectCategory(
+      String text,
+      ) {
     return _detectCategory(text);
   }
 
-  static List<VocationalMiniGameEntity> groupQuestions(
+  static List<VocationalMiniGameEntity>
+  groupQuestions(
       List<GameQuestionEntity> questions,
       ) {
-    final laboratorioQuestions = <GameQuestionEntity>[];
-    final consultorioQuestions = <GameQuestionEntity>[];
-    final tallerQuestions = <GameQuestionEntity>[];
-    final estudioQuestions = <GameQuestionEntity>[];
+    final laboratorioQuestions =
+    <GameQuestionEntity>[];
 
-    // Después de agregar la pregunta del acuario, Laboratorio queda cerrado.
-    // Las preguntas siguientes continúan clasificándose para los otros juegos,
-    // pero ya no se agregan más preguntas científicas al Laboratorio.
-    var laboratoryClosed = false;
+    final consultorioQuestions =
+    <GameQuestionEntity>[];
+
+    final tallerQuestions =
+    <GameQuestionEntity>[];
+
+    final estudioQuestions =
+    <GameQuestionEntity>[];
+
+    /*
+     * Laboratorio termina cuando encuentra la actividad
+     * del acuario o cuando alcanza los 10 retos.
+     */
+    bool laboratoryClosed = false;
 
     for (final question in questions) {
-      final category = _detectCategory(question.text);
+      final category = _detectCategory(
+        question.text,
+      );
 
       switch (category) {
         case VocationalCategory.calculo:
         case VocationalCategory.fisico:
         case VocationalCategory.biologico:
-          if (!laboratoryClosed) {
+          if (!laboratoryClosed &&
+              laboratorioQuestions.length <
+                  _maxChallengesPerGame) {
             laboratorioQuestions.add(question);
 
-            if (_isAquariumQuestion(question.text)) {
+            if (_isAquariumQuestion(
+              question.text,
+            ) ||
+                laboratorioQuestions.length >=
+                    _maxChallengesPerGame) {
               laboratoryClosed = true;
             }
           }
           break;
 
         case VocationalCategory.social:
-          consultorioQuestions.add(question);
+          _addQuestionIfAvailable(
+            list: consultorioQuestions,
+            question: question,
+          );
           break;
 
         case VocationalCategory.mecanico:
-          tallerQuestions.add(question);
+          _addQuestionIfAvailable(
+            list: tallerQuestions,
+            question: question,
+          );
           break;
 
         case VocationalCategory.artistico:
         case VocationalCategory.musical:
-          estudioQuestions.add(question);
+          _addQuestionIfAvailable(
+            list: estudioQuestions,
+            question: question,
+          );
           break;
 
         case VocationalCategory.persuasivo:
-          if (_isLeadershipQuestion(question.text)) {
-            tallerQuestions.add(question);
+          if (_isLeadershipQuestion(
+            question.text,
+          )) {
+            _addQuestionIfAvailable(
+              list: tallerQuestions,
+              question: question,
+            );
           } else {
-            consultorioQuestions.add(question);
+            _addQuestionIfAvailable(
+              list: consultorioQuestions,
+              question: question,
+            );
           }
           break;
 
         case VocationalCategory.literario:
-          if (_isCreativeLiteraryQuestion(question.text)) {
-            estudioQuestions.add(question);
+          if (_isCreativeLiteraryQuestion(
+            question.text,
+          )) {
+            _addQuestionIfAvailable(
+              list: estudioQuestions,
+              question: question,
+            );
           } else {
-            consultorioQuestions.add(question);
+            _addQuestionIfAvailable(
+              list: consultorioQuestions,
+              question: question,
+            );
           }
           break;
+      }
+
+      /*
+       * Si los cuatro minijuegos ya tienen 10 retos,
+       * dejamos de recorrer preguntas innecesariamente.
+       */
+      if (laboratorioQuestions.length >=
+          _maxChallengesPerGame &&
+          consultorioQuestions.length >=
+              _maxChallengesPerGame &&
+          tallerQuestions.length >=
+              _maxChallengesPerGame &&
+          estudioQuestions.length >=
+              _maxChallengesPerGame) {
+        break;
       }
     }
 
@@ -93,45 +155,95 @@ class GameMapper {
           VocationalCategory.fisico,
           VocationalCategory.biologico,
         ],
-        questions: laboratorioQuestions,
+        questions: _limitQuestions(
+          laboratorioQuestions,
+        ),
       ),
       VocationalMiniGameEntity(
         kind: VocationalGameKind.consultorio,
         title: 'Consultorio',
-        description: 'Escucha distintas situaciones y decide cómo ayudar.',
+        description:
+        'Escucha distintas situaciones y decide cómo ayudar.',
         categories: const [
           VocationalCategory.social,
           VocationalCategory.literario,
           VocationalCategory.persuasivo,
         ],
-        questions: consultorioQuestions,
+        questions: _limitQuestions(
+          consultorioQuestions,
+        ),
       ),
       VocationalMiniGameEntity(
         kind: VocationalGameKind.taller,
         title: 'Taller',
-        description: 'Arma, repara y organiza las piezas de un dispositivo.',
+        description:
+        'Arma, repara y organiza las piezas de un dispositivo.',
         categories: const [
           VocationalCategory.mecanico,
           VocationalCategory.persuasivo,
         ],
-        questions: tallerQuestions,
+        questions: _limitQuestions(
+          tallerQuestions,
+        ),
       ),
       VocationalMiniGameEntity(
         kind: VocationalGameKind.estudio,
         title: 'Estudio creativo',
-        description: 'Combina colores, figuras, palabras y sonidos.',
+        description:
+        'Combina colores, figuras, palabras y sonidos.',
         categories: const [
           VocationalCategory.artistico,
           VocationalCategory.musical,
           VocationalCategory.literario,
         ],
-        questions: estudioQuestions,
+        questions: _limitQuestions(
+          estudioQuestions,
+        ),
       ),
     ];
   }
 
-  static bool _isAquariumQuestion(String rawText) {
+  /// Agrega una pregunta solamente si el juego todavía
+  /// no alcanzó el límite de 10 retos.
+  static void _addQuestionIfAvailable({
+    required List<GameQuestionEntity> list,
+    required GameQuestionEntity question,
+  }) {
+    if (list.length >= _maxChallengesPerGame) {
+      return;
+    }
+
+    /*
+     * Evita agregar accidentalmente la misma pregunta
+     * más de una vez.
+     */
+    final bool alreadyAdded = list.any(
+          (existingQuestion) =>
+      existingQuestion.id == question.id,
+    );
+
+    if (!alreadyAdded) {
+      list.add(question);
+    }
+  }
+
+  /// Protección adicional para garantizar que ninguna
+  /// lista tenga más de 10 preguntas.
+  static List<GameQuestionEntity> _limitQuestions(
+      List<GameQuestionEntity> questions,
+      ) {
+    return List<GameQuestionEntity>.unmodifiable(
+      questions.take(
+        _maxChallengesPerGame,
+      ),
+    );
+  }
+
+  static bool _isAquariumQuestion(
+      String rawText,
+      ) {
     final text = _normalize(rawText);
+
     return _containsAny(
       text,
       const [
@@ -144,7 +256,9 @@ class GameMapper {
     );
   }
 
-  static bool _isLeadershipQuestion(String rawText) {
+  static bool _isLeadershipQuestion(
+      String rawText,
+      ) {
     final text = _normalize(rawText);
 
     return _containsAny(
@@ -165,7 +279,9 @@ class GameMapper {
     );
   }
 
-  static bool _isCreativeLiteraryQuestion(String rawText) {
+  static bool _isCreativeLiteraryQuestion(
+      String rawText,
+      ) {
     final text = _normalize(rawText);
 
     return _containsAny(
@@ -187,11 +303,16 @@ class GameMapper {
     );
   }
 
-  static VocationalCategory _detectCategory(String rawText) {
+  static VocationalCategory _detectCategory(
+      String rawText,
+      ) {
     final text = _normalize(rawText);
 
     for (final entry in _keywords.entries) {
-      if (_containsAny(text, entry.value)) {
+      if (_containsAny(
+        text,
+        entry.value,
+      )) {
         return entry.key;
       }
     }
@@ -199,7 +320,10 @@ class GameMapper {
     return VocationalCategory.artistico;
   }
 
-  static bool _containsAny(String text, List<String> words) {
+  static bool _containsAny(
+      String text,
+      List<String> words,
+      ) {
     return words.any(text.contains);
   }
 
@@ -215,7 +339,9 @@ class GameMapper {
         .replaceAll('ñ', 'n');
   }
 
-  static const Map<VocationalCategory, List<String>> _keywords = {
+  static const Map<
+      VocationalCategory,
+      List<String>> _keywords = {
     VocationalCategory.calculo: [
       'calcular',
       'aritmetica',

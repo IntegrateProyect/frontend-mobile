@@ -16,6 +16,14 @@ class API implements IApi {
     '',
   );
 
+  static final String _recommendationBaseUrl = (
+      dotenv.env['API_URL'] ??
+          'https://orientate-backend.shop/api/v1/recommendations'
+  ).replaceFirst(
+    RegExp(r'/$'),
+    '',
+  );
+
   Map<String, String> getHeaders([
     String? token,
   ]) {
@@ -952,7 +960,49 @@ class API implements IApi {
       body: data,
     );
 
-    return _asMap(result);
+    return _mapFromData(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getAppointmentDetail(
+      String token,
+      String appointmentId,
+      ) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/counselors/appointments/$appointmentId',
+      token: token,
+    );
+
+    return _mapFromData(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateAppointment(
+      String token,
+      String appointmentId,
+      Map<String, dynamic> data,
+      ) async {
+    final result = await _request(
+      method: 'PUT',
+      path: '/counselors/appointments/$appointmentId',
+      token: token,
+      body: data,
+    );
+
+    return _mapFromData(result);
+  }
+
+  @override
+  Future<void> deleteAppointment(
+      String token,
+      String appointmentId,
+      ) async {
+    await _request(
+      method: 'DELETE',
+      path: '/counselors/appointments/$appointmentId',
+      token: token,
+    );
   }
 
   // ==========================================================
@@ -1221,6 +1271,42 @@ class API implements IApi {
         'results',
       ],
     );
+  }
+
+  // ==========================================================
+  // RECOMENDACIONES VOCACIONALES
+  // ==========================================================
+
+  // ==========================================================
+// RECOMENDACIONES VOCACIONALES
+// ==========================================================
+
+  @override
+  Future<Map<String, dynamic>> generateRecommendations(
+      String token, {
+        int topN = 5,
+      }) async {
+    if (token.trim().isEmpty) {
+      throw Exception(
+        'No hay una sesión activa para generar recomendaciones',
+      );
+    }
+
+    final int safeTopN = topN.clamp(1, 20).toInt();
+
+    final dynamic result = await _request(
+      method: 'POST',
+      path: '/recommendations',
+      token: token,
+      queryParameters: {
+        'top_n': safeTopN.toString(),
+      },
+      logData: {
+        'top_n': safeTopN,
+      },
+    );
+
+    return _asMap(result);
   }
 
   // ==========================================================

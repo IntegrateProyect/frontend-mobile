@@ -46,6 +46,7 @@ class FirstAidChallengeComponent extends PositionComponent {
   int _attempts = 0;
   bool _locked = false;
   bool _scanning = false;
+  bool _completionShown = false;
   final DateTime _startedAt = DateTime.now();
 
   FirstAidChallengeComponent({
@@ -195,8 +196,34 @@ class FirstAidChallengeComponent extends PositionComponent {
       );
     });
     Future<void>.delayed(const Duration(milliseconds: 2800), () {
-      if (!_locked) _finish('completed');
+      if (!_locked) _showCompletionModal();
     });
+  }
+
+  void _showCompletionModal() {
+    if (_locked || _completionShown) return;
+
+    _completionShown = true;
+    _message?.removeFromParent();
+    _message = null;
+    _instruction.text = '';
+
+    for (final zone in _zones) {
+      zone.active = false;
+    }
+
+    for (final bandage in _bandages) {
+      bandage.lock();
+    }
+
+    add(
+      _FirstAidCompletionModal(
+        imageAsset: 'first_aid_girl.png',
+        position: Vector2.zero(),
+        size: size.clone(),
+        onContinue: () => _finish('completed'),
+      ),
+    );
   }
 
   void _wrong(String text) {
@@ -274,6 +301,236 @@ class FirstAidChallengeComponent extends PositionComponent {
       'completionTimeSeconds': elapsed,
       'endReason': reason,
     });
+  }
+}
+
+class _FirstAidCompletionModal extends PositionComponent
+    with TapCallbacks {
+  final String imageAsset;
+  final VoidCallback onContinue;
+
+  _FirstAidCompletionModal({
+    required this.imageAsset,
+    required Vector2 position,
+    required Vector2 size,
+    required this.onContinue,
+  }) : super(
+    position: position,
+    size: size,
+    priority: 2000,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    final modalWidth = math.min(size.x - 38, 430.0);
+    final modalHeight = math.min(size.y - 90, 470.0);
+    final modalSize = Vector2(modalWidth, modalHeight);
+    final modalTopLeft = Vector2(
+      (size.x - modalWidth) / 2,
+      (size.y - modalHeight) / 2,
+    );
+
+    add(
+      _FirstAidModalBackground(
+        position: modalTopLeft,
+        size: modalSize,
+      ),
+    );
+
+    add(
+      TextBoxComponent(
+        text: '¡Felicidades!',
+        position: Vector2(
+          modalTopLeft.x + modalWidth / 2,
+          modalTopLeft.y + 28,
+        ),
+        size: Vector2(modalWidth - 36, 52),
+        anchor: Anchor.topCenter,
+        align: Anchor.topCenter,
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFFFC857),
+            fontSize: 29,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+
+    final characterCenter = Vector2(
+      modalTopLeft.x + modalWidth * 0.27,
+      modalTopLeft.y + modalHeight * 0.53,
+    );
+
+    try {
+      final character = await Sprite.load(imageAsset);
+      add(
+        SpriteComponent(
+          sprite: character,
+          position: characterCenter,
+          size: Vector2(
+            modalWidth * 0.40,
+            modalHeight * 0.62,
+          ),
+          anchor: Anchor.center,
+          priority: 3,
+        ),
+      );
+    } catch (error) {
+      debugPrint('No se pudo cargar $imageAsset: $error');
+      add(
+        TextComponent(
+          text: '👩‍⚕️🧰',
+          position: characterCenter,
+          anchor: Anchor.center,
+          priority: 3,
+          textRenderer: TextPaint(
+            style: const TextStyle(fontSize: 60),
+          ),
+        ),
+      );
+    }
+
+    add(
+      TextBoxComponent(
+        text:
+        '¡Excelente trabajo!\n\nCuraste correctamente el brazo y completaste la actividad de primeros auxilios.\n\nTu ayuda hizo sentir mucho mejor al paciente.',
+        position: Vector2(
+          modalTopLeft.x + modalWidth * 0.48,
+          modalTopLeft.y + modalHeight * 0.27,
+        ),
+        size: Vector2(
+          modalWidth * 0.46,
+          modalHeight * 0.48,
+        ),
+        priority: 3,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFFF4F8FC),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            height: 1.25,
+          ),
+        ),
+      ),
+    );
+
+    add(
+      _FirstAidContinueButton(
+        position: Vector2(
+          modalTopLeft.x + modalWidth / 2,
+          modalTopLeft.y + modalHeight - 48,
+        ),
+        width: modalWidth - 52,
+        onPressed: onContinue,
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()..color = const Color(0xFF00152E).withOpacity(0.88),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    // Consume el toque para impedir que llegue al juego que está debajo.
+    super.onTapDown(event);
+  }
+}
+
+class _FirstAidModalBackground extends PositionComponent {
+  _FirstAidModalBackground({
+    required Vector2 position,
+    required Vector2 size,
+  }) : super(
+    position: position,
+    size: size,
+    priority: 1,
+  );
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final shape = RRect.fromRectAndRadius(
+      rect,
+      const Radius.circular(30),
+    );
+
+    canvas.drawRRect(
+      shape,
+      Paint()..color = const Color(0xFF123450),
+    );
+
+    canvas.drawRRect(
+      shape,
+      Paint()
+        ..color = const Color(0xFFFFC857)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+  }
+}
+
+class _FirstAidContinueButton extends PositionComponent
+    with TapCallbacks {
+  final VoidCallback onPressed;
+
+  _FirstAidContinueButton({
+    required Vector2 position,
+    required double width,
+    required this.onPressed,
+  }) : super(
+    position: position,
+    size: Vector2(width, 58),
+    anchor: Anchor.center,
+    priority: 10,
+  );
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    add(
+      TextComponent(
+        text: 'Continuar',
+        position: size / 2,
+        anchor: Anchor.center,
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Color(0xFF08233B),
+            fontSize: 19,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final shape = RRect.fromRectAndRadius(
+      rect,
+      Radius.circular(size.y / 2),
+    );
+
+    canvas.drawRRect(
+      shape,
+      Paint()..color = const Color(0xFFFFC857),
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+    onPressed();
   }
 }
 
