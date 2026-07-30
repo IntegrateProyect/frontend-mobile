@@ -231,10 +231,6 @@ class _VocationalResultsScreenState
             _buildRecommendedCareers(
               careersProvider,
             ),
-            SizedBox(height: 20.h),
-            _buildRiasecOverview(
-              resultsProvider.latestResult!,
-            ),
           ],
         ],
       ),
@@ -316,7 +312,7 @@ class _VocationalResultsScreenState
                   CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Tu perfil RIASEC',
+                      'Tus resultados vocacionales',
                       style: TextStyle(
                         color: StudentUiColors.darkText,
                         fontSize: 18.sp,
@@ -481,7 +477,7 @@ class _VocationalResultsScreenState
                     ),
                     SizedBox(height: 4.h),
                     Text(
-                      'Ordenadas según tu perfil RIASEC y tus factores personales.',
+                      'Ordenadas según tus resultados y factores personales.',
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 11.sp,
@@ -702,7 +698,7 @@ class _VocationalResultsScreenState
                     SizedBox(width: 6.w),
                     Expanded(
                       child: Text(
-                        'Seleccionada a partir de tu perfil RIASEC',
+                        'Seleccionada a partir de tus resultados',
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 9.8.sp,
@@ -812,7 +808,7 @@ class _VocationalResultsScreenState
           ),
           SizedBox(height: 12.h),
           Text(
-            'Aún no hay resultados RIASEC',
+            'Aún no hay resultados vocacionales',
             style: TextStyle(
               color: StudentUiColors.darkText,
               fontSize: 17.sp,
@@ -856,8 +852,8 @@ class _VocationalResultsScreenState
           ),
           SizedBox(height: 12.h),
           Text(
-            'Completa todos los minijuegos para obtener tu '
-                'perfil RIASEC y tus carreras recomendadas.',
+            'Completa todos los minijuegos para obtener tus '
+                'resultados y carreras recomendadas.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey[600],
