@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:orientate/core/routes/AppRoutes.dart';
-import 'package:orientate/features/student/presentation/providers/student_results_provider.dart';
 import 'package:orientate/features/student/presentation/providers/careers_provider.dart';
+import 'package:orientate/features/student/presentation/providers/student_results_provider.dart';
+
 import '../../../vocational_games/presentation/providers/games_provider.dart';
 import '../../domain/entities/career_entity.dart';
-
+import '../../domain/entities/vocational_result_entity.dart';
 import '../components/common/student_bottom_navigation_bar.dart';
 import '../components/common/student_ui_colors.dart';
 
@@ -16,46 +17,81 @@ class VocationalResultsScreen extends StatefulWidget {
   const VocationalResultsScreen({super.key});
 
   @override
-  State<VocationalResultsScreen> createState() {
-    return _VocationalResultsScreenState();
-  }
+  State<VocationalResultsScreen> createState() =>
+      _VocationalResultsScreenState();
 }
 
 class _VocationalResultsScreenState
     extends State<VocationalResultsScreen> {
+  static const Map<String, String> _riasecNames = {
+    'R': 'Realista',
+    'I': 'Investigador',
+    'A': 'Artístico',
+    'S': 'Social',
+    'E': 'Emprendedor',
+    'C': 'Convencional',
+  };
+
+  static const Map<String, Color> _riasecColors = {
+    'R': Color(0xFF2563EB),
+    'I': Color(0xFF7C3AED),
+    'A': Color(0xFFDB2777),
+    'S': Color(0xFF059669),
+    'E': Color(0xFFEA580C),
+    'C': Color(0xFF475569),
+  };
+
   @override
   void initState() {
     super.initState();
+    Future.microtask(_loadData);
+  }
 
-    Future.microtask(() async {
-      if (!mounted) return;
+  Future<void> _loadData() async {
+    if (!mounted) return;
 
-      final resultsProvider = context.read<StudentResultsProvider>();
-      final gamesProvider = context.read<GamesProvider>();
-      final careersProvider = context.read<CareersProvider>();
+    final resultsProvider =
+    context.read<StudentResultsProvider>();
+    final gamesProvider = context.read<GamesProvider>();
+    final careersProvider = context.read<CareersProvider>();
 
-      await resultsProvider.fetchResults();
-      await gamesProvider.fetchGames();
+    await resultsProvider.fetchResults();
+    await gamesProvider.fetchGames();
 
-      if (resultsProvider.results.isNotEmpty &&
-          !gamesProvider.areAllGamesCompleted) {
-        await gamesProvider.markAllAsCompleted();
-      }
+    if (!mounted) return;
 
-      if (!mounted) return;
+    if (resultsProvider.results.isNotEmpty &&
+        !gamesProvider.areAllGamesCompleted) {
+      await gamesProvider.markAllAsCompleted();
+    }
 
-      if (gamesProvider.areAllGamesCompleted &&
-          resultsProvider.results.isNotEmpty) {
-        await careersProvider.fetchRecommendedCareers(
-          topN: 5,
-        );
-      }
-    });
+    if (!mounted) return;
+
+    if (gamesProvider.areAllGamesCompleted &&
+        resultsProvider.results.isNotEmpty) {
+      await careersProvider.fetchRecommendedCareers(
+        topN: 5,
+      );
+    }
+  }
+
+  Future<void> _refreshData() async {
+    final resultsProvider =
+    context.read<StudentResultsProvider>();
+    final careersProvider = context.read<CareersProvider>();
+
+    await resultsProvider.fetchResults();
+
+    if (resultsProvider.results.isNotEmpty) {
+      await careersProvider.fetchRecommendedCareers(
+        topN: 5,
+        force: true,
+      );
+    }
   }
 
   void _goToStudentHome() {
     if (!mounted) return;
-
     context.go(AppRoutes.home.path);
   }
 
@@ -74,106 +110,26 @@ class _VocationalResultsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<StudentResultsProvider>();
+    final resultsProvider =
+    context.watch<StudentResultsProvider>();
     final gamesProvider = context.watch<GamesProvider>();
     final careersProvider = context.watch<CareersProvider>();
 
-    if (gamesProvider.isLoading && gamesProvider.miniGames.isEmpty) {
-      return Scaffold(
-        backgroundColor: StudentUiColors.background,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          title: Text(
-            'Tus Resultados',
-            style: TextStyle(
-              color: StudentUiColors.darkText,
-              fontWeight: FontWeight.w900,
-              fontSize: 18.sp,
-            ),
-          ),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(
-            color: StudentUiColors.primary,
-          ),
-        ),
-        bottomNavigationBar: const StudentBottomNavigationBar(
-          currentIndex: 3,
-        ),
-      );
-    }
-
-    final allCompleted = gamesProvider.areAllGamesCompleted;
-
     return PopScope(
-      /*
-       * Esta pantalla se abre mediante context.go().
-       * Por eso no debe ejecutar context.pop(), ya que puede no existir
-       * una pantalla anterior dentro de la pila de GoRouter.
-       */
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-
-        _goToStudentHome();
+        if (!didPop) {
+          _goToStudentHome();
+        }
       },
       child: Scaffold(
         backgroundColor: StudentUiColors.background,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            tooltip: 'Regresar al inicio',
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              color: Colors.black,
-            ),
-            onPressed: _goToStudentHome,
-          ),
-          title: Text(
-            'Tus Resultados',
-            style: TextStyle(
-              color: StudentUiColors.darkText,
-              fontWeight: FontWeight.w900,
-              fontSize: 18.sp,
-            ),
-          ),
-          actions: [
-            IconButton(
-              tooltip: 'Notificaciones',
-              icon: const Icon(
-                Icons.notifications_none,
-                color: Colors.black,
-              ),
-              onPressed: () {
-                _showMessage(
-                  'Notificaciones próximamente',
-                );
-              },
-            ),
-            IconButton(
-              tooltip: 'Más opciones',
-              icon: const Icon(
-                Icons.more_vert,
-                color: Colors.black,
-              ),
-              onPressed: () {
-                _showMessage(
-                  'Más opciones próximamente',
-                );
-              },
-            ),
-          ],
+        appBar: _buildAppBar(),
+        body: _buildScreenBody(
+          resultsProvider: resultsProvider,
+          gamesProvider: gamesProvider,
+          careersProvider: careersProvider,
         ),
-        body: allCompleted
-            ? _buildBody(
-          provider,
-          careersProvider,
-        )
-            : _buildIncompleteGamesState(),
         bottomNavigationBar:
         const StudentBottomNavigationBar(
           currentIndex: 3,
@@ -182,12 +138,62 @@ class _VocationalResultsScreenState
     );
   }
 
-  Widget _buildBody(
-      StudentResultsProvider provider,
-      CareersProvider careersProvider,
-      ) {
-    if (provider.isLoading &&
-        provider.results.isEmpty) {
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        tooltip: 'Regresar al inicio',
+        icon: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Colors.black,
+        ),
+        onPressed: _goToStudentHome,
+      ),
+      title: Text(
+        'Tus Resultados',
+        style: TextStyle(
+          color: StudentUiColors.darkText,
+          fontWeight: FontWeight.w900,
+          fontSize: 18.sp,
+        ),
+      ),
+      actions: [
+        IconButton(
+          tooltip: 'Notificaciones',
+          icon: const Icon(
+            Icons.notifications_none,
+            color: Colors.black,
+          ),
+          onPressed: () {
+            _showMessage('Notificaciones próximamente');
+          },
+        ),
+        IconButton(
+          tooltip: 'Más opciones',
+          icon: const Icon(
+            Icons.more_vert,
+            color: Colors.black,
+          ),
+          onPressed: () {
+            _showMessage('Más opciones próximamente');
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScreenBody({
+    required StudentResultsProvider resultsProvider,
+    required GamesProvider gamesProvider,
+    required CareersProvider careersProvider,
+  }) {
+    if ((gamesProvider.isLoading &&
+        gamesProvider.miniGames.isEmpty) ||
+        (resultsProvider.isLoading &&
+            resultsProvider.results.isEmpty)) {
       return const Center(
         child: CircularProgressIndicator(
           color: StudentUiColors.primary,
@@ -195,104 +201,242 @@ class _VocationalResultsScreenState
       );
     }
 
+    if (!gamesProvider.areAllGamesCompleted &&
+        resultsProvider.results.isEmpty) {
+      return _buildIncompleteGamesState();
+    }
+
     return RefreshIndicator(
       color: StudentUiColors.primary,
-      onRefresh: () async {
-        await provider.fetchResults();
-        await careersProvider.fetchRecommendedCareers(
-          topN: 5,
-          force: true,
-        );
-      },
+      onRefresh: _refreshData,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
           18.w,
           16.h,
           18.w,
-          28.h,
+          30.h,
         ),
         children: [
-          if (provider.errorMessage != null) ...[
+          if (resultsProvider.errorMessage != null) ...[
             _ResultsErrorCard(
-              message: provider.errorMessage!,
-              onRetry: provider.fetchResults,
+              message: resultsProvider.errorMessage!,
+              onRetry: _refreshData,
             ),
-            SizedBox(height: 18.h),
+            SizedBox(height: 16.h),
           ],
+          if (resultsProvider.results.isEmpty)
+            _buildEmptyResults()
+          else ...[
+            _buildRecommendedCareers(
+              careersProvider,
+            ),
+            SizedBox(height: 20.h),
+            _buildRiasecOverview(
+              resultsProvider.latestResult!,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
-          _buildMainResultCard(provider),
+  Widget _buildRiasecOverview(
+      VocationalResultEntity result,
+      ) {
+    final scores = <MapEntry<String, double>>[];
 
+    for (final letter in const [
+      'R',
+      'I',
+      'A',
+      'S',
+      'E',
+      'C',
+    ]) {
+      scores.add(
+        MapEntry(
+          letter,
+          _normalizeScore(result.scores[letter] ?? 0),
+        ),
+      );
+    }
+
+    final rankedScores =
+    List<MapEntry<String, double>>.from(scores)
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final dominant = rankedScores
+        .take(3)
+        .map((item) => item.key)
+        .join('');
+
+    return Container(
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(
+          color: const Color(0xFFE8E6F2),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48.w,
+                height: 48.w,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF6D28D9),
+                      Color(0xFF4338CA),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(15.r),
+                ),
+                child: const Icon(
+                  Icons.radar_rounded,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tu perfil RIASEC',
+                      style: TextStyle(
+                        color: StudentUiColors.darkText,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      'Puntuaciones reales obtenidas en tus actividades.',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 11.sp,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (dominant.isNotEmpty)
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 11.w,
+                    vertical: 7.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1ECFF),
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  child: Text(
+                    dominant,
+                    style: TextStyle(
+                      color: StudentUiColors.primary,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.4,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           SizedBox(height: 22.h),
-
-          _buildRecommendedCareers(
-            careersProvider,
-          ),
-
-          SizedBox(height: 22.h),
-
-          _buildSectionHeader(
-            title: 'Fortalezas Detectadas',
-            action: 'Ver todas',
-            onActionPressed: () {
-              _showMessage(
-                'Listado completo próximamente',
-              );
-            },
-          ),
-
-          SizedBox(height: 12.h),
-
-          _strengthItem(
-            icon: Icons.psychology_outlined,
-            title: 'Pensamiento Lógico',
-            text:
-            'Capacidad excepcional para resolver problemas complejos mediante el análisis.',
-            color: const Color(0xFF4285F4),
-          ),
-
-          SizedBox(height: 10.h),
-
-          _strengthItem(
-            icon: Icons.groups_2_outlined,
-            title: 'Colaboración',
-            text:
-            'Habilidad natural para trabajar en equipos multidisciplinarios con éxito.',
-            color: StudentUiColors.teal,
-          ),
-
-          SizedBox(height: 10.h),
-
-          _strengthItem(
-            icon: Icons.workspace_premium_outlined,
-            title: 'Atención al Detalle',
-            text:
-            'Alta precisión en tareas técnicas y metodológicas.',
-            color: const Color(0xFF6A4CFF),
-          ),
-
-          SizedBox(height: 24.h),
-
-          Text(
-            'Intereses Principales',
-            style: TextStyle(
-              color: StudentUiColors.darkText,
-              fontSize: 17.sp,
-              fontWeight: FontWeight.w900,
+          ...scores.map(
+                (item) => _buildRiasecScoreRow(
+              letter: item.key,
+              score: item.value,
             ),
           ),
+        ],
+      ),
+    );
+  }
 
-          SizedBox(height: 12.h),
+  Widget _buildRiasecScoreRow({
+    required String letter,
+    required double score,
+  }) {
+    final color =
+        _riasecColors[letter] ?? StudentUiColors.primary;
 
-          _buildInterestChips(),
-
-          SizedBox(height: 26.h),
-
-          _buildClarityCard(provider),
-
-          SizedBox(height: 28.h),
-
-          _buildCareersButton(),
+    return Padding(
+      padding: EdgeInsets.only(bottom: 14.h),
+      child: Row(
+        children: [
+          Container(
+            width: 37.w,
+            height: 37.w,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Text(
+              letter,
+              style: TextStyle(
+                color: color,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          SizedBox(width: 11.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _riasecNames[letter] ?? letter,
+                        style: TextStyle(
+                          color: StudentUiColors.darkText,
+                          fontSize: 11.5.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${(score * 100).round()}%',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 6.h),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: LinearProgressIndicator(
+                    value: score,
+                    minHeight: 7.h,
+                    backgroundColor: color.withOpacity(0.09),
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -305,41 +449,63 @@ class _VocationalResultsScreenState
       padding: EdgeInsets.all(18.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22.r),
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(
+          color: const Color(0xFFE8E6F2),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Carreras recomendadas',
-            style: TextStyle(
-              color: StudentUiColors.darkText,
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w900,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Carreras recomendadas',
+                      style: TextStyle(
+                        color: StudentUiColors.darkText,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'Ordenadas según tu perfil RIASEC y tus factores personales.',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 11.sp,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (provider.hasCareers)
+                IconButton(
+                  tooltip: 'Actualizar recomendaciones',
+                  onPressed: provider.refresh,
+                  icon: const Icon(
+                    Icons.refresh_rounded,
+                    color: StudentUiColors.primary,
+                  ),
+                ),
+            ],
           ),
-          SizedBox(height: 5.h),
-          Text(
-            'Opciones calculadas con tus resultados y factores personales.',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 11.sp,
-              height: 1.3,
-            ),
-          ),
-          SizedBox(height: 16.h),
+          SizedBox(height: 18.h),
           if (provider.isLoading)
             Padding(
-              padding: EdgeInsets.symmetric(
-                vertical: 24.h,
-              ),
+              padding: EdgeInsets.symmetric(vertical: 28.h),
               child: const Center(
                 child: CircularProgressIndicator(
                   color: StudentUiColors.primary,
@@ -347,51 +513,14 @@ class _VocationalResultsScreenState
               ),
             )
           else if (provider.errorMessage != null)
-            Column(
-              children: [
-                Text(
-                  provider.errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.red[700],
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: 12.h),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    provider.fetchRecommendedCareers(
-                      topN: 5,
-                      force: true,
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.refresh_rounded,
-                  ),
-                  label: const Text(
-                    'Intentar nuevamente',
-                  ),
-                ),
-              ],
-            )
+            _buildRecommendationError(provider)
           else if (provider.careers.isEmpty)
-              Text(
-                'Todavía no hay recomendaciones disponibles.',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12.sp,
-                ),
-              )
+              _buildEmptyRecommendations(provider)
             else
-              ...provider.careers
-                  .asMap()
-                  .entries
-                  .map(
+              ...provider.careers.asMap().entries.map(
                     (entry) => Padding(
                   padding: EdgeInsets.only(
-                    bottom:
-                    entry.key ==
+                    bottom: entry.key ==
                         provider.careers.length - 1
                         ? 0
                         : 12.h,
@@ -411,80 +540,177 @@ class _VocationalResultsScreenState
     required int position,
     required CareerEntity career,
   }) {
-    final double score =
-    career.score.clamp(0.0, 1.0);
-    final String? universityName =
-        career.universityName;
+    final university = career.universityName?.trim();
+    final isFirst = position == 1;
 
     return Container(
-      padding: EdgeInsets.all(14.w),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: StudentUiColors.primary
-            .withOpacity(0.055),
-        borderRadius: BorderRadius.circular(17.r),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
-          color: StudentUiColors.primary
-              .withOpacity(0.13),
+          color: isFirst
+              ? StudentUiColors.primary.withOpacity(0.32)
+              : const Color(0xFFE6E2F2),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: StudentUiColors.primary.withOpacity(
+              isFirst ? 0.10 : 0.045,
+            ),
+            blurRadius: isFirst ? 16 : 11,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 20.r,
-            backgroundColor: StudentUiColors.primary,
-            foregroundColor: Colors.white,
-            child: Text(
-              '$position',
-              style: TextStyle(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w900,
+          Container(
+            width: 48.w,
+            height: 48.w,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF5B21B6),
+                  Color(0xFF4338CA),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '#$position',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (isFirst)
+                  Icon(
+                    Icons.star_rounded,
+                    color: const Color(0xFFFFD166),
+                    size: 13.sp,
+                  ),
+              ],
             ),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 13.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 9.w,
+                    vertical: 4.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isFirst
+                        ? const Color(0xFFFFF4D8)
+                        : const Color(0xFFF1ECFF),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Text(
+                    isFirst
+                        ? 'MEJOR COINCIDENCIA'
+                        : 'OPCIÓN RECOMENDADA',
+                    style: TextStyle(
+                      color: isFirst
+                          ? const Color(0xFFB76A00)
+                          : StudentUiColors.primary,
+                      fontSize: 8.5.sp,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.35,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8.h),
                 Text(
-                  career.name.toString(),
+                  career.name.trim().isEmpty
+                      ? 'Carrera sin nombre'
+                      : career.name.trim(),
                   style: TextStyle(
                     color: StudentUiColors.darkText,
-                    fontSize: 13.sp,
+                    fontSize: 13.5.sp,
+                    height: 1.25,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                if (universityName != null &&
-                    universityName.trim().isNotEmpty) ...[
-                  SizedBox(height: 5.h),
-                  Text(
-                    universityName,
-                    style: TextStyle(
-                      color: Colors.grey[650],
-                      fontSize: 10.5.sp,
-                      height: 1.25,
+                if (university != null &&
+                    university.isNotEmpty) ...[
+                  SizedBox(height: 9.h),
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.w,
+                      vertical: 8.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F7FC),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Row(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 27.w,
+                          height: 27.w,
+                          decoration: BoxDecoration(
+                            color: StudentUiColors.primary
+                                .withOpacity(0.10),
+                            borderRadius:
+                            BorderRadius.circular(8.r),
+                          ),
+                          child: Icon(
+                            Icons.account_balance_rounded,
+                            size: 15.sp,
+                            color: StudentUiColors.primary,
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            university,
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 10.5.sp,
+                              height: 1.25,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-                SizedBox(height: 9.h),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8.r),
-                  child: LinearProgressIndicator(
-                    value: score,
-                    minHeight: 7.h,
-                    backgroundColor: const Color(0xFFEDE9FE),
-                    color: StudentUiColors.primary,
-                  ),
-                ),
-                SizedBox(height: 5.h),
-                Text(
-                  '${(score * 100).round()}% de compatibilidad',
-                  style: TextStyle(
-                    color: StudentUiColors.primary,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w800,
-                  ),
+                SizedBox(height: 10.h),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: StudentUiColors.primary,
+                      size: 15.sp,
+                    ),
+                    SizedBox(width: 6.w),
+                    Expanded(
+                      child: Text(
+                        'Seleccionada a partir de tu perfil RIASEC',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 9.8.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -494,507 +720,116 @@ class _VocationalResultsScreenState
     );
   }
 
-  Widget _buildMainResultCard(
-      StudentResultsProvider provider,
+  Widget _buildRecommendationError(
+      CareersProvider provider,
       ) {
-    final hasResult = provider.results.isNotEmpty;
-
-    final topCareer = hasResult &&
-        provider.results.first.topCareer.trim().isNotEmpty
-        ? provider.results.first.topCareer.trim()
-        : 'Ingeniería y STEM';
-
     return Container(
-      padding: EdgeInsets.all(22.w),
+      width: double.infinity,
+      padding: EdgeInsets.all(15.w),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24.r),
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFE040FB),
-            Color(0xFF7C4DFF),
-            Color(0xFF4B5CFF),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7C4DFF)
-                .withOpacity(0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Column(
         children: [
-          Container(
-            width: 82.w,
-            height: 82.w,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withOpacity(0.25),
-              ),
-            ),
-            child: Icon(
-              Icons.track_changes_rounded,
-              color: Colors.white,
-              size: 42.sp,
-            ),
-          ),
-
-          SizedBox(height: 14.h),
-
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: 14.w,
-              vertical: 5.h,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-            child: Text(
-              'Resultado Principal',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-
-          SizedBox(height: 12.h),
-
           Text(
-            topCareer,
+            provider.errorMessage!,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 25.sp,
-              fontWeight: FontWeight.w900,
+              color: Colors.red[700],
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
             ),
           ),
-
-          SizedBox(height: 8.h),
-
-          Text(
-            'Tu perfil destaca por habilidades analíticas y pensamiento sistemático.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 13.sp,
-              height: 1.25,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-
-          SizedBox(height: 22.h),
-
-          Container(
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.16),
-              borderRadius: BorderRadius.circular(18.r),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.18),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'COMPATIBILIDAD',
-                        style: TextStyle(
-                          color:
-                          Colors.white.withOpacity(0.75),
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        '94%',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24.sp,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 48.w,
-                  height: 48.w,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.check_circle_outline_rounded,
-                    color: Colors.white,
-                    size: 31.sp,
-                  ),
-                ),
-              ],
-            ),
+          SizedBox(height: 10.h),
+          OutlinedButton.icon(
+            onPressed: () {
+              provider.fetchRecommendedCareers(
+                topN: 5,
+                force: true,
+              );
+            },
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Intentar nuevamente'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader({
-    required String title,
-    required String action,
-    required VoidCallback onActionPressed,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
+  Widget _buildEmptyRecommendations(
+      CareersProvider provider,
+      ) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 20.h),
+        child: Column(
+          children: [
+            Icon(
+              Icons.school_outlined,
+              size: 42.sp,
+              color: Colors.grey[400],
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              'Todavía no hay recomendaciones disponibles.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12.sp,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            TextButton.icon(
+              onPressed: () {
+                provider.fetchRecommendedCareers(
+                  topN: 5,
+                  force: true,
+                );
+              },
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Generar recomendaciones'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyResults() {
+    return Container(
+      padding: EdgeInsets.all(24.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22.r),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.radar_rounded,
+            size: 52.sp,
+            color: StudentUiColors.primary,
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            'Aún no hay resultados RIASEC',
             style: TextStyle(
               color: StudentUiColors.darkText,
               fontSize: 17.sp,
               fontWeight: FontWeight.w900,
             ),
           ),
-        ),
-        TextButton(
-          onPressed: onActionPressed,
-          child: Text(
-            '$action  ›',
+          SizedBox(height: 7.h),
+          Text(
+            'Completa tus actividades para generar tu perfil vocacional.',
+            textAlign: TextAlign.center,
             style: TextStyle(
-              color: const Color(0xFF2563EB),
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _strengthItem({
-    required IconData icon,
-    required String title,
-    required String text,
-    required Color color,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(
-          color: const Color(0xFFE5E7EB),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.025),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42.w,
-            height: 42.w,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(14.r),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 23.sp,
-            ),
-          ),
-
-          SizedBox(width: 13.w),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: StudentUiColors.darkText,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 3.h),
-                Text(
-                  text,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 10.5.sp,
-                    height: 1.25,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              color: Colors.grey[600],
+              fontSize: 12.sp,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildInterestChips() {
-    const interests = [
-      _InterestChip(
-        icon: Icons.bolt_rounded,
-        label: 'Tecnología',
-        backgroundColor: Color(0xFFEFF6FF),
-        color: Color(0xFF2563EB),
-      ),
-      _InterestChip(
-        icon: Icons.data_object_rounded,
-        label: 'Matemáticas',
-        backgroundColor: Color(0xFFF3E8FF),
-        color: Color(0xFF9333EA),
-      ),
-      _InterestChip(
-        icon: Icons.emoji_events_outlined,
-        label: 'Liderazgo',
-        backgroundColor: Color(0xFFFFF7ED),
-        color: Color(0xFFF97316),
-      ),
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: interests.map((item) {
-          return Container(
-            margin: EdgeInsets.only(right: 10.w),
-            padding: EdgeInsets.symmetric(
-              horizontal: 14.w,
-              vertical: 9.h,
-            ),
-            decoration: BoxDecoration(
-              color: item.backgroundColor,
-              borderRadius: BorderRadius.circular(18.r),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  item.icon,
-                  color: item.color,
-                  size: 17.sp,
-                ),
-                SizedBox(width: 6.w),
-                Text(
-                  item.label,
-                  style: TextStyle(
-                    color: item.color,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildClarityCard(
-      StudentResultsProvider provider,
-      ) {
-    final clarity = _getClarity(provider);
-    final percentage = (clarity * 100).round();
-
-    return Container(
-      padding: EdgeInsets.all(18.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.035),
-            blurRadius: 14,
-            offset: const Offset(0, 7),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.star_border_rounded,
-                color: StudentUiColors.darkText,
-                size: 24.sp,
-              ),
-
-              SizedBox(width: 8.w),
-
-              Expanded(
-                child: Text(
-                  'Claridad Vocacional',
-                  style: TextStyle(
-                    color: StudentUiColors.darkText,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-
-              Text(
-                '$percentage%',
-                style: TextStyle(
-                  color: const Color(0xFF2563EB),
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 16.h),
-
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10.r),
-            child: LinearProgressIndicator(
-              value: clarity,
-              minHeight: 9.h,
-              backgroundColor:
-              const Color(0xFFF3E8FF),
-              color: StudentUiColors.primary,
-            ),
-          ),
-
-          SizedBox(height: 10.h),
-
-          Row(
-            mainAxisAlignment:
-            MainAxisAlignment.spaceBetween,
-            children: [
-              _clarityLabel('EXPLORANDO'),
-              _clarityLabel('DEFINIDO'),
-              _clarityLabel('SEGURO'),
-            ],
-          ),
-
-          SizedBox(height: 16.h),
-
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(14.w),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(
-                color: const Color(0xFFE5E7EB),
-              ),
-            ),
-            child: Text(
-              _getClarityMessage(clarity),
-              style: TextStyle(
-                color: Colors.grey[700],
-                fontSize: 11.sp,
-                height: 1.3,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  double _getClarity(
-      StudentResultsProvider provider,
-      ) {
-    if (provider.results.isEmpty) {
-      return 0.85;
-    }
-
-    /*
-     * Por ahora se conserva el valor visual.
-     * Cuando tu entidad incluya claridad vocacional,
-     * sustituye este valor por el dato real.
-     */
-    return 0.85;
-  }
-
-  String _getClarityMessage(double clarity) {
-    if (clarity >= 0.80) {
-      return '¡Excelente! Tus respuestas muestran una dirección muy clara hacia carreras técnicas. Estás listo para el siguiente paso.';
-    }
-
-    if (clarity >= 0.50) {
-      return 'Tu perfil comienza a mostrar una dirección vocacional. Continúa explorando carreras y realizando actividades.';
-    }
-
-    return 'Todavía estás explorando tus intereses. Realiza más actividades para fortalecer tu perfil vocacional.';
-  }
-
-  Widget _clarityLabel(String text) {
-    return Text(
-      text,
-      style: TextStyle(
-        color: Colors.grey[700],
-        fontSize: 8.sp,
-        fontWeight: FontWeight.w900,
-      ),
-    );
-  }
-
-  Widget _buildCareersButton() {
-    return SizedBox(
-        width: double.infinity,
-        height: 58.h,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: StudentUiColors.primary,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18.r),
-            ),
-            elevation: 0,
-          ),
-          onPressed: () {
-            context.push(AppRoutes.careers.path);
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Ver carreras recomendadas',
-                style: TextStyle(
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Icon(
-                Icons.arrow_forward_rounded,
-                size: 22.sp,
-              ),
-            ],
-          ),
-        )
     );
   }
 
@@ -1021,7 +856,8 @@ class _VocationalResultsScreenState
           ),
           SizedBox(height: 12.h),
           Text(
-            'Aún no has completado todos los minijuegos. Para poder analizar tus habilidades, intereses y darte tus resultados finales con las carreras recomendadas, debes completar todas las áreas.',
+            'Completa todos los minijuegos para obtener tu '
+                'perfil RIASEC y tus carreras recomendadas.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey[600],
@@ -1047,7 +883,7 @@ class _VocationalResultsScreenState
                 context.go(AppRoutes.games.path);
               },
               child: Text(
-                'Ir a los Minijuegos',
+                'Ir a los minijuegos',
                 style: TextStyle(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w900,
@@ -1058,6 +894,20 @@ class _VocationalResultsScreenState
         ],
       ),
     );
+  }
+
+  double _normalizeScore(dynamic value) {
+    final raw = value is num
+        ? value.toDouble()
+        : double.tryParse(value?.toString() ?? '') ?? 0;
+
+    if (raw > 1 && raw <= 100) {
+      return (raw / 100)
+          .clamp(0.0, 1.0)
+          .toDouble();
+    }
+
+    return raw.clamp(0.0, 1.0).toDouble();
   }
 }
 
@@ -1113,18 +963,4 @@ class _ResultsErrorCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _InterestChip {
-  final IconData icon;
-  final String label;
-  final Color backgroundColor;
-  final Color color;
-
-  const _InterestChip({
-    required this.icon,
-    required this.label,
-    required this.backgroundColor,
-    required this.color,
-  });
 }

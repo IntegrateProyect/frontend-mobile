@@ -27,8 +27,10 @@ import '../../features/student/presentation/screens/student_profile_screen.dart'
 import '../../features/student/presentation/screens/vocational_results_screen.dart';
 import '../../features/student/presentation/screens/CareersScreen.dart';
 import '../../features/student/presentation/screens/universities_screen.dart';
+import '../../features/student/presentation/screens/university_detail_screen.dart';
 import '../../features/student/presentation/screens/student_agenda_screen.dart';
 import '../../features/student/presentation/screens/events_screen.dart';
+import '../../features/university/domain/entities/university_entity.dart';
 
 // =========================================================
 // MINIJUEGOS
@@ -166,6 +168,16 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.universities.path,
       builder: (context, state) {
         return const UniversitiesScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.universityDetail.path,
+      builder: (context, state) {
+        final university = state.extra as UniversityEntity;
+        return UniversityDetailScreen(
+          university: university,
+        );
       },
     ),
 

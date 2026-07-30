@@ -215,36 +215,36 @@ class VocationalRouteCard extends StatelessWidget {
               stage: stages[index],
               isLast: index == stages.length - 1,
             ),
-          SizedBox(height: 12.h),
-          SizedBox(
-            width: double.infinity,
-            height: 48.h,
-            child: ElevatedButton.icon(
-              onPressed: onGamesTap,
-              icon: Icon(
-                hasGroup
-                    ? Icons.sports_esports_rounded
-                    : Icons.lock_outline_rounded,
-              ),
-              label: Text(
-                !hasGroup
-                    ? 'Unirme a un grupo'
-                    : gamesCompleted
-                    ? 'Ver actividades'
-                    : gamesStarted
-                    ? 'Continuar actividades'
-                    : 'Iniciar actividades',
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF311B92),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24.r),
+          if (!gamesCompleted) ...[
+            SizedBox(height: 12.h),
+            SizedBox(
+              width: double.infinity,
+              height: 48.h,
+              child: ElevatedButton.icon(
+                onPressed: onGamesTap,
+                icon: Icon(
+                  hasGroup
+                      ? Icons.sports_esports_rounded
+                      : Icons.lock_outline_rounded,
+                ),
+                label: Text(
+                  !hasGroup
+                      ? 'Unirme a un grupo'
+                      : gamesStarted
+                      ? 'Continuar actividades'
+                      : 'Iniciar actividades',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24.r),
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
