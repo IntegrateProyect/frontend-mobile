@@ -4,12 +4,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../common/student_ui_colors.dart';
 
 class StudentRecommendationsCard extends StatelessWidget {
-  final VoidCallback onCareersTap;
   final VoidCallback onUniversitiesTap;
 
   const StudentRecommendationsCard({
     super.key,
-    required this.onCareersTap,
     required this.onUniversitiesTap,
   });
 
@@ -60,7 +58,7 @@ class StudentRecommendationsCard extends StatelessWidget {
                     ),
                     SizedBox(height: 3.h),
                     Text(
-                      'Acciones sugeridas para avanzar en tu camino.',
+                      'Encuentra instituciones relacionadas con tu perfil.',
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 11.sp,
@@ -72,105 +70,68 @@ class StudentRecommendationsCard extends StatelessWidget {
             ],
           ),
           SizedBox(height: 14.h),
-          _RecommendationItem(
-            icon: Icons.school_outlined,
-            title: 'Carreras sugeridas',
-            description:
-            'Descubre opciones según tus resultados vocacionales.',
-            color: StudentUiColors.pink,
-            onTap: onCareersTap,
-          ),
-          SizedBox(height: 10.h),
-          _RecommendationItem(
-            icon: Icons.account_balance_outlined,
-            title: 'Universidades compatibles',
-            description:
-            'Encuentra instituciones con carreras relacionadas.',
-            color: StudentUiColors.blue,
+          InkWell(
             onTap: onUniversitiesTap,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecommendationItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _RecommendationItem({
-    required this.icon,
-    required this.title,
-    required this.description,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18.r),
-      child: Container(
-        padding: EdgeInsets.all(12.w),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(18.r),
-          border: Border.all(
-            color: color.withOpacity(0.16),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48.w,
-              height: 48.w,
+            borderRadius: BorderRadius.circular(18.r),
+            child: Container(
+              padding: EdgeInsets.all(12.w),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.13),
-                borderRadius: BorderRadius.circular(16.r),
+                color: StudentUiColors.blue.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(18.r),
+                border: Border.all(
+                  color: StudentUiColors.blue.withOpacity(0.16),
+                ),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 25.sp,
-              ),
-            ),
-            SizedBox(width: 13.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: StudentUiColors.darkText,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w900,
+                  Container(
+                    width: 48.w,
+                    height: 48.w,
+                    decoration: BoxDecoration(
+                      color: StudentUiColors.blue.withOpacity(0.13),
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    child: Icon(
+                      Icons.account_balance_outlined,
+                      color: StudentUiColors.blue,
+                      size: 25.sp,
                     ),
                   ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 10.5.sp,
-                      height: 1.2,
+                  SizedBox(width: 13.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Universidades compatibles',
+                          style: TextStyle(
+                            color: StudentUiColors.darkText,
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 3.h),
+                        Text(
+                          'Encuentra instituciones con carreras relacionadas.',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 10.5.sp,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: StudentUiColors.blue,
+                    size: 25.sp,
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: color,
-              size: 25.sp,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

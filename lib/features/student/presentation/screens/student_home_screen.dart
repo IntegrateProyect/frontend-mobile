@@ -434,11 +434,6 @@ class _StudentHomeScreenState
           SizedBox(height: 20.h),
 
           StudentRecommendationsCard(
-            onCareersTap: () {
-              context.push(
-                AppRoutes.careers.path,
-              );
-            },
             onUniversitiesTap: () {
               context.push(
                 AppRoutes.universities.path,

@@ -10,7 +10,6 @@ import 'package:orientate/core/routes/AppRoutes.dart';
 import '../../../university/presentation/providers/universities_provider.dart';
 import '../components/common/student_ui_colors.dart';
 import '../components/universities/university_card.dart';
-import '../providers/universities_provider.dart';
 
 class UniversitiesScreen
     extends StatefulWidget {
@@ -365,22 +364,12 @@ class _UniversitiesScreenState
 
           return UniversityCard(
             university: university,
-            onTap: university.isRegistered
-                ? () {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Perfil de ${university.name} próximamente',
-                  ),
-                  behavior:
-                  SnackBarBehavior
-                      .floating,
-                ),
+            onTap: () {
+              context.push(
+                AppRoutes.universityDetail.path,
+                extra: university,
               );
-            }
-                : null,
+            },
           );
         },
       ),
