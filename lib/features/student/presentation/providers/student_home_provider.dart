@@ -14,6 +14,8 @@ import '../../domain/usecases/get_student_appointments_usecase.dart';
 import '../../domain/usecases/get_student_profile_usecase.dart';
 import '../../domain/usecases/get_vocational_results_usecase.dart';
 import '../../domain/usecases/schedule_appointment_usecase.dart';
+import '../../../university/domain/entities/university_announcement_entity.dart';
+import '../../../university/data/datasources/models/university_announcement_model.dart';
 
 class StudentHomeProvider extends ChangeNotifier {
   final GetStudentProfileUseCase _getProfileUseCase;
@@ -51,6 +53,7 @@ class StudentHomeProvider extends ChangeNotifier {
   List<dynamic> _studentGroups = [];
   List<AppointmentEntity> _appointments = [];
   List<EventEntity> _events = [];
+  List<UniversityAnnouncementEntity> _announcements = [];
 
   bool _isLoading = false;
   bool _hasChatbotInteraction = false;
@@ -72,6 +75,7 @@ class StudentHomeProvider extends ChangeNotifier {
       List.unmodifiable(_appointments);
 
   List<EventEntity> get events => List.unmodifiable(_events);
+  List<UniversityAnnouncementEntity> get announcements => List.unmodifiable(_announcements);
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -304,6 +308,7 @@ class StudentHomeProvider extends ChangeNotifier {
       _results = await _loadResultsSafely();
       _availableGames = await _loadGamesSafely();
       _events = await _loadEventsSafely();
+      _announcements = await _loadAnnouncementsSafely();
     } catch (error, stackTrace) {
       debugPrint('Error cargando inicio del estudiante: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -534,6 +539,19 @@ class StudentHomeProvider extends ChangeNotifier {
       return await _getEventsUseCase();
     } catch (error) {
       debugPrint('No se pudieron cargar los eventos: $error');
+      return [];
+    }
+  }
+
+  Future<List<UniversityAnnouncementEntity>> _loadAnnouncementsSafely() async {
+    try {
+      final token = await _userService.getToken();
+      if (token == null || token.trim().isEmpty) return [];
+
+      final list = await _api.getStudentAnnouncements(token.trim());
+      return list.map((item) => UniversityAnnouncementModel.fromJson(Map<String, dynamic>.from(item))).toList();
+    } catch (error) {
+      debugPrint('No se pudieron cargar los anuncios: $error');
       return [];
     }
   }

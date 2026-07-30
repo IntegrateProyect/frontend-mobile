@@ -101,6 +101,8 @@ import '../../features/student/presentation/providers/careers_provider.dart';
 import '../../features/student/presentation/providers/student_home_provider.dart';
 import '../../features/student/presentation/providers/student_profile_provider.dart';
 import '../../features/student/presentation/providers/student_results_provider.dart';
+import '../../features/student/domain/usecases/save_favorite_usecase.dart';
+import '../../features/student/presentation/providers/favorites_provider.dart';
 
 // ALUMNI
 import '../../features/alumni/data/repositories/alumni_repository_impl.dart';
@@ -309,9 +311,15 @@ Future<void> init() async {
     ),
   );
 
+  sl.registerLazySingleton<SaveFavoriteUseCase>(
+        () => SaveFavoriteUseCase(
+      sl<StudentRepository>(),
+    ),
+  );
+
   sl.registerLazySingleton<GetStudentAppointmentsUseCase>(
         () => GetStudentAppointmentsUseCase(
-      sl<CounselorRepository>(),
+      sl<StudentRepository>(),
     ),
   );
 
@@ -355,6 +363,12 @@ Future<void> init() async {
         () => CareersProvider(
       getRecommendedCareersUseCase:
       sl<GetRecommendedCareersUseCase>(),
+    ),
+  );
+
+  sl.registerFactory<FavoritesProvider>(
+        () => FavoritesProvider(
+      saveFavoriteUseCase: sl<SaveFavoriteUseCase>(),
     ),
   );
 
