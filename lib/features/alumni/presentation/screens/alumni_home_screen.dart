@@ -6,6 +6,7 @@ import 'package:orientate/core/routes/AppRoutes.dart';
 import '../components/alumni_story_card.dart';
 import '../components/alumni_empty_state.dart';
 import '../providers/alumni_home_provider.dart';
+import 'package:orientate/shared/theme/theme_provider.dart';
 
 class AlumniHomeScreen extends StatelessWidget {
   const AlumniHomeScreen({super.key});
@@ -16,6 +17,8 @@ class AlumniHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AlumniHomeProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
 
     if (provider.profile == null && !provider.isLoading && provider.errorMessage == null) {
       Future.microtask(() => provider.loadHomeData());
@@ -26,16 +29,16 @@ class AlumniHomeScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
+      backgroundColor: isDark ? const Color(0xFF0F1020) : const Color(0xFFF8F9FE),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
         elevation: 0,
         centerTitle: false,
         toolbarHeight: 50.h,
         title: Text(
           'Portal Alumni',
           style: TextStyle(
-            color: _accentColor,
+            color: isDark ? Colors.white : _accentColor,
             fontWeight: FontWeight.w900,
             fontSize: 18.sp,
             letterSpacing: -0.5,
@@ -46,10 +49,10 @@ class AlumniHomeScreen extends StatelessWidget {
             icon: Container(
               padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
-                color: _primaryColor.withOpacity(0.08),
+                color: isDark ? const Color(0xFFB59AFF).withOpacity(0.12) : _primaryColor.withOpacity(0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.person_outline_rounded, color: _primaryColor, size: 18),
+              child: Icon(Icons.person_outline_rounded, color: isDark ? const Color(0xFFB59AFF) : _primaryColor, size: 18),
             ),
             onPressed: () => context.push(AppRoutes.alumniProfile.path),
           ),
@@ -145,18 +148,19 @@ class AlumniHomeScreen extends StatelessWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: _accentColor, letterSpacing: -0.4),
+          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: isDark ? Colors.white : _accentColor, letterSpacing: -0.4),
         ),
         TextButton(
           onPressed: () => context.push(AppRoutes.successStories.path),
           style: TextButton.styleFrom(
             visualDensity: VisualDensity.compact,
-            foregroundColor: _primaryColor,
+            foregroundColor: isDark ? const Color(0xFFB59AFF) : _primaryColor,
           ),
           child: Text('Ver todas', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.sp)),
         ),

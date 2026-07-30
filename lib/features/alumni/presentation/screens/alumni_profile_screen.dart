@@ -6,6 +6,8 @@ import '../components/alumni_header.dart';
 import '../components/alumni_info_tile.dart';
 import '../providers/alumni_home_provider.dart';
 import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
+import 'package:orientate/shared/theme/theme_provider.dart';
+import 'package:orientate/core/routes/AppRoutes.dart';
 
 class AlumniProfileScreen extends StatelessWidget {
   const AlumniProfileScreen({super.key});
@@ -17,9 +19,21 @@ class AlumniProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<AlumniHomeProvider>();
     final profile = provider.profile;
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+
+    final String displayName = (profile?.name != null && profile!.name.trim().isNotEmpty)
+        ? profile.name
+        : (user?.name ?? 'Egresado');
+
+    final String displayDegree = (profile?.degree != null && profile!.degree.trim().isNotEmpty)
+        ? profile.degree
+        : 'Carrera';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
+      backgroundColor: isDark ? const Color(0xFF0F1020) : const Color(0xFFF8F9FE),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -39,8 +53,8 @@ class AlumniProfileScreen extends StatelessWidget {
       body: Column(
         children: [
           AlumniHeader(
-            name: profile?.name ?? 'Egresado',
-            subtitle: '${profile?.degree ?? 'Carrera'} • Egresado',
+            name: displayName,
+            subtitle: '$displayDegree • Egresado',
             isVerified: true,
           ),
           Expanded(
@@ -49,11 +63,11 @@ class AlumniProfileScreen extends StatelessWidget {
               padding: EdgeInsets.all(24.r),
               child: Column(
                 children: [
-                  _buildStatsRow(),
+                  _buildStatsRow(isDark),
                   SizedBox(height: 28.h),
-                  _buildProfileCard(profile),
+                  _buildProfileCard(profile, user, isDark),
                   SizedBox(height: 32.h),
-                  _buildActions(context),
+                  _buildActions(context, themeProvider, isDark),
                   SizedBox(height: 20.h),
                 ],
               ),
@@ -64,12 +78,15 @@ class AlumniProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow(bool isDark) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 20.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1A1B2E) : Colors.white,
         borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(
+          color: isDark ? const Color(0xFF303149) : Colors.transparent,
+        ),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5)),
         ],
@@ -77,24 +94,29 @@ class AlumniProfileScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStatItem('12', 'Historias'),
-          _buildDivider(),
-          _buildStatItem('4.5k', 'Vistas'),
-          _buildDivider(),
-          _buildStatItem('156', 'Impacto'),
+          _buildStatItem('12', 'Historias', isDark),
+          _buildDivider(isDark),
+          _buildStatItem('4.5k', 'Vistas', isDark),
+          _buildDivider(isDark),
+          _buildStatItem('156', 'Impacto', isDark),
         ],
       ),
     );
   }
 
-  Widget _buildDivider() => Container(width: 1, height: 30.h, color: const Color(0xFFF1F5F9));
+  Widget _buildDivider(bool isDark) => Container(width: 1, height: 30.h, color: isDark ? const Color(0xFF303149) : const Color(0xFFF1F5F9));
 
-  Widget _buildStatItem(String value, String label) {
+  Widget _buildStatItem(String value, String label, bool isDark) {
     return Column(
       children: [
         Text(
           value,
-          style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900, color: _primaryColor, letterSpacing: -0.5),
+          style: TextStyle(
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w900,
+            color: isDark ? const Color(0xFFB59AFF) : _primaryColor,
+            letterSpacing: -0.5,
+          ),
         ),
         Text(
           label.toUpperCase(),
@@ -104,13 +126,32 @@ class AlumniProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileCard(dynamic profile) {
+  Widget _buildProfileCard(dynamic profile, dynamic user, bool isDark) {
+    final String currentJobValue = (profile?.degree != null && profile!.degree.trim().isNotEmpty)
+        ? 'Egresado de ${profile.degree}'
+        : 'Egresado';
+
+    final String companyValue = (profile?.company != null && profile!.company.trim().isNotEmpty)
+        ? profile.company
+        : 'No especificada';
+
+    final String gradYearValue = (profile?.graduationYear != null && profile!.graduationYear > 0)
+        ? profile.graduationYear.toString()
+        : 'No especificado';
+
+    final String emailValue = (profile?.email != null && profile!.email.trim().isNotEmpty)
+        ? profile.email
+        : (user?.email ?? 'No especificado');
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(24.r),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1A1B2E) : Colors.white,
         borderRadius: BorderRadius.circular(32.r),
+        border: Border.all(
+          color: isDark ? const Color(0xFF303149) : Colors.transparent,
+        ),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 10)),
         ],
@@ -120,45 +161,97 @@ class AlumniProfileScreen extends StatelessWidget {
         children: [
           Text(
             'Información Profesional',
-            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: _accentColor, letterSpacing: -0.5),
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w900,
+              color: isDark ? Colors.white : _accentColor,
+              letterSpacing: -0.5,
+            ),
           ),
           SizedBox(height: 20.h),
           AlumniInfoTile(
             icon: Icons.work_outline_rounded,
             label: 'Puesto Actual',
-            value: profile?.currentJob ?? 'No especificado',
+            value: currentJobValue,
           ),
-          _buildItemDivider(),
+          _buildItemDivider(isDark),
           AlumniInfoTile(
             icon: Icons.business_outlined,
             label: 'Empresa',
-            value: profile?.company ?? 'No especificada',
+            value: companyValue,
           ),
-          _buildItemDivider(),
+          _buildItemDivider(isDark),
           AlumniInfoTile(
             icon: Icons.history_edu_rounded,
             label: 'Año de Graduación',
-            value: profile?.graduationYear?.toString() ?? 'N/A',
+            value: gradYearValue,
           ),
-          _buildItemDivider(),
+          _buildItemDivider(isDark),
           AlumniInfoTile(
             icon: Icons.email_outlined,
             label: 'Contacto Institucional',
-            value: profile?.email ?? 'N/A',
+            value: emailValue,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildItemDivider() => Padding(
+  Widget _buildItemDivider(bool isDark) => Padding(
     padding: EdgeInsets.symmetric(vertical: 4.h),
-    child: Divider(color: const Color(0xFFF8FAFF), thickness: 1.5),
+    child: Divider(color: isDark ? const Color(0xFF303149) : const Color(0xFFF8FAFF), thickness: 1.5),
   );
 
-  Widget _buildActions(BuildContext context) {
+  Widget _buildActions(BuildContext context, ThemeProvider themeProvider, bool isDark) {
     return Column(
       children: [
+        Container(
+          margin: EdgeInsets.only(bottom: 24.h),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1A1B2E) : Colors.white,
+            borderRadius: BorderRadius.circular(24.r),
+            border: Border.all(
+              color: isDark ? const Color(0xFF303149) : const Color(0xFFECECF3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                color: isDark ? Colors.amberAccent : const Color(0xFF311B92),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Modo Oscuro',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                    Text(
+                      isDark ? 'Tema oscuro activado' : 'Tema claro activado',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: isDark,
+                onChanged: themeProvider.setDarkMode,
+                activeColor: Colors.amberAccent,
+              ),
+            ],
+          ),
+        ),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16.r),
@@ -167,7 +260,7 @@ class AlumniProfileScreen extends StatelessWidget {
             ],
           ),
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () => context.push(AppRoutes.alumniProfileForm.path),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
               foregroundColor: Colors.white,

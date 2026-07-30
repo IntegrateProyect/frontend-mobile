@@ -29,6 +29,8 @@ class GetStudentFileUseCase {
           createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
         );
       }).toList(),
+      riasec: data['riasec'],
+      recommendations: data['recommendations'],
     );
   }
 

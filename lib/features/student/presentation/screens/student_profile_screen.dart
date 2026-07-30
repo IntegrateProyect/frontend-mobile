@@ -14,6 +14,7 @@ import '../components/profile/profile_chip_section.dart';
 import '../components/profile/profile_preferences_row.dart';
 import '../components/profile/student_profile_empty_state.dart';
 import '../components/profile/vocational_clarity_card.dart';
+import 'package:orientate/shared/theme/theme_provider.dart';
 import '../providers/student_profile_provider.dart';
 
 class StudentProfileScreen extends StatefulWidget {
@@ -50,6 +51,8 @@ class _StudentProfileScreenState
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
     final profileProvider =
     context.watch<StudentProfileProvider>();
 
@@ -73,24 +76,24 @@ class _StudentProfileScreenState
         _goToStudentHome();
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
           elevation: 0,
           leading: IconButton(
             tooltip: 'Regresar al inicio',
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new,
-              color: Colors.black,
+              color: isDark ? Colors.white : Colors.black,
               size: 20,
             ),
             onPressed: _goToStudentHome,
           ),
-          title: const Text(
+          title: Text(
             'Perfil Vocacional',
             style: TextStyle(
-              color: Colors.black,
+              color: isDark ? Colors.white : Colors.black,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -99,6 +102,7 @@ class _StudentProfileScreenState
         body: _buildBody(
           profileProvider: profileProvider,
           authProvider: authProvider,
+          themeProvider: themeProvider,
           avatarUrl: avatarUrl,
         ),
         bottomNavigationBar:
@@ -112,6 +116,7 @@ class _StudentProfileScreenState
   Widget _buildBody({
     required StudentProfileProvider profileProvider,
     required AuthProvider authProvider,
+    required ThemeProvider themeProvider,
     required String? avatarUrl,
   }) {
     final profile = profileProvider.profile;
@@ -214,6 +219,53 @@ class _StudentProfileScreenState
               SizedBox(height: 32.h),
               VocationalClarityCard(
                 clarity: profile.vocationalClarity,
+              ),
+              SizedBox(height: 24.h),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                decoration: BoxDecoration(
+                  color: themeProvider.isDarkMode ? const Color(0xFF1E1F38) : const Color(0xFFF5F6FC),
+                  borderRadius: BorderRadius.circular(16.r),
+                  border: Border.all(
+                    color: themeProvider.isDarkMode ? const Color(0xFF2E305C) : const Color(0xFFECECF3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      themeProvider.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                      color: themeProvider.isDarkMode ? Colors.amberAccent : const Color(0xFF311B92),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Modo Oscuro',
+                            style: TextStyle(
+                              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14.sp,
+                            ),
+                          ),
+                          Text(
+                            themeProvider.isDarkMode ? 'Tema oscuro activado' : 'Tema claro activado',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 11.sp,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: themeProvider.isDarkMode,
+                      onChanged: themeProvider.setDarkMode,
+                      activeColor: Colors.amberAccent,
+                    ),
+                  ],
+                ),
               ),
               if (profileProvider.errorMessage != null) ...[
                 SizedBox(height: 20.h),

@@ -17,6 +17,8 @@ import '../components/university_alumni_carousel.dart';
 import '../components/university_upcoming_event_card.dart';
 import '../components/university_management_grid.dart';
 
+import 'package:orientate/shared/theme/theme_provider.dart';
+
 class UniversityHomeScreen extends StatefulWidget {
   const UniversityHomeScreen({super.key});
 
@@ -41,6 +43,8 @@ class _UniversityHomeScreenState extends State<UniversityHomeScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
     
     final String universityName = (user?.universityName != null && user!.universityName!.isNotEmpty)
         ? user.universityName!
@@ -52,7 +56,7 @@ class _UniversityHomeScreenState extends State<UniversityHomeScreen> {
     final alumniProvider = context.watch<UniversityAlumniProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
+      backgroundColor: isDark ? const Color(0xFF0F1020) : const Color(0xFFF8F9FE),
       appBar: const UniversityHomeAppBar(),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

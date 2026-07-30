@@ -107,17 +107,19 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
       return matchesSearch && matchesCareer;
     }).toList();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FE),
+        backgroundColor: isDark ? const Color(0xFF0F1020) : const Color(0xFFF8F9FE),
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
           elevation: 0,
           centerTitle: true,
           title: Text(
             'Gestión de Egresados', 
-            style: TextStyle(color: _accentColor, fontSize: 18.sp, fontWeight: FontWeight.w900),
+            style: TextStyle(color: isDark ? Colors.white : _accentColor, fontSize: 18.sp, fontWeight: FontWeight.w900),
           ),
           automaticallyImplyLeading: false,
           bottom: TabBar(
