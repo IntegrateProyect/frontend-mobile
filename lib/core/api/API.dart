@@ -1514,6 +1514,16 @@ class API implements IApi {
 
   // --- 📢 ANUNCIOS / CONVOCATORIAS ---
   @override
+  Future<List<dynamic>> getStudentAnnouncements(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/catalog/announcements',
+      token: token,
+    );
+    return _asList(result, keys: const ['data']);
+  }
+
+  @override
   Future<List<dynamic>> getUniversityAnnouncements(String token) async {
     final result = await _request(
       method: 'GET',

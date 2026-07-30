@@ -19,6 +19,7 @@ import 'features/student/presentation/providers/careers_provider.dart';
 import 'features/student/presentation/providers/student_home_provider.dart';
 import 'features/student/presentation/providers/student_profile_provider.dart';
 import 'features/student/presentation/providers/student_results_provider.dart';
+import 'features/student/presentation/providers/favorites_provider.dart';
 
 // UNIVERSITY
 import 'features/university/presentation/providers/universities_provider.dart';
@@ -121,6 +122,10 @@ Future<void> main() async {
          */
         ChangeNotifierProvider<CareersProvider>(
           create: (_) => di.sl<CareersProvider>(),
+        ),
+
+        ChangeNotifierProvider<FavoritesProvider>(
+          create: (_) => di.sl<FavoritesProvider>(),
         ),
 
         // ====================================================

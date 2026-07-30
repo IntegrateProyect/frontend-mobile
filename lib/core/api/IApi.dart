@@ -417,6 +417,10 @@ abstract class IApi {
   // ANUNCIOS
   // ============================================================
 
+  Future<List<dynamic>> getStudentAnnouncements(
+      String token,
+      );
+
   Future<List<dynamic>> getUniversityAnnouncements(
       String token,
       );
