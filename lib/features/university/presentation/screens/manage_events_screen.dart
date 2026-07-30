@@ -100,13 +100,15 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
     final authProvider = context.watch<AuthProvider>();
     final isPremium = authProvider.user?.isPremium ?? false;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
+      backgroundColor: isDark ? const Color(0xFF0F1020) : const Color(0xFFF8F9FE),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: Text('Calendario de Eventos', style: TextStyle(color: _accentColor, fontSize: 18.sp, fontWeight: FontWeight.w900)),
+        title: Text('Calendario de Eventos', style: TextStyle(color: isDark ? Colors.white : _accentColor, fontSize: 18.sp, fontWeight: FontWeight.w900)),
         automaticallyImplyLeading: false,
       ),
       body: provider.isLoading && provider.events.isEmpty

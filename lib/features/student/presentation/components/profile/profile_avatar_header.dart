@@ -23,6 +23,8 @@ class ProfileAvatarHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Column(
         children: [
@@ -34,8 +36,8 @@ class ProfileAvatarHeader extends StatelessWidget {
                   width: 110.r,
                   height: 110.r,
                   clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF3F4F6),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1A1B2E) : const Color(0xFFF3F4F6),
                     shape: BoxShape.circle,
                   ),
                   child: hasAvatar
@@ -57,7 +59,7 @@ class ProfileAvatarHeader extends StatelessWidget {
                       color: StudentUiColors.primary,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white,
+                        color: isDark ? const Color(0xFF0F1020) : Colors.white,
                         width: 2,
                       ),
                     ),
@@ -76,7 +78,7 @@ class ProfileAvatarHeader extends StatelessWidget {
             name.trim().isEmpty ? 'Estudiante' : name,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: StudentUiColors.darkText,
+              color: isDark ? Colors.white : StudentUiColors.darkText,
               fontSize: 22.sp,
               fontWeight: FontWeight.w900,
             ),
@@ -86,7 +88,7 @@ class ProfileAvatarHeader extends StatelessWidget {
             subtitle,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
               fontSize: 13.sp,
             ),
           ),

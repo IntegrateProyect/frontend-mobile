@@ -61,6 +61,7 @@ import '../../features/counselor/presentation/screens/counselor_students_screen.
 
 import '../../features/admin/presentation/screens/admin_home_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_home_screen.dart';
+import '../../features/alumni/presentation/screens/alumni_profile_screen.dart';
 import '../../features/alumni/presentation/screens/success_stories_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_profile_form_screen.dart';
 import '../../features/alumni/presentation/screens/write_story_screen.dart';
@@ -310,6 +311,13 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.alumniHome.path,
       builder: (context, state) {
         return const AlumniHomeScreen();
+      },
+    ),
+
+    GoRoute(
+      path: AppRoutes.alumniProfile.path,
+      builder: (context, state) {
+        return const AlumniProfileScreen();
       },
     ),
 

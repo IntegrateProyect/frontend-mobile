@@ -202,6 +202,11 @@ class _StudentFileScreenState extends State<StudentFileScreen> {
           SizedBox(height: 10.h),
           _ProfileCard(profile: file.profile),
           SizedBox(height: 20.h),
+          _VocationalResultsSection(
+            riasec: file.riasec,
+            recommendations: file.recommendations,
+          ),
+          SizedBox(height: 20.h),
           Row(
             children: [
               Expanded(
@@ -636,6 +641,255 @@ class _ErrorState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _VocationalResultsSection extends StatelessWidget {
+  final Map<String, dynamic>? riasec;
+  final List<dynamic>? recommendations;
+
+  const _VocationalResultsSection({
+    required this.riasec,
+    required this.recommendations,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasRiasec = riasec != null && riasec!.isNotEmpty;
+    final hasRecs = recommendations != null && recommendations!.isNotEmpty;
+
+    if (!hasRiasec) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(20.w),
+        margin: EdgeInsets.only(bottom: 20.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(19.r),
+          border: Border.all(color: const Color(0xFFECECF3)),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.hourglass_empty_rounded,
+              color: Colors.amber.shade700,
+              size: 40.sp,
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              'Aún sin resultados vocacionales',
+              style: TextStyle(
+                color: const Color(0xFF1D1B4B),
+                fontWeight: FontWeight.w900,
+                fontSize: 14.sp,
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'El estudiante todavía no completa sus pruebas.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 11.sp,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Determine dominant trait from riasec scores
+    String dominantTrait = 'Desconocido';
+    double maxScore = -1.0;
+    
+    riasec!.forEach((key, value) {
+      final double score = value is num ? value.toDouble() : double.tryParse('$value') ?? 0.0;
+      if (score > maxScore) {
+        maxScore = score;
+        dominantTrait = key;
+      }
+    });
+
+    final traitLabels = {
+      'R': 'Realista (Taller / Técnico)',
+      'I': 'Investigador (Científico / Laboratorio)',
+      'A': 'Artístico (Diseño / Estudio)',
+      'S': 'Social (Servicio / Consultorio)',
+      'E': 'Emprendedor (Persuasivo / Negocios)',
+      'C': 'Convencional (Organización / Oficina)',
+      'MECANICO': 'Mecánico / Taller (Realista)',
+      'CIENTIFICO_FISICO': 'Científico Físico (Investigador)',
+      'CIENTIFICO_BIOLOGICO': 'Científico Biológico (Investigador)',
+      'CALCULO': 'Cálculo y Análisis (Investigador/Convencional)',
+      'SERVICIO_SOCIAL': 'Servicio Social / Humanidades (Social)',
+      'LITERARIO': 'Literario / Humanidades (Artístico/Social)',
+      'PERSUASIVO': 'Persuasivo / Liderazgo (Emprendedor)',
+      'ARTISTICO': 'Artístico y Creativo (Artístico)',
+      'MUSICAL': 'Musical y Sonoro (Artístico)'
+    };
+
+    final String traitName = traitLabels[dominantTrait.toUpperCase()] ?? dominantTrait;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. Dominant Trait Card
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(20.w),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22.r),
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFFE040FB),
+                Color(0xFF7C4DFF),
+                Color(0xFF4B5CFF),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF7C4DFF).withOpacity(0.25),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 60.w,
+                height: 60.w,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.psychology_rounded,
+                  color: Colors.white,
+                  size: 32.sp,
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Text(
+                'Perfil Vocacional Dominante',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 10.5.sp,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                traitName,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        SizedBox(height: 20.h),
+        
+        // 2. Recommended Careers list
+        if (hasRecs) ...[
+          Text(
+            'Carreras sugeridas',
+            style: TextStyle(
+              color: const Color(0xFF1D1B4B),
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          ...recommendations!.asMap().entries.map((entry) {
+            final int index = entry.key + 1;
+            final dynamic rec = entry.value;
+            final String name = rec['careerName'] ?? rec['name'] ?? 'Carrera';
+            final String? uni = rec['universityName'];
+            final double score = rec['score'] is num ? rec['score'].toDouble() : 0.0;
+            
+            return Container(
+              margin: EdgeInsets.only(bottom: 10.h),
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: const Color(0xFFECECF3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 16.r,
+                    backgroundColor: const Color(0xFF7C4DFF).withOpacity(0.1),
+                    child: Text(
+                      '$index',
+                      style: TextStyle(
+                        color: const Color(0xFF7C4DFF),
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: TextStyle(
+                            color: const Color(0xFF1D1B4B),
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        if (uni != null && uni.trim().isNotEmpty) ...[
+                          SizedBox(height: 3.h),
+                          Text(
+                            uni,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 10.sp,
+                            ),
+                          ),
+                        ],
+                        SizedBox(height: 8.h),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6.r),
+                          child: LinearProgressIndicator(
+                            value: score.clamp(0.0, 1.0),
+                            minHeight: 5.h,
+                            backgroundColor: const Color(0xFFEDE9FE),
+                            color: const Color(0xFF7C4DFF),
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          '${(score.clamp(0.0, 1.0) * 100).round()}% de compatibilidad',
+                          style: TextStyle(
+                            color: const Color(0xFF7C4DFF),
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          SizedBox(height: 20.h),
+        ],
+      ],
     );
   }
 }

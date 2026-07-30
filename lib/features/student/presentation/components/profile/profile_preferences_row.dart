@@ -54,27 +54,29 @@ class _PreferenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.symmetric(vertical: 16.h),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.04),
+        color: isDark ? color.withOpacity(0.12) : color.withOpacity(0.04),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
-          color: color.withOpacity(0.12),
+          color: isDark ? color.withOpacity(0.24) : color.withOpacity(0.12),
         ),
       ),
       child: Column(
         children: [
           Icon(
             icon,
-            color: color,
+            color: isDark ? color.withOpacity(0.9) : color,
             size: 22.sp,
           ),
           SizedBox(height: 8.h),
           Text(
             label,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
               fontSize: 9.sp,
               fontWeight: FontWeight.bold,
             ),
@@ -84,7 +86,7 @@ class _PreferenceCard extends StatelessWidget {
             value,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: StudentUiColors.darkText,
+              color: isDark ? Colors.white : StudentUiColors.darkText,
               fontSize: 13.sp,
               fontWeight: FontWeight.bold,
             ),
