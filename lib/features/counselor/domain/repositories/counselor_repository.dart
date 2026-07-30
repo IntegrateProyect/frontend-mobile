@@ -17,6 +17,8 @@ abstract class CounselorRepository {
   Future<List<StudentProfileEntity>> getGroupStudents(String groupId);
   Future<List<StudentProfileEntity>> getStudents();
   Future<Map<String, dynamic>> getStudentFile(String studentId);
+  Future<void> updateStudentParents(String studentId, String? email1, String? email2);
+  Future<void> sendStudentReport(String studentId, List<String> emails, String format);
   
   // Actions
   Future<void> registerSession(String studentId, Map<String, dynamic> sessionData);

@@ -202,6 +202,12 @@ class _StudentFileScreenState extends State<StudentFileScreen> {
           SizedBox(height: 10.h),
           _ProfileCard(profile: file.profile),
           SizedBox(height: 20.h),
+          _ParentsCard(
+            profile: file.profile,
+            studentId: widget.studentId,
+            studentName: widget.studentName,
+          ),
+          SizedBox(height: 20.h),
           _VocationalResultsSection(
             riasec: file.riasec,
             recommendations: file.recommendations,
@@ -890,6 +896,422 @@ class _VocationalResultsSection extends StatelessWidget {
           SizedBox(height: 20.h),
         ],
       ],
+    );
+  }
+}
+
+class _ParentsCard extends StatelessWidget {
+  final Map<String, dynamic> profile;
+  final String studentId;
+  final String studentName;
+
+  const _ParentsCard({
+    required this.profile,
+    required this.studentId,
+    required this.studentName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final String? email1 = profile['parentEmail1'] ?? profile['parent_email_1'];
+    final String? email2 = profile['parentEmail2'] ?? profile['parent_email_2'];
+
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFECECF3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.family_restroom_rounded, color: Color(0xFF311B92)),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'Contacto de Padres / Familia',
+                    style: TextStyle(
+                      color: const Color(0xFF1D1B4B),
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                onPressed: () => _showEditParentsDialog(context, email1, email2),
+                icon: const Icon(Icons.edit_rounded, color: Color(0xFF311B92), size: 20),
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Editar correos',
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          _buildParentEmailRow('Padre / Tutor 1:', email1),
+          SizedBox(height: 8.h),
+          _buildParentEmailRow('Padre / Tutor 2:', email2),
+          if ((email1 != null && email1.trim().isNotEmpty) || (email2 != null && email2.trim().isNotEmpty)) ...[
+            SizedBox(height: 16.h),
+            SizedBox(
+              width: double.infinity,
+              height: 40.h,
+              child: ElevatedButton.icon(
+                onPressed: () => _showSendReportDialog(context, email1, email2),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                icon: const Icon(Icons.send_rounded, size: 16),
+                label: Text(
+                  'Enviar reporte vocacional',
+                  style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParentEmailRow(String label, String? email) {
+    final bool hasEmail = email != null && email.trim().isNotEmpty;
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(width: 6.w),
+        Expanded(
+          child: Text(
+            hasEmail ? email : 'No registrado',
+            style: TextStyle(
+              color: hasEmail ? const Color(0xFF1D1B4B) : Colors.grey.shade400,
+              fontSize: 12.sp,
+              fontWeight: hasEmail ? FontWeight.w800 : FontWeight.w600,
+              fontStyle: hasEmail ? FontStyle.normal : FontStyle.italic,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showEditParentsDialog(BuildContext context, String? email1, String? email2) {
+    final formKey = GlobalKey<FormState>();
+    final controller1 = TextEditingController(text: email1);
+    final controller2 = TextEditingController(text: email2);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (builderCtx, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+            title: Row(
+              children: [
+                const Icon(Icons.family_restroom_rounded, color: Color(0xFF311B92)),
+                SizedBox(width: 8.w),
+                const Text('Contacto de Padres', style: TextStyle(fontWeight: FontWeight.w900)),
+              ],
+            ),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Registra hasta dos direcciones de correo para enviar los reportes del alumno.',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12.sp),
+                    ),
+                    SizedBox(height: 16.h),
+                    TextFormField(
+                      controller: controller1,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: 'Correo Padre / Tutor 1',
+                        labelStyle: const TextStyle(color: Color(0xFF311B92)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: const BorderSide(color: Color(0xFF311B92), width: 2),
+                        ),
+                        prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF311B92)),
+                      ),
+                      validator: (val) {
+                        if (val != null && val.trim().isNotEmpty) {
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val.trim())) {
+                            return 'Ingresa un correo electrónico válido.';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 12.h),
+                    TextFormField(
+                      controller: controller2,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: 'Correo Padre / Tutor 2',
+                        labelStyle: const TextStyle(color: Color(0xFF311B92)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: const BorderSide(color: Color(0xFF311B92), width: 2),
+                        ),
+                        prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF311B92)),
+                      ),
+                      validator: (val) {
+                        if (val != null && val.trim().isNotEmpty) {
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val.trim())) {
+                            return 'Ingresa un correo electrónico válido.';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState!.validate()) {
+                    Navigator.pop(dialogCtx);
+                    
+                    BuildContext? loadingCtx;
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (ctx) {
+                        loadingCtx = ctx;
+                        return const Center(child: CircularProgressIndicator(color: Color(0xFF311B92)));
+                      },
+                    );
+
+                    final success = await context.read<CounselorProvider>().updateStudentParents(
+                      studentId,
+                      controller1.text.trim().isEmpty ? null : controller1.text.trim(),
+                      controller2.text.trim().isEmpty ? null : controller2.text.trim(),
+                    );
+
+                    if (loadingCtx != null && loadingCtx!.mounted) {
+                      Navigator.pop(loadingCtx!);
+                    }
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(success
+                              ? 'Contactos actualizados correctamente.'
+                              : 'Error al actualizar contactos.'),
+                          backgroundColor: success ? Colors.green : Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                ),
+                child: const Text('Guardar'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showSendReportDialog(BuildContext context, String? email1, String? email2) {
+    bool target1 = email1 != null && email1.trim().isNotEmpty;
+    bool target2 = email2 != null && email2.trim().isNotEmpty;
+    String format = 'pdf';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (builderCtx, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+            title: Row(
+              children: [
+                const Icon(Icons.send_rounded, color: Color(0xFF311B92)),
+                SizedBox(width: 8.w),
+                const Text('Compartir Reporte', style: TextStyle(fontWeight: FontWeight.w900)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Selecciona los destinatarios y el formato del reporte vocacional de $studentName.',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12.sp),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  'Enviar a:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp, color: const Color(0xFF1D1B4B)),
+                ),
+                if (email1 != null && email1.trim().isNotEmpty)
+                  CheckboxListTile(
+                    title: Text(email1, style: TextStyle(fontSize: 12.sp)),
+                    value: target1,
+                    onChanged: (val) {
+                      setDialogState(() {
+                        target1 = val ?? false;
+                      });
+                    },
+                    activeColor: const Color(0xFF311B92),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                if (email2 != null && email2.trim().isNotEmpty)
+                  CheckboxListTile(
+                    title: Text(email2, style: TextStyle(fontSize: 12.sp)),
+                    value: target2,
+                    onChanged: (val) {
+                      setDialogState(() {
+                        target2 = val ?? false;
+                      });
+                    },
+                    activeColor: const Color(0xFF311B92),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                SizedBox(height: 10.h),
+                Text(
+                  'Formato:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp, color: const Color(0xFF1D1B4B)),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: Text('PDF (Email)', style: TextStyle(fontSize: 12.sp)),
+                        value: 'pdf',
+                        groupValue: format,
+                        onChanged: (val) {
+                          setDialogState(() {
+                            format = val!;
+                          });
+                        },
+                        activeColor: const Color(0xFF311B92),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: Text('CSV (Excel)', style: TextStyle(fontSize: 12.sp)),
+                        value: 'csv',
+                        groupValue: format,
+                        onChanged: (val) {
+                          setDialogState(() {
+                            format = val!;
+                          });
+                        },
+                        activeColor: const Color(0xFF311B92),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: (!target1 && !target2)
+                    ? null
+                    : () async {
+                        Navigator.pop(dialogCtx);
+                        
+                        BuildContext? loadingCtx;
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) {
+                            loadingCtx = ctx;
+                            return const Center(child: CircularProgressIndicator(color: Color(0xFF311B92)));
+                          },
+                        );
+
+                        final List<String> emails = [];
+                        if (target1 && email1 != null) emails.add(email1);
+                        if (target2 && email2 != null) emails.add(email2);
+
+                        final success = await context.read<CounselorProvider>().sendStudentReport(
+                          studentId,
+                          emails,
+                          format,
+                        );
+
+                        if (loadingCtx != null && loadingCtx!.mounted) {
+                          Navigator.pop(loadingCtx!);
+                        }
+
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(success
+                                  ? 'Reporte enviado exitosamente.'
+                                  : 'Error al enviar el reporte vocacional.'),
+                              backgroundColor: success ? Colors.green : Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                ),
+                child: const Text('Enviar'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
