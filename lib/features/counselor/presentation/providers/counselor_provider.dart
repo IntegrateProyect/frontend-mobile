@@ -523,6 +523,41 @@ class CounselorProvider extends ChangeNotifier {
     return 0;
   }
 
+  Future<bool> updateStudentParents(String studentId, String? email1, String? email2) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.updateStudentParents(studentId, email1, email2);
+      await loadStudentFile(studentId);
+      return true;
+    } catch (error) {
+      _errorMessage = _cleanError(error);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> sendStudentReport(String studentId, List<String> emails, String format) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.sendStudentReport(studentId, emails, format);
+      return true;
+    } catch (error) {
+      _errorMessage = _cleanError(error);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   String _cleanError(Object error) {
     final String message = error
         .toString()

@@ -200,6 +200,21 @@ abstract class IApi {
       Map<String, dynamic> data,
       );
 
+  Future<void> updateStudentParents(
+      String token,
+      String studentId,
+      String? email1,
+      String? email2,
+      );
+
+  Future<void> sendStudentReport(
+      String token,
+      String studentId,
+      List<String> emails,
+      String format,
+      );
+
+
   Future<List<dynamic>> getCounselorStudents(
       String token,
       );

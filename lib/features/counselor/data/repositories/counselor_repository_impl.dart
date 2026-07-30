@@ -279,6 +279,26 @@ class CounselorRepositoryImpl implements CounselorRepository {
     return api.getStudentFile(token, studentId);
   }
 
+  @override
+  Future<void> updateStudentParents(
+      String studentId,
+      String? email1,
+      String? email2,
+      ) async {
+    final String token = await _getToken();
+    await api.updateStudentParents(token, studentId, email1, email2);
+  }
+
+  @override
+  Future<void> sendStudentReport(
+      String studentId,
+      List<String> emails,
+      String format,
+      ) async {
+    final String token = await _getToken();
+    await api.sendStudentReport(token, studentId, emails, format);
+  }
+
   // =========================================================
   // SESIONES
   // =========================================================

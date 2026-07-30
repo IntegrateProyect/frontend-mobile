@@ -852,6 +852,43 @@ class API implements IApi {
     return _asMap(result);
   }
 
+
+  @override
+  Future<void> updateStudentParents(
+      String token,
+      String studentId,
+      String? email1,
+      String? email2,
+      ) async {
+    await _request(
+      method: 'POST',
+      path: '/counselors/students/$studentId/parents',
+      token: token,
+      body: {
+        'email1': email1,
+        'email2': email2,
+      },
+    );
+  }
+
+  @override
+  Future<void> sendStudentReport(
+      String token,
+      String studentId,
+      List<String> emails,
+      String format,
+      ) async {
+    await _request(
+      method: 'POST',
+      path: '/counselors/students/$studentId/report/send',
+      token: token,
+      body: {
+        'emails': emails,
+        'format': format,
+      },
+    );
+  }
+
   @override
   Future<Map<String, dynamic>>
   registerSession(
