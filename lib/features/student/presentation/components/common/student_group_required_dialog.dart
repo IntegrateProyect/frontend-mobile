@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/student_home_provider.dart';
+import '../../providers/student_group_provider.dart';
 import 'student_ui_colors.dart';
 
 Future<bool> requireStudentGroup({
   required BuildContext context,
 }) async {
-  final provider = context.read<StudentHomeProvider>();
+  final provider = context.read<StudentGroupProvider>();
 
   if (provider.hasGroup) return true;
 
@@ -57,7 +57,7 @@ class _StudentGroupRequiredDialogState
       _errorMessage = null;
     });
 
-    final provider = context.read<StudentHomeProvider>();
+    final provider = context.read<StudentGroupProvider>();
     final success = await provider.joinGroupByCode(code);
 
     if (!mounted) return;

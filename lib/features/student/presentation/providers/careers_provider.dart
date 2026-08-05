@@ -14,6 +14,7 @@ class CareersProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _hasLoaded = false;
   String? _errorMessage;
+  bool _isDisposed = false;
 
   List<CareerEntity> get careers =>
       List<CareerEntity>.unmodifiable(_careers);
@@ -22,6 +23,18 @@ class CareersProvider extends ChangeNotifier {
   bool get hasLoaded => _hasLoaded;
   bool get hasCareers => _careers.isNotEmpty;
   String? get errorMessage => _errorMessage;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
 
   Future<void> fetchRecommendedCareers({
     int topN = 5,
@@ -33,7 +46,7 @@ class CareersProvider extends ChangeNotifier {
 
     _isLoading = true;
     _errorMessage = null;
-    notifyListeners();
+    _safeNotifyListeners();
 
     try {
       _careers = await _getCareersUseCase(topN: topN);
@@ -45,7 +58,7 @@ class CareersProvider extends ChangeNotifier {
       _errorMessage = _friendlyError(error);
     } finally {
       _isLoading = false;
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
@@ -61,7 +74,7 @@ class CareersProvider extends ChangeNotifier {
     _isLoading = false;
     _hasLoaded = false;
     _errorMessage = null;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   String _friendlyError(Object error) {

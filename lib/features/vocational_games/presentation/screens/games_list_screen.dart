@@ -3,434 +3,179 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:orientate/core/routes/AppRoutes.dart';
-import 'package:orientate/features/student/presentation/components/common/student_bottom_navigation_bar.dart';
 import 'package:orientate/features/student/presentation/providers/student_results_provider.dart';
 
-import '../../domain/entities/vocational_game_kind.dart';
 import '../../domain/entities/vocational_mini_game_entity.dart';
-
 import '../components/games_list/games_empty_state.dart';
-import '../components/games_list/games_list_header.dart';
 import '../components/games_list/games_loading_overlay.dart';
-import '../components/games_list/vocational_mini_game_card.dart';
-
+import '../components/games_list/games_list_body.dart';
 import '../providers/games_provider.dart';
-
-import 'games/consultorio_game_screen.dart';
-import 'games/estudio_game_screen.dart';
-import 'games/laboratorio_game_screen.dart';
-import 'games/taller_game_screen.dart';
+import '../providers/game_play_provider.dart';
+import '../providers/game_persistence_provider.dart';
+import 'game_detail_screen.dart';
 
 class GamesListScreen extends StatefulWidget {
-  const GamesListScreen({
-    super.key,
-  });
+  const GamesListScreen({super.key});
 
   @override
-  State<GamesListScreen> createState() {
-    return _GamesListScreenState();
-  }
+  State<GamesListScreen> createState() => _GamesListScreenState();
 }
 
-class _GamesListScreenState
-    extends State<GamesListScreen> {
-  static const Color primaryColor =
-  Color(0xFF311B92);
-
-  static const Color backgroundColor =
-  Color(0xFFF8F9FE);
-
+class _GamesListScreenState extends State<GamesListScreen> {
   bool _isOpeningGame = false;
-  bool _isReturningHome = false;
 
   @override
   void initState() {
     super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) async {
-        if (!mounted) {
-          return;
-        }
-
-        final provider = context.read<GamesProvider>();
-        final resultsProvider = context.read<StudentResultsProvider>();
-
-        /*
-         * No vuelve a consultar el backend cuando
-         * los minijuegos ya están cargados.
-         */
-        if (provider.miniGames.isEmpty &&
-            !provider.isLoading &&
-            !provider.isLoadingQuestions) {
-          await provider.fetchGames();
-        } else {
-          provider.refreshLocalStatuses();
-        }
-
-        if (!mounted) {
-          return;
-        }
-
-        await resultsProvider.fetchResults();
-
-        if (!mounted) {
-          return;
-        }
-
-        if (resultsProvider.results.isNotEmpty &&
-            !provider.areAllGamesCompleted) {
-          await provider.markAllAsCompleted();
-        }
-      },
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initData());
   }
 
-  void _goToStudentHome() {
-    if (!mounted || _isReturningHome) {
-      return;
-    }
+  Future<void> _initData() async {
+    if (!mounted) return;
 
-    _isReturningHome = true;
-
-    context.go(
-      AppRoutes.home.path,
-    );
-  }
-
-  Future<bool> _handleSystemBack() async {
-    _goToStudentHome();
-
-    return true;
-  }
-
-  Future<void> _refreshGames(
-      GamesProvider provider,
-      ) async {
-    await provider.fetchGames(
-      force: true,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    final message = provider.errorMessage;
-
-    /*
-     * Cuando ya existen tarjetas, el error no
-     * aparece en GamesEmptyState. Por eso se muestra
-     * como SnackBar después de deslizar para actualizar.
-     */
-    if (provider.miniGames.isNotEmpty &&
-        message != null &&
-        message.isNotEmpty) {
-      _showMessage(message);
-    }
-  }
-
-  Future<void> _retryGames(
-      GamesProvider provider,
-      ) async {
-    await provider.fetchGames(
-      force: true,
-    );
-  }
-
-  Future<void> _openMiniGame(
-      GamesProvider provider,
-      VocationalMiniGameEntity miniGame,
-      ) async {
-    if (_isOpeningGame ||
-        provider.isLoadingQuestions) {
-      return;
-    }
-
-    if (miniGame.questions.isEmpty) {
-      _showMessage(
-        'Este minijuego todavía no tiene preguntas.',
-      );
-
-      return;
-    }
-
-    setState(() {
-      _isOpeningGame = true;
-    });
+    final gamesProvider = context.read<GamesProvider>();
+    final persistenceProvider = context.read<GamePersistenceProvider>();
+    final resultsProvider = context.read<StudentResultsProvider>();
 
     try {
-      await provider.selectMiniGame(
-        miniGame,
-      );
+      await gamesProvider.fetchGames();
+      if (!mounted) return;
 
-      if (!mounted) {
-        return;
+      await persistenceProvider.loadAllStatuses(gamesProvider.miniGames);
+      await resultsProvider.fetchResults();
+
+      if (mounted && 
+          resultsProvider.results.isNotEmpty && 
+          !persistenceProvider.areAllCompleted(gamesProvider.miniGames)) {
+        await persistenceProvider.markAllAsCompleted(gamesProvider.miniGames);
       }
-
-      final game = provider.activeGame;
-
-      if (game == null) {
-        _showMessage(
-          'No se pudo identificar el juego seleccionado.',
-        );
-
-        return;
-      }
-
-      /*
-       * Inicia o recupera la sesión antes de
-       * abrir la pantalla de Flame.
-       */
-      await provider.startSessionIfNeeded(
-        game.id,
-        statusKey: miniGame.statusKey,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      late final Widget destination;
-
-      switch (miniGame.kind) {
-        case VocationalGameKind.laboratorio:
-          destination =
-              LaboratorioGameScreen(
-                game: game,
-                miniGameKey:
-                miniGame.statusKey,
-              );
-          break;
-
-        case VocationalGameKind.consultorio:
-          destination =
-              ConsultorioGameScreen(
-                game: game,
-                miniGameKey:
-                miniGame.statusKey,
-              );
-          break;
-
-        case VocationalGameKind.taller:
-          destination =
-              TallerGameScreen(
-                game: game,
-                miniGameKey:
-                miniGame.statusKey,
-              );
-          break;
-
-        case VocationalGameKind.estudio:
-          destination =
-              EstudioGameScreen(
-                game: game,
-                miniGameKey:
-                miniGame.statusKey,
-              );
-          break;
-      }
-
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => destination,
-        ),
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      /*
-       * Al regresar solamente se leen los estados
-       * guardados localmente.
-       *
-       * Aquí ya no se llama fetchGames(), porque
-       * eso producía solicitudes repetidas al backend.
-       */
-      await provider.refreshLocalStatuses();
-    } catch (error, stackTrace) {
-      debugPrint(
-        'Error al abrir el minijuego: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      _showMessage(
-        provider.errorMessage ??
-            'Ocurrió un error al abrir el minijuego.',
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isOpeningGame = false;
-        });
-      }
+    } catch (e) {
+      debugPrint('Error initializing data: $e');
     }
   }
 
-  void _showMessage(String message) {
-    if (!mounted) {
+  Future<void> _refreshGames() async {
+    final gamesProvider = context.read<GamesProvider>();
+    await gamesProvider.fetchGames(force: true);
+    if (mounted && gamesProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(gamesProvider.errorMessage!), 
+          behavior: SnackBarBehavior.floating
+        ),
+      );
+    }
+  }
+
+  Future<void> _onGameTap(VocationalMiniGameEntity miniGame) async {
+    if (_isOpeningGame) return;
+    if (miniGame.questions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Este minijuego aún no tiene preguntas.'), 
+          behavior: SnackBarBehavior.floating
+        ),
+      );
       return;
     }
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior:
-          SnackBarBehavior.floating,
+    setState(() => _isOpeningGame = true);
+
+    try {
+      final gamesProvider = context.read<GamesProvider>();
+      final playProvider = context.read<GamePlayProvider>();
+      final persistenceProvider = context.read<GamePersistenceProvider>();
+
+      if (gamesProvider.games.isEmpty) return;
+
+      final activeGame = gamesProvider.games.first;
+      final savedIndex = persistenceProvider.getSavedIndex(miniGame.statusKey);
+      final savedSession = persistenceProvider.getSavedSession(miniGame.statusKey);
+
+      playProvider.setupSession(activeGame, miniGame.questions, savedIndex, savedSession);
+
+      if (savedSession == null) {
+        await playProvider.startNewSession(activeGame.id);
+        if (mounted) {
+          await persistenceProvider.saveProgress(
+            miniGame.statusKey, 
+            0, 
+            sessionId: playProvider.sessionId
+          );
+        }
+      }
+
+      if (mounted) {
+        _navigateToGame(miniGame);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al abrir el juego: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isOpeningGame = false);
+    }
+  }
+
+  void _navigateToGame(VocationalMiniGameEntity miniGame) {
+    final gamesProvider = context.read<GamesProvider>();
+    if (gamesProvider.games.isEmpty) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => GameDetailScreen(
+          game: gamesProvider.games.first,
+          miniGameKey: miniGame.statusKey,
         ),
-      );
+      ),
+    ).then((_) {
+      if (mounted) _initData();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider =
-    context.watch<GamesProvider>();
+    final provider = context.watch<GamesProvider>();
 
-    return BackButtonListener(
-      onBackButtonPressed:
-      _handleSystemBack,
-      child: Scaffold(
-        backgroundColor:
-        backgroundColor,
-        appBar: AppBar(
-          automaticallyImplyLeading:
-          false,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            tooltip:
-            'Regresar al inicio',
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              color: Colors.black,
-            ),
-            onPressed:
-            _goToStudentHome,
-          ),
-          title: const Text(
-            'Minijuegos vocacionales',
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight:
-              FontWeight.w900,
-              fontSize: 18,
-            ),
-          ),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FE),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          onPressed: () => context.go(AppRoutes.home.path),
         ),
-        body: _buildBody(provider),
-        bottomNavigationBar:
-        const StudentBottomNavigationBar(
-          currentIndex: 1,
+        title: const Text(
+          'Minijuegos vocacionales', 
+          style: TextStyle(
+            color: Colors.black, 
+            fontWeight: FontWeight.w900, 
+            fontSize: 18
+          )
         ),
       ),
-    );
-  }
-
-  Widget _buildBody(
-      GamesProvider provider,
-      ) {
-    if (provider.isLoading &&
-        provider.miniGames.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: primaryColor,
-        ),
-      );
-    }
-
-    return Stack(
-      children: [
-        RefreshIndicator(
-          color: primaryColor,
-          onRefresh: () {
-            return _refreshGames(
-              provider,
-            );
-          },
-          child:
-          provider.miniGames.isEmpty
-              ? GamesEmptyState(
-            isLoading:
-            provider.isLoading,
-            message:
-            provider.errorMessage,
-            onRetry: () {
-              return _retryGames(
-                provider,
-              );
-            },
-          )
-              : ListView(
-            physics:
-            const AlwaysScrollableScrollPhysics(),
-            padding:
-            const EdgeInsets.all(
-              22,
-            ),
-            children: [
-              const GamesListHeader(),
-              ...provider
-                  .miniGames
-                  .asMap()
-                  .entries
-                  .map(
-                    (entry) {
-                  final miniGame =
-                      entry.value;
-
-                  final status =
-                  provider
-                      .getMiniGameStatus(
-                    miniGame
-                        .statusKey,
-                  );
-
-                  final progress =
-                  provider
-                      .getMiniGameProgress(
-                    miniGame
-                        .statusKey,
-                    miniGame
-                        .questions
-                        .length,
-                  );
-
-                  return VocationalMiniGameCard(
-                    miniGame:
-                    miniGame,
-                    status:
-                    status,
-                    progress:
-                    progress,
-                    animationIndex:
-                    entry.key,
-                    onTap: () {
-                      _openMiniGame(
-                        provider,
-                        miniGame,
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: _refreshGames,
+            child: provider.miniGames.isEmpty && !provider.isLoading
+                ? GamesEmptyState(
+                    isLoading: provider.isLoading, 
+                    message: provider.errorMessage, 
+                    onRetry: _refreshGames
+                  )
+                : GamesListBody(
+                    miniGames: provider.miniGames,
+                    onGameTap: _onGameTap,
+                  ),
           ),
-        ),
-        GamesLoadingOverlay(
-          visible:
-          _isOpeningGame ||
-              provider.isLoadingQuestions,
-        ),
-      ],
+          if (provider.isLoading || _isOpeningGame) 
+            const GamesLoadingOverlay(visible: true),
+        ],
+      ),
     );
   }
 }

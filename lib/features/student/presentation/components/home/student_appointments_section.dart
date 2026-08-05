@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../counselor/domain/entities/appointment_entity.dart';
-import '../../../domain/entities/appointment_entity.dart';
 import '../common/student_ui_colors.dart';
 
 class StudentAppointmentsSection extends StatelessWidget {

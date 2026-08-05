@@ -27,10 +27,18 @@ class _RealChatScreenState extends State<RealChatScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final provider = context.read<ChatProvider>();
-      provider.connect(); // Aseguramos conexión al entrar
+      provider.connect();
       provider.loadHistory(widget.contactId);
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _scrollToBottom() {
@@ -45,25 +53,18 @@ class _RealChatScreenState extends State<RealChatScreen> {
 
   void _handleSend() {
     final text = _controller.text.trim();
-    debugPrint('XXX CHAT SCREEN: Botón enviar presionado. Texto: "$text"');
-    if (text.isEmpty) {
-      debugPrint('XXX CHAT SCREEN: Cancelado porque el texto está vacío.');
-      return;
-    }
+    if (text.isEmpty) return;
     
     final authProvider = context.read<AuthProvider>();
     final currentUserId = authProvider.user?.id ?? '';
-    debugPrint('XXX CHAT SCREEN: Identidades - Emisor (Yo): "$currentUserId", Receptor (Contacto): "${widget.contactId}"');
     
     if (currentUserId.isEmpty) {
-      debugPrint('XXX CHAT SCREEN: Error - currentUserId está vacío.');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: No se pudo identificar al usuario actual')),
       );
       return;
     }
 
-    debugPrint('XXX CHAT SCREEN: Llamando a ChatProvider.sendMessage...');
     context.read<ChatProvider>().sendMessage(widget.contactId, text, currentUserId);
     _controller.clear();
   }

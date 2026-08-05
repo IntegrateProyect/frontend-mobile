@@ -1,8 +1,8 @@
 import '../entities/student_profile_entity.dart';
-import '../repositories/student_repository.dart';
+import '../repositories/profile_repository.dart';
 
 class GetStudentProfileUseCase {
-  final StudentRepository repository;
+  final ProfileRepository repository;
 
   GetStudentProfileUseCase(this.repository);
 

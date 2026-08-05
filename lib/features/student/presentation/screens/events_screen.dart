@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../components/common/student_ui_colors.dart';
-import '../providers/student_home_provider.dart';
+import '../providers/student_events_provider.dart';
 import '../../domain/entities/event_entity.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -20,14 +20,14 @@ class _EventsScreenState extends State<EventsScreen> {
     super.initState();
     Future.microtask(() {
       if (mounted) {
-        context.read<StudentHomeProvider>().loadHomeData();
+        context.read<StudentEventsProvider>().loadEvents();
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<StudentHomeProvider>();
+    final provider = context.watch<StudentEventsProvider>();
     final events = provider.events;
 
     return Scaffold(
@@ -56,7 +56,7 @@ class _EventsScreenState extends State<EventsScreen> {
             )
           : RefreshIndicator(
               color: StudentUiColors.primary,
-              onRefresh: provider.loadHomeData,
+              onRefresh: provider.loadEvents,
               child: events.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
@@ -159,11 +159,11 @@ class _EventsScreenState extends State<EventsScreen> {
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12.r),
                     ),
-                    child: Text(
+                    child: const Text(
                       'Vocacional',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 10.sp,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -177,24 +177,24 @@ class _EventsScreenState extends State<EventsScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.calendar_month, color: Colors.white, size: 14.sp),
+                          const Icon(Icons.calendar_month, color: Colors.white, size: 14),
                           SizedBox(width: 4.w),
                           Text(
                             dateStr,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 11.sp,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           SizedBox(width: 12.w),
-                          Icon(Icons.access_time, color: Colors.white, size: 14.sp),
+                          const Icon(Icons.access_time, color: Colors.white, size: 14),
                           SizedBox(width: 4.w),
                           Text(
                             timeStr,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 11.sp,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

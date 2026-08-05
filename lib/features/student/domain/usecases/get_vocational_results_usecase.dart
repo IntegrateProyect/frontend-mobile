@@ -1,8 +1,8 @@
 import '../entities/vocational_result_entity.dart';
-import '../repositories/student_repository.dart';
+import '../repositories/vocational_repository.dart';
 
 class GetVocationalResultsUseCase {
-  final StudentRepository repository;
+  final VocationalRepository repository;
 
   GetVocationalResultsUseCase(this.repository);
 

@@ -11,6 +11,7 @@ import 'package:orientate/features/onboarding/presentation/screens/onboarding_sc
 import 'package:orientate/features/auth/presentation/screens/login_screen.dart';
 import 'package:orientate/features/auth/presentation/screens/register_screen.dart';
 import 'package:orientate/features/auth/presentation/screens/role_selection_screen.dart';
+import 'package:orientate/features/auth/presentation/screens/student_profile_setup_screen.dart';
 
 // Estudiante
 import 'package:orientate/features/student/presentation/screens/student_home_screen.dart';
@@ -19,14 +20,18 @@ import 'package:orientate/features/student/presentation/screens/vocational_resul
 import 'package:orientate/features/student/presentation/screens/CareersScreen.dart';
 import 'package:orientate/features/student/presentation/screens/career_detail_screen.dart';
 import 'package:orientate/features/student/presentation/screens/career_compare_screen.dart';
-import 'package:orientate/features/student/presentation/screens/universities_screen.dart';
-import 'package:orientate/features/student/presentation/screens/university_detail_screen.dart';
-import 'package:orientate/features/student/presentation/screens/scholarships_screen.dart';
 import 'package:orientate/features/student/presentation/screens/events_screen.dart';
 import 'package:orientate/features/student/presentation/screens/alumni_list_screen.dart';
 import 'package:orientate/features/student/presentation/screens/favorites_screen.dart';
 import 'package:orientate/features/student/presentation/screens/request_support_screen.dart';
 import 'package:orientate/features/student/presentation/screens/vocational_route_screen.dart';
+
+// Universidad (Ubicaciones corregidas)
+import 'package:orientate/features/university/presentation/screens/universities_screen.dart';
+import 'package:orientate/features/university/presentation/screens/university_detail_screen.dart';
+import 'package:orientate/features/university/presentation/screens/scholarships_screen.dart';
+import 'package:orientate/features/university/presentation/screens/university_home_screen.dart';
+import 'package:orientate/features/university/presentation/screens/manage_careers_screen.dart';
 
 // Chatbot y chat
 import 'package:orientate/features/chatbot/presentation/screens/chat_screen.dart';
@@ -40,10 +45,6 @@ import 'package:orientate/features/vocational_games/presentation/screens/games_l
 import 'package:orientate/features/counselor/presentation/screens/counselor_home_screen.dart';
 import 'package:orientate/features/counselor/presentation/screens/counselor_profile_screen.dart';
 
-// Universidad
-import 'package:orientate/features/university/presentation/screens/university_home_screen.dart';
-import 'package:orientate/features/university/presentation/screens/manage_careers_screen.dart';
-
 // Alumni
 import 'package:orientate/features/alumni/presentation/screens/alumni_home_screen.dart';
 import 'package:orientate/features/alumni/presentation/screens/alumni_profile_screen.dart';
@@ -53,9 +54,7 @@ import 'package:orientate/features/admin/presentation/screens/admin_home_screen.
 import 'package:orientate/features/admin/presentation/screens/user_management_screen.dart';
 
 class RouteGenerator {
-  static Route<dynamic> generateRoute(
-      RouteSettings settings,
-      ) {
+  static Route<dynamic> generateRoute(RouteSettings settings) {
     final String? name = settings.name;
 
     // =========================================================
@@ -100,6 +99,13 @@ class RouteGenerator {
     // =========================================================
     // ESTUDIANTE
     // =========================================================
+
+    if (name == AppRoutes.studentProfileSetup.path) {
+      return MaterialPageRoute(
+        builder: (_) => const StudentProfileSetupScreen(),
+        settings: settings,
+      );
+    }
 
     if (name == AppRoutes.home.path) {
       return MaterialPageRoute(
@@ -155,13 +161,11 @@ class RouteGenerator {
     // =========================================================
 
     if (name == AppRoutes.universityDetail.path) {
-      final Object? arguments =
-          settings.arguments;
+      final Object? arguments = settings.arguments;
 
       if (arguments is! UniversityEntity) {
         return _errorRoute(
-          message:
-          'No se recibió la información de la universidad.',
+          message: 'No se recibió la información de la universidad.',
         );
       }
 
@@ -234,26 +238,18 @@ class RouteGenerator {
     }
 
     if (name == AppRoutes.realChat.path) {
-      final Object? arguments =
-          settings.arguments;
+      final Object? arguments = settings.arguments;
 
       if (arguments is! Map<String, dynamic>) {
         return _errorRoute(
-          message:
-          'No se recibió la información del contacto.',
+          message: 'No se recibió la información del contacto.',
         );
       }
 
       return MaterialPageRoute(
         builder: (_) => RealChatScreen(
-          contactId:
-          arguments['contactId']
-              ?.toString() ??
-              '',
-          contactName:
-          arguments['contactName']
-              ?.toString() ??
-              'Contacto',
+          contactId: arguments['contactId']?.toString() ?? '',
+          contactName: arguments['contactName']?.toString() ?? 'Contacto',
         ),
         settings: settings,
       );
@@ -272,8 +268,7 @@ class RouteGenerator {
 
     if (name == AppRoutes.gameDetail.path) {
       return _errorRoute(
-        message:
-        'El detalle del minijuego todavía no está configurado.',
+        message: 'El detalle del minijuego todavía no está configurado.',
       );
     }
 

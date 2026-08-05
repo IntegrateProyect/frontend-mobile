@@ -7,6 +7,14 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/routes/AppRoutes.dart';
 import '../providers/auth_provider.dart';
+import '../components/login/lower_case_text_formatter.dart';
+import '../components/login/login_styles.dart';
+import '../components/login/login_header.dart';
+import '../components/login/login_input_decorations.dart';
+import '../components/login/login_label.dart';
+import '../components/login/forgot_password_link.dart';
+import '../components/login/login_button.dart';
+import '../components/login/register_link.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -21,15 +29,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static const Color _primaryColor = Color(0xFF311B92);
-  static const Color _darkTextColor = Color(0xFF1D1B4B);
-  static const Color _fieldColor = Color(0xFFF8F9FE);
-
-  final TextEditingController _emailController =
-  TextEditingController();
-
-  final TextEditingController _passwordController =
-  TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
 
@@ -37,7 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-
     super.dispose();
   }
 
@@ -45,169 +45,86 @@ class _LoginScreenState extends State<LoginScreen> {
     FocusScope.of(context).unfocus();
 
     final authProvider = context.read<AuthProvider>();
-
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
     if (email.isEmpty) {
-      _showError(
-        'Ingresa tu correo electrónico',
-      );
+      _showError('Ingresa tu correo electrónico');
       return;
     }
 
     if (password.isEmpty) {
-      _showError(
-        'Ingresa tu contraseña',
-      );
+      _showError('Ingresa tu contraseña');
       return;
     }
 
-    final success = await authProvider.login(
-      email,
-      password,
-    );
+    final success = await authProvider.login(email, password);
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     if (!success) {
       _showError(
-        authProvider.errorMessage ??
-            'No fue posible iniciar sesión',
+        authProvider.errorMessage ?? 'No fue posible iniciar sesión',
       );
       return;
     }
 
-    final role = authProvider.user?.role
-        ?.trim()
-        .toLowerCase() ??
-        '';
-
-    await _redirectByRole(
-      role: role,
-      authProvider: authProvider,
-    );
+    final role = authProvider.user?.role?.trim().toLowerCase() ?? '';
+    await _redirectByRole(role: role, authProvider: authProvider);
   }
 
   Future<void> _redirectByRole({
     required String role,
     required AuthProvider authProvider,
   }) async {
-    /*
-     * ORIENTADOR
-     */
     if (_isCounselorRole(role)) {
-      if (mounted) {
-        context.go(
-          AppRoutes.counselorHome.path,
-        );
-      }
-
+      if (mounted) context.go(AppRoutes.counselorHome.path);
       return;
     }
 
-    /*
-     * ESTUDIANTE
-     *
-     * Antes de entrar al Home se comprueba si ya tiene
-     * creado su perfil vocacional.
-     */
     if (_isStudentRole(role)) {
-      final profileExists =
-      await authProvider.studentProfileExists();
+      final profileExists = await authProvider.studentProfileExists();
+      if (!mounted) return;
 
-      if (!mounted) {
-        return;
-      }
-
-      /*
-       * El backend respondió que el perfil no existe.
-       *
-       * Esto es normal para una cuenta recién creada.
-       * No se muestra como error.
-       */
       if (profileExists == false) {
-        context.go(
-          AppRoutes.studentProfileSetup.path,
-        );
-
+        context.go(AppRoutes.studentProfileSetup.path);
         return;
       }
 
-      /*
-       * El estudiante ya tiene perfil vocacional.
-       */
       if (profileExists == true) {
-        context.go(
-          AppRoutes.home.path,
-        );
-
+        context.go(AppRoutes.home.path);
         return;
       }
 
-      /*
-       * null representa un error real:
-       * conexión, token, servidor u otro problema.
-       */
       _showError(
-        authProvider.errorMessage ??
-            'No fue posible comprobar tu perfil vocacional',
+        authProvider.errorMessage ?? 'No fue posible comprobar tu perfil vocacional',
       );
-
       return;
     }
 
-    /*
-     * UNIVERSIDAD
-     */
     if (_isUniversityRole(role)) {
       if (mounted) {
         final verificationStatus = authProvider.user?.verificationStatus;
         if (verificationStatus == 'VERIFIED') {
-          context.go(
-            AppRoutes.universityHome.path,
-          );
+          context.go(AppRoutes.universityHome.path);
         } else {
-          context.go(
-            AppRoutes.universityVerification.path,
-          );
+          context.go(AppRoutes.universityVerification.path);
         }
       }
-
       return;
     }
 
-    /*
-     * ALUMNI O EGRESADO
-     */
     if (_isAlumniRole(role)) {
-      if (mounted) {
-        context.go(
-          AppRoutes.alumniHome.path,
-        );
-      }
-
+      if (mounted) context.go(AppRoutes.alumniHome.path);
       return;
     }
 
-    /*
-     * ADMINISTRADOR
-     */
     if (_isAdminRole(role)) {
-      if (mounted) {
-        context.go(
-          AppRoutes.adminHome.path,
-        );
-      }
-
+      if (mounted) context.go(AppRoutes.adminHome.path);
       return;
     }
 
-    _showError(
-      'El rol de esta cuenta no es válido',
-    );
+    _showError('El rol de esta cuenta no es válido');
   }
 
   bool _isStudentRole(String role) {
@@ -241,34 +158,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   bool _isAdminRole(String role) {
-    return role == 'admin' ||
-        role == 'administrador' ||
-        role.contains('admin');
+    return role == 'admin' || role == 'administrador' || role.contains('admin');
   }
 
   void _showError(String message) {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            color: Colors.white,
-          ),
-        ),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.redAccent,
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.all(20.w),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            12.r,
-          ),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
       ),
     );
   }
@@ -279,235 +182,96 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return PlatformScaffold(
       backgroundColor: Colors.white,
-      material: (_, __) {
-        return MaterialScaffoldData(
-          resizeToAvoidBottomInset: true,
-        );
-      },
+      material: (_, __) => MaterialScaffoldData(resizeToAvoidBottomInset: true),
       body: SafeArea(
         child: LayoutBuilder(
-          builder: (
-              context,
-              constraints,
-              ) {
+          builder: (context, constraints) {
             return SingleChildScrollView(
-              keyboardDismissBehavior:
-              ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.symmetric(
-                horizontal: 32.w,
-              ),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.symmetric(horizontal: 32.w),
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Column(
                     children: [
                       SizedBox(height: 70.h),
-
-                      _buildHeader(),
-
+                      const LoginHeader(),
                       SizedBox(height: 55.h),
-
-                      _buildLabel(
-                        'Correo electrónico',
-                      ),
-
+                      const LoginLabel(text: 'Correo electrónico'),
                       SizedBox(height: 10.h),
-
                       TextFormField(
                         controller: _emailController,
                         enabled: !authProvider.isLoading,
                         inputFormatters: [
-                          const _LowerCaseTextFormatter(),
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[a-z0-9@._%+\-]'),
-                          ),
+                          const LowerCaseTextFormatter(),
+                          FilteringTextInputFormatter.allow(RegExp(r'[a-z0-9@._%+\-]')),
                         ],
-                        keyboardType:
-                        TextInputType.emailAddress,
-                        textInputAction:
-                        TextInputAction.next,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
                         autocorrect: false,
                         enableSuggestions: false,
-                        autofillHints: const [
-                          AutofillHints.email,
-                        ],
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          color: Colors.black87,
-                        ),
-                        decoration: _inputDecoration(
+                        autofillHints: const [AutofillHints.email],
+                        style: TextStyle(fontSize: 16.sp, color: Colors.black87),
+                        decoration: LoginInputDecorations.getFieldDecoration(
                           hint: 'ejemplo@correo.com',
                           icon: Icons.email_outlined,
                         ),
                       ),
-
                       SizedBox(height: 24.h),
-
-                      _buildLabel(
-                        'Contraseña',
-                      ),
-
+                      const LoginLabel(text: 'Contraseña'),
                       SizedBox(height: 10.h),
-
                       TextFormField(
                         controller: _passwordController,
                         enabled: !authProvider.isLoading,
                         obscureText: _obscurePassword,
-                        textInputAction:
-                        TextInputAction.done,
+                        textInputAction: TextInputAction.done,
                         autocorrect: false,
                         enableSuggestions: false,
-                        autofillHints: const [
-                          AutofillHints.password,
-                        ],
+                        autofillHints: const [AutofillHints.password],
                         onFieldSubmitted: (_) {
-                          if (!authProvider.isLoading) {
-                            _handleLogin();
-                          }
+                          if (!authProvider.isLoading) _handleLogin();
                         },
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          color: Colors.black87,
-                        ),
-                        decoration: _inputDecoration(
+                        style: TextStyle(fontSize: 16.sp, color: Colors.black87),
+                        decoration: LoginInputDecorations.getFieldDecoration(
                           hint: '••••••••',
                           icon: Icons.lock_outline,
                           suffix: IconButton(
-                            onPressed:
-                            authProvider.isLoading
+                            onPressed: authProvider.isLoading
                                 ? null
-                                : () {
-                              setState(() {
-                                _obscurePassword =
-                                !_obscurePassword;
-                              });
-                            },
+                                : () => setState(() => _obscurePassword = !_obscurePassword),
                             icon: Icon(
                               _obscurePassword
-                                  ? Icons
-                                  .visibility_outlined
-                                  : Icons
-                                  .visibility_off_outlined,
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
                               size: 22.sp,
                               color: Colors.grey[600],
                             ),
                           ),
                         ),
                       ),
-
                       SizedBox(height: 12.h),
-
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: authProvider.isLoading
-                              ? null
-                              : () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const ForgotPasswordScreen(),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            '¿Olvidaste tu contraseña?',
-                            style: TextStyle(
-                              color: _primaryColor,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                      ForgotPasswordLink(
+                        onTap: authProvider.isLoading
+                            ? null
+                            : () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const ForgotPasswordScreen(),
+                                  ),
+                                );
+                              },
                       ),
-
                       SizedBox(height: 36.h),
-
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: authProvider.isLoading
-                              ? null
-                              : _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                            _primaryColor,
-                            foregroundColor:
-                            Colors.white,
-                            disabledBackgroundColor:
-                            _primaryColor.withOpacity(
-                              0.55,
-                            ),
-                            padding:
-                            EdgeInsets.symmetric(
-                              vertical: 18.h,
-                            ),
-                            shape:
-                            RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(
-                                16.r,
-                              ),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: authProvider.isLoading
-                              ? SizedBox(
-                            width: 24.w,
-                            height: 24.w,
-                            child:
-                            const CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                              : Text(
-                            'Iniciar sesión',
-                            style: TextStyle(
-                              fontSize: 17.sp,
-                              fontWeight:
-                              FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                      LoginButton(
+                        isLoading: authProvider.isLoading,
+                        onPressed: _handleLogin,
                       ),
-
                       SizedBox(height: 32.h),
-
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        children: [
-                          Text(
-                            '¿No tienes una cuenta? ',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14.sp,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: authProvider.isLoading
-                                ? null
-                                : () {
-                              context.push(
-                                AppRoutes
-                                    .roleSelection
-                                    .path,
-                              );
-                            },
-                            child: Text(
-                              'Regístrate aquí',
-                              style: TextStyle(
-                                color: _primaryColor,
-                                fontWeight:
-                                FontWeight.bold,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                          ),
-                        ],
+                      RegisterLink(
+                        onTap: authProvider.isLoading
+                            ? null
+                            : () => context.push(AppRoutes.roleSelection.path),
                       ),
-
                       SizedBox(height: 40.h),
                     ],
                   ),
@@ -517,166 +281,6 @@ class _LoginScreenState extends State<LoginScreen> {
           },
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        Container(
-          width: 100.w,
-          height: 100.w,
-          decoration: BoxDecoration(
-            color: _primaryColor.withOpacity(
-              0.05,
-            ),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: _primaryColor,
-              width: 1.5.w,
-            ),
-          ),
-          child: Icon(
-            Icons.explore,
-            size: 50.sp,
-            color: _primaryColor,
-          ),
-        ),
-
-        SizedBox(height: 28.h),
-
-        Text(
-          'Oriéntate+',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 34.sp,
-            fontWeight: FontWeight.w900,
-            color: _darkTextColor,
-            letterSpacing: -1,
-          ),
-        ),
-
-        SizedBox(height: 8.h),
-
-        Text(
-          'Tu futuro profesional comienza aquí.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15.sp,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 15.sp,
-          fontWeight: FontWeight.w700,
-          color: _darkTextColor,
-        ),
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData icon,
-    Widget? suffix,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(
-        color: Colors.grey[500],
-        fontSize: 15.sp,
-      ),
-      prefixIcon: Icon(
-        icon,
-        color: _primaryColor,
-        size: 24.sp,
-      ),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: _fieldColor,
-      contentPadding: EdgeInsets.symmetric(
-        vertical: 18.h,
-        horizontal: 20.w,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          16.r,
-        ),
-        borderSide: const BorderSide(
-          color: Color(0xFFE5E7EB),
-        ),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          16.r,
-        ),
-        borderSide: const BorderSide(
-          color: Color(0xFFE5E7EB),
-        ),
-      ),
-      disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          16.r,
-        ),
-        borderSide: const BorderSide(
-          color: Color(0xFFE5E7EB),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          16.r,
-        ),
-        borderSide: const BorderSide(
-          color: _primaryColor,
-          width: 1.5,
-        ),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          16.r,
-        ),
-        borderSide: const BorderSide(
-          color: Colors.redAccent,
-        ),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          16.r,
-        ),
-        borderSide: const BorderSide(
-          color: Colors.redAccent,
-          width: 1.5,
-        ),
-      ),
-    );
-  }
-}
-
-class _LowerCaseTextFormatter extends TextInputFormatter {
-  const _LowerCaseTextFormatter();
-
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue,
-      TextEditingValue newValue,
-      ) {
-    final lowerCaseText = newValue.text.toLowerCase();
-
-    return newValue.copyWith(
-      text: lowerCaseText,
-      selection: TextSelection.collapsed(
-        offset: lowerCaseText.length,
-      ),
-      composing: TextRange.empty,
     );
   }
 }

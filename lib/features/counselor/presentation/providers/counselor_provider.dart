@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import 'package:orientate/features/student/domain/entities/student_profile_entity.dart';
@@ -27,25 +28,17 @@ import '../../domain/usecases/update_appointment_usecase.dart';
 import '../../domain/usecases/delete_appointment_usecase.dart';
 import '../../domain/repositories/counselor_repository.dart';
 
+import 'counselor_error_helper.dart';
+import 'counselor_dashboard_manager.dart';
+import 'counselor_group_manager.dart';
+import 'counselor_appointment_manager.dart';
+import 'counselor_student_manager.dart';
+
 class CounselorProvider extends ChangeNotifier {
-  final GetGroupsUseCase _getGroupsUseCase;
-  final CreateGroupUseCase _createGroupUseCase;
-  final UpdateGroupUseCase _updateGroupUseCase;
-  final GetGroupDetailsUseCase _getGroupDetailsUseCase;
-  final RegisterSessionUseCase _registerSessionUseCase;
-  final AssignTaskUseCase _assignTaskUseCase;
-  final GetConsultationsUseCase _getConsultationsUseCase;
-  final GetCounselorProfileUseCase _getCounselorProfileUseCase;
-  final GetCounselorStatsUseCase _getCounselStatsUseCase;
-  final GetCounselorStudentsUseCase _getStudentsUseCase;
-  final GetStudentFileUseCase _getStudentFileUseCase;
-  final GetCounselorAppointmentsUseCase _getAppointmentsUseCase;
-  final GetGroupStudentsUseCase _getGroupStudentsUseCase;
-  final ScheduleCounselorAppointmentUseCase _scheduleAppointmentUseCase;
-  final GetAppointmentDetailUseCase _getAppointmentDetailUseCase;
-  final UpdateAppointmentUseCase _updateAppointmentUseCase;
-  final DeleteAppointmentUseCase _deleteAppointmentUseCase;
-  final CounselorRepository _repository;
+  final CounselorDashboardManager _dashboardManager;
+  final CounselorGroupManager _groupManager;
+  final CounselorAppointmentManager _appointmentManager;
+  final CounselorStudentManager _studentManager;
 
   CounselorProvider({
     required GetGroupsUseCase getGroupsUseCase,
@@ -66,24 +59,32 @@ class CounselorProvider extends ChangeNotifier {
     required UpdateAppointmentUseCase updateAppointmentUseCase,
     required DeleteAppointmentUseCase deleteAppointmentUseCase,
     required CounselorRepository repository,
-  })  : _getGroupsUseCase = getGroupsUseCase,
-        _createGroupUseCase = createGroupUseCase,
-        _updateGroupUseCase = updateGroupUseCase,
-        _getGroupDetailsUseCase = getGroupDetailsUseCase,
-        _registerSessionUseCase = registerSessionUseCase,
-        _assignTaskUseCase = assignTaskUseCase,
-        _getConsultationsUseCase = getConsultationsUseCase,
-        _getCounselorProfileUseCase = getCounselorProfileUseCase,
-        _getCounselStatsUseCase = getCounselorStatsUseCase,
-        _getStudentsUseCase = getStudentsUseCase,
-        _getStudentFileUseCase = getStudentFileUseCase,
-        _getAppointmentsUseCase = getAppointmentsUseCase,
-        _getGroupStudentsUseCase = getGroupStudentsUseCase,
-        _scheduleAppointmentUseCase = scheduleAppointmentUseCase,
-        _getAppointmentDetailUseCase = getAppointmentDetailUseCase,
-        _updateAppointmentUseCase = updateAppointmentUseCase,
-        _deleteAppointmentUseCase = deleteAppointmentUseCase,
-        _repository = repository;
+  })  : _dashboardManager = CounselorDashboardManager(
+          getGroupsUseCase: getGroupsUseCase,
+          getConsultationsUseCase: getConsultationsUseCase,
+          getCounselorProfileUseCase: getCounselorProfileUseCase,
+          getCounselorStatsUseCase: getCounselorStatsUseCase,
+          getStudentsUseCase: getStudentsUseCase,
+          getAppointmentsUseCase: getAppointmentsUseCase,
+          repository: repository,
+        ),
+        _groupManager = CounselorGroupManager(
+          createGroupUseCase: createGroupUseCase,
+          updateGroupUseCase: updateGroupUseCase,
+          repository: repository,
+        ),
+        _appointmentManager = CounselorAppointmentManager(
+          scheduleAppointmentUseCase: scheduleAppointmentUseCase,
+          getAppointmentDetailUseCase: getAppointmentDetailUseCase,
+          updateAppointmentUseCase: updateAppointmentUseCase,
+          deleteAppointmentUseCase: deleteAppointmentUseCase,
+          repository: repository,
+        ),
+        _studentManager = CounselorStudentManager(
+          getGroupStudentsUseCase: getGroupStudentsUseCase,
+          getStudentFileUseCase: getStudentFileUseCase,
+          repository: repository,
+        );
 
   CounselorProfileEntity? _profile;
 
@@ -136,19 +137,19 @@ class CounselorProvider extends ChangeNotifier {
   // =========================================================
 
   int get totalStudentsCount {
-    final int apiValue = _toInt(_stats['totalStudents'] ?? _stats['total_students']);
+    final int apiValue = CounselorErrorHelper.toInt(_stats['totalStudents'] ?? _stats['total_students']);
     return apiValue > 0 ? apiValue : _students.length;
   }
 
-  int get activeStudentsCount => _toInt(_stats['activeStudents'] ?? _stats['active_students']);
-  int get lowProgressCount => _toInt(_stats['lowProgress'] ?? _stats['low_progress']);
-  int get highIndecisionCount => _toInt(_stats['highIndecision'] ?? _stats['high_indecision']);
-  int get solicitudesCount => _toInt(_stats['requests'] ?? _stats['solicitudes']);
+  int get activeStudentsCount => CounselorErrorHelper.toInt(_stats['activeStudents'] ?? _stats['active_students']);
+  int get lowProgressCount => CounselorErrorHelper.toInt(_stats['lowProgress'] ?? _stats['low_progress']);
+  int get highIndecisionCount => CounselorErrorHelper.toInt(_stats['highIndecision'] ?? _stats['high_indecision']);
+  int get solicitudesCount => CounselorErrorHelper.toInt(_stats['requests'] ?? _stats['solicitudes']);
   int get groupsCount {
-    final int apiValue = _toInt(_stats['groups'] ?? _stats['totalGroups'] ?? _stats['total_groups']);
+    final int apiValue = CounselorErrorHelper.toInt(_stats['groups'] ?? _stats['totalGroups'] ?? _stats['total_groups']);
     return apiValue > 0 ? apiValue : _groups.length;
   }
-  int get reportesCount => _toInt(_stats['reports'] ?? _stats['reportes']);
+  int get reportesCount => CounselorErrorHelper.toInt(_stats['reports'] ?? _stats['reportes']);
 
   // =========================================================
   // DASHBOARD
@@ -160,89 +161,29 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final groupsResult = await _loadGroupsSafely();
-      final consultationsResult = await _loadConsultationsSafely();
-      final profileResult = await _loadProfileSafely();
-      final statsResult = await _loadStatsSafely();
-      final studentsResult = await _loadStudentsSafely();
-      final appointmentsResult = await _loadAppointmentsSafely();
-      final availabilityResult = await _loadAvailabilitySafely();
+      final results = await Future.wait([
+        _dashboardManager.loadGroupsSafely(),
+        _dashboardManager.loadConsultationsSafely(),
+        _dashboardManager.loadProfileSafely(),
+        _dashboardManager.loadStatsSafely(),
+        _dashboardManager.loadStudentsSafely(),
+        _dashboardManager.loadAppointmentsSafely(),
+        _dashboardManager.loadAvailabilitySafely(),
+      ]);
 
-      _groups = groupsResult;
-      _consultations = consultationsResult;
-      _profile = profileResult;
-      _stats = statsResult;
-      _students = _removeDuplicatedStudents(studentsResult);
-      _appointments = appointmentsResult;
-      _availability = availabilityResult;
+      _groups = results[0] as List<dynamic>;
+      _consultations = results[1] as List<StudentConsultationEntity>;
+      _profile = results[2] as CounselorProfileEntity?;
+      _stats = results[3] as Map<String, dynamic>;
+      _students = _removeDuplicatedStudents(results[4] as List<StudentProfileEntity>);
+      _appointments = results[5] as List<AppointmentEntity>;
+      _availability = results[6] as List<AvailabilitySlotEntity>;
 
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
     } finally {
       _isLoading = false;
       notifyListeners();
-    }
-  }
-
-  Future<List<dynamic>> _loadGroupsSafely() async {
-    try {
-      return await _getGroupsUseCase.call();
-    } catch (_) {
-      return <dynamic>[];
-    }
-  }
-
-  Future<List<StudentConsultationEntity>> _loadConsultationsSafely() async {
-    try {
-      final result = await _getConsultationsUseCase.call();
-      return List<StudentConsultationEntity>.from(result);
-    } catch (_) {
-      return <StudentConsultationEntity>[];
-    }
-  }
-
-  Future<CounselorProfileEntity?> _loadProfileSafely() async {
-    try {
-      return await _getCounselorProfileUseCase.call();
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<Map<String, dynamic>> _loadStatsSafely() async {
-    try {
-      final result = await _getCounselStatsUseCase.call();
-      return Map<String, dynamic>.from(result);
-    } catch (_) {
-      return <String, dynamic>{};
-    }
-  }
-
-  Future<List<StudentProfileEntity>> _loadStudentsSafely() async {
-    try {
-      final dynamic result = await _getStudentsUseCase.call();
-      if (result is! List) return <StudentProfileEntity>[];
-      return result.whereType<StudentProfileEntity>().toList();
-    } catch (_) {
-      return <StudentProfileEntity>[];
-    }
-  }
-
-  Future<List<AppointmentEntity>> _loadAppointmentsSafely() async {
-    try {
-      final result = await _getAppointmentsUseCase.call();
-      return List<AppointmentEntity>.from(result);
-    } catch (_) {
-      return <AppointmentEntity>[];
-    }
-  }
-
-  Future<List<AvailabilitySlotEntity>> _loadAvailabilitySafely() async {
-    try {
-      final result = await _repository.getAvailability();
-      return result.map((json) => AvailabilitySlotEntity.fromJson(Map<String, dynamic>.from(json))).toList();
-    } catch (_) {
-      return <AvailabilitySlotEntity>[];
     }
   }
 
@@ -263,11 +204,11 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _createGroupUseCase.call(cleanName, accessCode.trim().isEmpty ? null : accessCode.trim());
+      await _groupManager.createGroup(cleanName, accessCode.trim().isEmpty ? null : accessCode.trim());
       await loadDashboardData();
       return true;
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -281,11 +222,11 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _updateGroupUseCase.call(groupId, name: name?.trim(), accessCode: accessCode?.trim());
+      await _groupManager.updateGroup(groupId, name: name?.trim(), accessCode: accessCode?.trim());
       await loadDashboardData();
       return true;
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -299,11 +240,11 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _repository.deleteGroup(groupId);
+      await _groupManager.deleteGroup(groupId);
       await loadDashboardData();
       return true;
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -321,12 +262,11 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final List<Map<String, dynamic>> rawSlots = slots.map((s) => s.toJson()).toList();
-      await _repository.saveAvailability(rawSlots);
-      _availability = await _loadAvailabilitySafely();
+      await _appointmentManager.saveAvailability(slots);
+      _availability = await _dashboardManager.loadAvailabilitySafely();
       return true;
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -335,32 +275,12 @@ class CounselorProvider extends ChangeNotifier {
   }
 
   List<AvailabilitySlotEntity> availabilityForDate(DateTime date) {
-    // dayOfWeek en DateTime: 1 (Lunes) a 7 (Domingo)
-    // dayOfWeek en Entity: 0 (Domingo) a 6 (Sábado)
     final day = date.weekday % 7;
     return _availability.where((s) => s.dayOfWeek == day).toList();
   }
 
   bool isInsideAvailability(DateTime dateTime) {
-    final daySlots = availabilityForDate(dateTime);
-    if (daySlots.isEmpty) return false;
-
-    final time = TimeOfDay.fromDateTime(dateTime);
-    final minutes = time.hour * 60 + time.minute;
-
-    for (final slot in daySlots) {
-      final startParts = slot.startTime.split(':');
-      final endParts = slot.endTime.split(':');
-
-      if (startParts.length < 2 || endParts.length < 2) continue;
-
-      final startMinutes = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
-      final endMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
-
-      if (minutes >= startMinutes && minutes <= endMinutes) return true;
-    }
-
-    return false;
+    return _appointmentManager.isInsideAvailability(dateTime, _availability);
   }
 
   // =========================================================
@@ -398,17 +318,17 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _scheduleAppointmentUseCase.call(
+      await _appointmentManager.scheduleAppointment(
         cleanStudentId,
         date,
         cleanMotive,
       );
 
-      _appointments = await _loadAppointmentsSafely();
+      _appointments = await _dashboardManager.loadAppointmentsSafely();
       notifyListeners();
       return true;
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -422,9 +342,9 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      return await _getAppointmentDetailUseCase.call(id);
+      return await _appointmentManager.getAppointmentDetail(id);
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       return null;
     } finally {
       _isLoading = false;
@@ -438,11 +358,11 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _updateAppointmentUseCase.call(id, data);
+      await _appointmentManager.updateAppointment(id, data);
       await loadDashboardData();
       return true;
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -456,11 +376,11 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _deleteAppointmentUseCase.call(id);
+      await _appointmentManager.deleteAppointment(id);
       await loadDashboardData();
       return true;
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -469,7 +389,7 @@ class CounselorProvider extends ChangeNotifier {
   }
 
   // =========================================================
-  // OTROS MÉTODOS (SIN CAMBIOS)
+  // OTROS MÉTODOS
   // =========================================================
 
   Future<List<StudentProfileEntity>> getGroupStudents(String groupId) async {
@@ -477,10 +397,9 @@ class CounselorProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final List<StudentProfileEntity> result = await _getGroupStudentsUseCase.call(groupId.trim());
-      return _removeDuplicatedStudents(result);
+      return await _studentManager.getGroupStudents(groupId);
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       rethrow;
     } finally {
       _isLoadingGroupStudents = false;
@@ -494,9 +413,9 @@ class CounselorProvider extends ChangeNotifier {
     _currentStudentFile = null;
     notifyListeners();
     try {
-      _currentStudentFile = await _getStudentFileUseCase.call(studentId.trim());
+      _currentStudentFile = await _studentManager.loadStudentFile(studentId);
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
     } finally {
       _isLoadingFile = false;
       notifyListeners();
@@ -516,24 +435,17 @@ class CounselorProvider extends ChangeNotifier {
     return unique.values.toList();
   }
 
-  int _toInt(dynamic value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
-  }
-
   Future<bool> updateStudentParents(String studentId, String? email1, String? email2) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await _repository.updateStudentParents(studentId, email1, email2);
+      await _studentManager.updateStudentParents(studentId, email1, email2);
       await loadStudentFile(studentId);
       return true;
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       return false;
     } finally {
       _isLoading = false;
@@ -547,55 +459,14 @@ class CounselorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _repository.sendStudentReport(studentId, emails, format);
+      await _studentManager.sendStudentReport(studentId, emails, format);
       return true;
     } catch (error) {
-      _errorMessage = _cleanError(error);
+      _errorMessage = CounselorErrorHelper.cleanError(error);
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  String _cleanError(Object error) {
-    final String message = error
-        .toString()
-        .replaceFirst('Exception: ', '')
-        .trim();
-
-    final String normalized = message.toLowerCase();
-
-    if (normalized.contains('cannot post')) {
-      return 'El servicio para agendar citas no está disponible.';
-    }
-
-    if (normalized.contains('pertenece') ||
-        normalized.contains('does not belong') ||
-        normalized.contains('not belong')) {
-      return 'El alumno seleccionado no pertenece a uno de tus grupos.';
-    }
-
-    if (normalized.contains('availability') ||
-        normalized.contains('disponibilidad') ||
-        normalized.contains('outside')) {
-      return 'La fecha y hora están fuera de tu disponibilidad.';
-    }
-
-    if (normalized.contains('overlap') ||
-        normalized.contains('solapamiento') ||
-        normalized.contains('conflict') ||
-        normalized.contains('already has')) {
-      return 'El orientador o el alumno ya tiene otra cita cercana a ese horario.';
-    }
-
-    if (normalized.contains('<!doctype html>') ||
-        normalized.contains('<html')) {
-      return 'El servidor no pudo procesar la solicitud.';
-    }
-
-    return message.isEmpty
-        ? 'No fue posible completar la solicitud.'
-        : message;
   }
 }

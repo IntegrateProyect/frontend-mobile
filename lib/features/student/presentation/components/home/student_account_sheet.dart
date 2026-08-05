@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import 'package:orientate/features/auth/presentation/providers/auth_provider.dart';
 import 'package:orientate/features/student/presentation/providers/student_home_provider.dart';
+import 'package:orientate/features/student/presentation/providers/student_group_provider.dart';
 
 import '../common/student_ui_colors.dart';
 
 Future<void> showStudentAccountSheet({
   required BuildContext context,
   required StudentHomeProvider homeProvider,
+  required StudentGroupProvider groupProvider,
   required AuthProvider authProvider,
 }) async {
   final user = authProvider.user;
@@ -124,16 +126,16 @@ Future<void> showStudentAccountSheet({
                 _AccountInformationItem(
                   icon: Icons.groups_2_outlined,
                   label: 'Grupo escolar',
-                  value: homeProvider.hasGroup
-                      ? homeProvider.currentGroupName
+                  value: groupProvider.hasGroup
+                      ? groupProvider.currentGroupName
                       : 'Sin grupo asignado',
                 ),
 
                 _AccountInformationItem(
                   icon: Icons.vpn_key_outlined,
                   label: 'Código de grupo',
-                  value: homeProvider.hasGroup
-                      ? homeProvider.currentGroupCode
+                  value: groupProvider.hasGroup
+                      ? groupProvider.currentGroupCode
                       : 'Sin código',
                 ),
 

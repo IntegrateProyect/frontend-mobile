@@ -1,8 +1,8 @@
 import '../entities/career_entity.dart';
-import '../repositories/student_repository.dart';
+import '../repositories/recommendations_repository.dart';
 
 class GetRecommendedCareersUseCase {
-  final StudentRepository repository;
+  final RecommendationsRepository repository;
 
   GetRecommendedCareersUseCase(this.repository);
 

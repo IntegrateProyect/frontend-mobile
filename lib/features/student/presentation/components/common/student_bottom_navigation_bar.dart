@@ -30,19 +30,19 @@ class StudentBottomNavigationBar extends StatelessWidget {
 
     switch (index) {
       case 0:
-        context.go(AppRoutes.home.path);
+        context.goNamed(AppRoutes.home.name);
         break;
       case 1:
-        context.go(AppRoutes.games.path);
+        context.goNamed(AppRoutes.games.name);
         break;
       case 2:
-        context.go(AppRoutes.studentAgenda.path);
+        context.goNamed(AppRoutes.studentAgenda.name);
         break;
       case 3:
-        context.go(AppRoutes.vocationalResults.path);
+        context.goNamed(AppRoutes.vocationalResults.name);
         break;
       case 4:
-        context.go(AppRoutes.studentProfile.path);
+        context.goNamed(AppRoutes.studentProfile.name);
         break;
     }
   }

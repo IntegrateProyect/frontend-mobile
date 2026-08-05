@@ -1,8 +1,8 @@
 import '../entities/student_profile_entity.dart';
-import '../repositories/student_repository.dart';
+import '../repositories/profile_repository.dart';
 
 class UpdateStudentProfileUseCase {
-  final StudentRepository repository;
+  final ProfileRepository repository;
 
   UpdateStudentProfileUseCase(this.repository);
 
