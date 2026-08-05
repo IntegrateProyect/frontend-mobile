@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../domain/entities/appointment_entity.dart';
-import '../../presentation/providers/counselor_provider.dart';
+
+import '../../../domain/entities/appointment_entity.dart';
+import '../../providers/counselor_provider.dart';
 import 'counselor_weekly_calendar.dart';
 
 class CounselorAgendaTabView extends StatelessWidget {
