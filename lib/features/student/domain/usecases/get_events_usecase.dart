@@ -1,8 +1,8 @@
 import '../entities/event_entity.dart';
-import '../repositories/student_repository.dart';
+import '../repositories/events_repository.dart';
 
 class GetEventsUseCase {
-  final StudentRepository repository;
+  final EventsRepository repository;
 
   GetEventsUseCase(this.repository);
 

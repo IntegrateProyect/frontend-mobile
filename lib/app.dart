@@ -15,28 +15,34 @@ class MyApp extends StatelessWidget {
     final themeProvider = context.watch<ThemeProvider>();
 
     return ScreenUtilInit(
+      // Tamaño base de diseño (iPhone X/11 aprox)
       designSize: const Size(375, 812),
       minTextAdapt: true,
       splitScreenMode: true,
+      // Asegura que ScreenUtil responda a cambios de tamaño de pantalla/orientación
+      ensureScreenSize: true,
+      // Corregido: RebuildFactors.always asegura la reconstrucción en cualquier cambio
+      rebuildFactor: RebuildFactors.always,
       builder: (context, child) {
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'Oriéntate+',
 
-          // Temas de la aplicación
+          // Configuración de temas
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
 
-          // GoRouter
+          // Enrutador GoRouter
           routerConfig: appRouter,
 
           builder: (context, child) {
             final mediaQuery = MediaQuery.of(context);
 
+            // Controlamos el factor de escala del texto
             final double textScale = mediaQuery.textScaler
                 .scale(1.0)
-                .clamp(0.85, 1.20)
+                .clamp(0.85, 1.15)
                 .toDouble();
 
             final clampedMediaQuery = mediaQuery.copyWith(
@@ -46,28 +52,25 @@ class MyApp extends StatelessWidget {
             return MediaQuery(
               data: clampedMediaQuery,
               child: ResponsiveBreakpoints.builder(
-                child: child ?? const SizedBox.shrink(),
+                child: Builder(
+                  builder: (context) {
+                    // El ResponsiveScaledBox escala proporcionalmente el contenido
+                    // basándose en el ancho de diseño según el dispositivo.
+                    return ResponsiveScaledBox(
+                      width: ResponsiveValue<double?>(context, conditionalValues: [
+                        const Condition.equals(name: MOBILE, value: 375),
+                        const Condition.equals(name: TABLET, value: 800),
+                        const Condition.equals(name: DESKTOP, value: 1200),
+                      ]).value,
+                      child: child ?? const SizedBox.shrink(),
+                    );
+                  },
+                ),
                 breakpoints: const [
-                  Breakpoint(
-                    start: 0,
-                    end: 450,
-                    name: MOBILE,
-                  ),
-                  Breakpoint(
-                    start: 451,
-                    end: 800,
-                    name: TABLET,
-                  ),
-                  Breakpoint(
-                    start: 801,
-                    end: 1920,
-                    name: DESKTOP,
-                  ),
-                  Breakpoint(
-                    start: 1921,
-                    end: double.infinity,
-                    name: '4K',
-                  ),
+                  Breakpoint(start: 0, end: 450, name: MOBILE),
+                  Breakpoint(start: 451, end: 800, name: TABLET),
+                  Breakpoint(start: 801, end: 1920, name: DESKTOP),
+                  Breakpoint(start: 1921, end: double.infinity, name: '4K'),
                 ],
               ),
             );

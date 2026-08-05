@@ -1,7 +1,7 @@
-import '../repositories/student_repository.dart';
+import '../repositories/favorites_repository.dart';
 
 class SaveFavoriteUseCase {
-  final StudentRepository repository;
+  final FavoritesRepository repository;
 
   SaveFavoriteUseCase(this.repository);
 

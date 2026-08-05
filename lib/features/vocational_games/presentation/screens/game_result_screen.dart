@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/games_provider.dart';
+import '../providers/game_persistence_provider.dart';
 
 class GameResultScreen extends StatelessWidget {
   final Map<String, dynamic> result;
@@ -16,7 +17,12 @@ class GameResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gamesProvider = context.watch<GamesProvider>();
-    if (!gamesProvider.areAllGamesCompleted) {
+    final persistenceProvider = context.watch<GamePersistenceProvider>();
+
+    // Verificamos si todos los juegos están completados usando el persistenceProvider
+    final allCompleted = persistenceProvider.areAllCompleted(gamesProvider.miniGames);
+
+    if (!allCompleted) {
       return Scaffold(
         backgroundColor: const Color(0xFFF8F9FE),
         appBar: AppBar(

@@ -22,17 +22,21 @@ class _CheckoutWebViewState extends State<CheckoutWebView> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
+            if (!mounted) return;
             setState(() {
               _isLoading = true;
             });
           },
           onPageFinished: (String url) {
+            if (!mounted) return;
             setState(() {
               _isLoading = false;
             });
           },
           onNavigationRequest: (NavigationRequest request) {
             final url = request.url;
+            if (!mounted) return NavigationDecision.prevent;
+
             if (url.contains('/payments/success') || url.contains('status=approved')) {
               Navigator.of(context).pop('success');
               return NavigationDecision.prevent;

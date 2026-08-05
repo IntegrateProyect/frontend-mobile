@@ -1,8 +1,8 @@
 import '../../../counselor/domain/entities/appointment_entity.dart';
-import '../repositories/student_repository.dart';
+import '../repositories/student_appointments_repository.dart';
 
 class GetStudentAppointmentsUseCase {
-  final StudentRepository repository;
+  final StudentAppointmentsRepository repository;
 
   GetStudentAppointmentsUseCase(this.repository);
 

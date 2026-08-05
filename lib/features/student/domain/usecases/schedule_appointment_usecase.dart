@@ -1,11 +1,11 @@
-import '../../../counselor/domain/repositories/counselor_repository.dart';
+import '../repositories/student_appointments_repository.dart';
 
 class ScheduleAppointmentUseCase {
-  final CounselorRepository repository;
+  final StudentAppointmentsRepository repository;
 
   ScheduleAppointmentUseCase(this.repository);
 
-  Future<void> call(String studentId, DateTime date, String motive) async {
-    return await repository.scheduleAppointment(studentId, date, motive);
+  Future<void> call(DateTime date, String motive) async {
+    return await repository.scheduleAppointment(date, motive);
   }
 }

@@ -6,7 +6,7 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../components/common/student_bottom_navigation_bar.dart';
 import '../components/common/student_ui_colors.dart';
-import '../providers/student_home_provider.dart';
+import '../providers/student_appointments_provider.dart';
 import '../../../counselor/domain/entities/appointment_entity.dart';
 
 class StudentAgendaScreen extends StatefulWidget {
@@ -25,7 +25,9 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
     super.initState();
     _selectedDay = _focusedDay;
     Future.microtask(() {
-      context.read<StudentHomeProvider>().loadHomeData();
+      if (mounted) {
+        context.read<StudentAppointmentsProvider>().loadAppointments();
+      }
     });
   }
 
@@ -35,7 +37,7 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<StudentHomeProvider>();
+    final provider = context.watch<StudentAppointmentsProvider>();
     final appointments = provider.appointments;
 
     return Scaffold(
@@ -52,50 +54,59 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            child: TableCalendar(
-              locale: 'es_ES',
-              firstDay: DateTime.now().subtract(const Duration(days: 30)),
-              lastDay: DateTime.now().add(const Duration(days: 90)),
-              focusedDay: _focusedDay,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
-                });
-              },
-              eventLoader: (day) => _getEventsForDay(day, appointments),
-              calendarStyle: const CalendarStyle(
-                todayDecoration: BoxDecoration(color: StudentUiColors.teal, shape: BoxShape.circle),
-                selectedDecoration: BoxDecoration(color: StudentUiColors.primary, shape: BoxShape.circle),
-                markerDecoration: BoxDecoration(color: StudentUiColors.pink, shape: BoxShape.circle),
-              ),
-              headerStyle: const HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            Container(
+              color: Colors.white,
+              child: TableCalendar(
+                locale: 'es_ES',
+                firstDay: DateTime.now().subtract(const Duration(days: 30)),
+                lastDay: DateTime.now().add(const Duration(days: 90)),
+                focusedDay: _focusedDay,
+                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                  });
+                },
+                eventLoader: (day) => _getEventsForDay(day, appointments),
+                calendarStyle: const CalendarStyle(
+                  todayDecoration: BoxDecoration(color: StudentUiColors.teal, shape: BoxShape.circle),
+                  selectedDecoration: BoxDecoration(color: StudentUiColors.primary, shape: BoxShape.circle),
+                  markerDecoration: BoxDecoration(color: StudentUiColors.pink, shape: BoxShape.circle),
+                ),
+                headerStyle: const HeaderStyle(
+                  formatButtonVisible: false,
+                  titleCentered: true,
+                ),
               ),
             ),
-          ),
-          SizedBox(height: 16.h),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline, size: 16, color: Colors.grey),
-                SizedBox(width: 8.w),
-                const Text('Tu orientador agenda y gestiona estas citas.', style: TextStyle(color: Colors.grey, fontSize: 12)),
-              ],
+            SizedBox(height: 16.h),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                  SizedBox(width: 8.w),
+                  const Expanded(
+                    child: Text(
+                      'Tu orientador agenda y gestiona estas citas.',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(height: 16.h),
-          Expanded(
-            child: _buildAppointmentList(_getEventsForDay(_selectedDay!, appointments)),
-          ),
-        ],
+            SizedBox(height: 16.h),
+            provider.isLoading && appointments.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: StudentUiColors.primary))
+                : _buildAppointmentList(_getEventsForDay(_selectedDay!, appointments)),
+            SizedBox(height: 20.h),
+          ],
+        ),
       ),
       bottomNavigationBar: const StudentBottomNavigationBar(currentIndex: 2),
     );
@@ -107,6 +118,7 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            SizedBox(height: 20.h),
             Icon(Icons.event_busy, size: 60.sp, color: Colors.grey[300]),
             SizedBox(height: 16.h),
             Text(
@@ -119,6 +131,8 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
     }
 
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       itemCount: dayAppointments.length,
       itemBuilder: (context, index) {

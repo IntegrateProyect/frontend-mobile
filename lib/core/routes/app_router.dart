@@ -1,403 +1,256 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:orientate/core/routes/AppRoutes.dart';
 
-import 'AppRoutes.dart';
+// Entidades
+import 'package:orientate/features/university/domain/entities/university_entity.dart';
 
-// =========================================================
-// ONBOARDING
-// =========================================================
+// Screens
+import 'package:orientate/features/onboarding/presentation/screens/splash_screen.dart';
+import 'package:orientate/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:orientate/features/auth/presentation/screens/login_screen.dart';
+import 'package:orientate/features/auth/presentation/screens/register_screen.dart';
+import 'package:orientate/features/auth/presentation/screens/role_selection_screen.dart';
+import 'package:orientate/features/auth/presentation/screens/student_profile_setup_screen.dart';
 
-import '../../features/onboarding/presentation/screens/splash_screen.dart';
-import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
+// Estudiante
+import 'package:orientate/features/student/presentation/screens/student_home_screen.dart';
+import 'package:orientate/features/student/presentation/screens/student_profile_screen.dart';
+import 'package:orientate/features/student/presentation/screens/vocational_results_screen.dart';
+import 'package:orientate/features/student/presentation/screens/CareersScreen.dart';
+import 'package:orientate/features/student/presentation/screens/career_detail_screen.dart';
+import 'package:orientate/features/student/presentation/screens/career_compare_screen.dart';
+import 'package:orientate/features/student/presentation/screens/events_screen.dart';
+import 'package:orientate/features/student/presentation/screens/alumni_list_screen.dart';
+import 'package:orientate/features/student/presentation/screens/favorites_screen.dart';
+import 'package:orientate/features/student/presentation/screens/request_support_screen.dart';
+import 'package:orientate/features/student/presentation/screens/vocational_route_screen.dart';
+import 'package:orientate/features/student/presentation/screens/student_agenda_screen.dart';
 
-// =========================================================
-// AUTENTICACIÓN
-// =========================================================
+// Universidad
+import 'package:orientate/features/university/presentation/screens/universities_screen.dart';
+import 'package:orientate/features/university/presentation/screens/university_detail_screen.dart';
+import 'package:orientate/features/university/presentation/screens/scholarships_screen.dart';
+import 'package:orientate/features/university/presentation/screens/university_home_screen.dart';
+import 'package:orientate/features/university/presentation/screens/manage_careers_screen.dart';
 
-import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/auth/presentation/screens/register_screen.dart';
-import '../../features/auth/presentation/screens/role_selection_screen.dart';
-import '../../features/auth/presentation/screens/student_profile_setup_screen.dart';
+// Chat y Chatbot
+import 'package:orientate/features/chatbot/presentation/screens/chat_screen.dart';
+import 'package:orientate/features/chat/presentation/screens/chat_contacts_screen.dart';
+import 'package:orientate/features/chat/presentation/screens/real_chat_screen.dart';
 
-// =========================================================
-// ESTUDIANTE
-// =========================================================
+// Minijuegos
+import 'package:orientate/features/vocational_games/presentation/screens/games_list_screen.dart';
 
-import '../../features/student/presentation/screens/student_home_screen.dart';
-import '../../features/student/presentation/screens/student_profile_screen.dart';
-import '../../features/student/presentation/screens/vocational_results_screen.dart';
-import '../../features/student/presentation/screens/CareersScreen.dart';
-import '../../features/student/presentation/screens/universities_screen.dart';
-import '../../features/student/presentation/screens/university_detail_screen.dart';
-import '../../features/student/presentation/screens/student_agenda_screen.dart';
-import '../../features/student/presentation/screens/events_screen.dart';
-import '../../features/university/domain/entities/university_entity.dart';
+// Orientador
+import 'package:orientate/features/counselor/presentation/screens/counselor_home_screen.dart';
+import 'package:orientate/features/counselor/presentation/screens/counselor_profile_screen.dart';
 
-// =========================================================
-// MINIJUEGOS
-// =========================================================
+// Alumni
+import 'package:orientate/features/alumni/presentation/screens/alumni_home_screen.dart';
+import 'package:orientate/features/alumni/presentation/screens/alumni_profile_screen.dart';
 
-import '../../features/vocational_games/presentation/screens/games_list_screen.dart';
-
-// =========================================================
-// CHAT
-// =========================================================
-
-import '../../features/chat/presentation/screens/chat_contacts_screen.dart';
-import '../../features/chat/presentation/screens/real_chat_screen.dart';
-import '../../features/chatbot/presentation/screens/chat_screen.dart';
-
-// =========================================================
-// ORIENTADOR
-// =========================================================
-
-import '../../features/counselor/presentation/screens/counselor_home_screen.dart';
-import '../../features/counselor/presentation/screens/counselor_profile_screen.dart';
-import '../../features/counselor/presentation/screens/vocational_map_screen.dart';
-import '../../features/counselor/presentation/screens/student_file_screen.dart';
-import '../../features/counselor/presentation/screens/group_students_screen.dart';
-import '../../features/counselor/presentation/screens/counselor_students_screen.dart';
-
-// =========================================================
-// OTROS ROLES
-// =========================================================
-
-import '../../features/admin/presentation/screens/admin_home_screen.dart';
-import '../../features/alumni/presentation/screens/alumni_home_screen.dart';
-import '../../features/alumni/presentation/screens/alumni_profile_screen.dart';
-import '../../features/alumni/presentation/screens/success_stories_screen.dart';
-import '../../features/alumni/presentation/screens/alumni_profile_form_screen.dart';
-import '../../features/alumni/presentation/screens/write_story_screen.dart';
-import '../../features/university/presentation/screens/university_home_screen.dart';
-import '../../features/university/presentation/screens/manage_careers_screen.dart';
-import '../../features/university/presentation/screens/university_verification_screen.dart';
-import '../../features/university/presentation/screens/manage_events_screen.dart';
-import '../../features/university/presentation/screens/manage_announcements_screen.dart';
-import '../../features/university/presentation/screens/manage_alumni_screen.dart';
+// Administrador
+import 'package:orientate/features/admin/presentation/screens/admin_home_screen.dart';
+import 'package:orientate/features/admin/presentation/screens/user_management_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.splash.path,
   debugLogDiagnostics: true,
   routes: [
-    // =========================================================
-    // ONBOARDING
-    // =========================================================
-
+    // Auth & Onboarding
     GoRoute(
       path: AppRoutes.splash.path,
-      builder: (context, state) {
-        return const SplashScreen();
-      },
+      name: AppRoutes.splash.name,
+      builder: (context, state) => const SplashScreen(),
     ),
-
     GoRoute(
       path: AppRoutes.onboarding.path,
-      builder: (context, state) {
-        return const OnboardingScreen();
-      },
+      name: AppRoutes.onboarding.name,
+      builder: (context, state) => const OnboardingScreen(),
     ),
-
-    // =========================================================
-    // AUTENTICACIÓN
-    // =========================================================
-
     GoRoute(
       path: AppRoutes.login.path,
-      builder: (context, state) {
-        return const LoginScreen();
-      },
+      name: AppRoutes.login.name,
+      builder: (context, state) => const LoginScreen(),
     ),
-
-    GoRoute(
-      path: AppRoutes.roleSelection.path,
-      builder: (context, state) {
-        return const RoleSelectionScreen();
-      },
-    ),
-
     GoRoute(
       path: AppRoutes.register.path,
-      builder: (context, state) {
-        final role = state.extra as String? ?? 'estudiante';
-
-        return RegisterScreen(
-          role: role,
-        );
-      },
+      name: AppRoutes.register.name,
+      builder: (context, state) => const RegisterScreen(),
     ),
-
-    // =========================================================
-    // ESTUDIANTE
-    // =========================================================
-
+    GoRoute(
+      path: AppRoutes.roleSelection.path,
+      name: AppRoutes.roleSelection.name,
+      builder: (context, state) => const RoleSelectionScreen(),
+    ),
     GoRoute(
       path: AppRoutes.studentProfileSetup.path,
-      builder: (context, state) {
-        return const StudentProfileSetupScreen();
-      },
+      name: AppRoutes.studentProfileSetup.name,
+      builder: (context, state) => const StudentProfileSetupScreen(),
     ),
 
+    // Student
     GoRoute(
       path: AppRoutes.home.path,
-      builder: (context, state) {
-        return const StudentHomeScreen();
-      },
+      name: AppRoutes.home.name,
+      builder: (context, state) => const StudentHomeScreen(),
     ),
-
     GoRoute(
       path: AppRoutes.studentProfile.path,
-      builder: (context, state) {
-        return const StudentProfileScreen();
-      },
+      name: AppRoutes.studentProfile.name,
+      builder: (context, state) => const StudentProfileScreen(),
     ),
-
     GoRoute(
       path: AppRoutes.vocationalResults.path,
-      builder: (context, state) {
-        return const VocationalResultsScreen();
-      },
+      name: AppRoutes.vocationalResults.name,
+      builder: (context, state) => const VocationalResultsScreen(),
     ),
-
     GoRoute(
       path: AppRoutes.careers.path,
-      builder: (context, state) {
-        return const CareersScreen();
-      },
+      name: AppRoutes.careers.name,
+      builder: (context, state) => const CareersScreen(),
     ),
-
+    GoRoute(
+      path: AppRoutes.careerDetail.path,
+      name: AppRoutes.careerDetail.name,
+      builder: (context, state) => const CareerDetailScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.careerCompare.path,
+      name: AppRoutes.careerCompare.name,
+      builder: (context, state) => const CareerCompareScreen(),
+    ),
     GoRoute(
       path: AppRoutes.universities.path,
-      builder: (context, state) {
-        return const UniversitiesScreen();
-      },
+      name: AppRoutes.universities.name,
+      builder: (context, state) => const UniversitiesScreen(),
     ),
-
     GoRoute(
       path: AppRoutes.universityDetail.path,
+      name: AppRoutes.universityDetail.name,
       builder: (context, state) {
         final university = state.extra as UniversityEntity;
-        return UniversityDetailScreen(
-          university: university,
-        );
+        return UniversityDetailScreen(university: university);
       },
     ),
-
     GoRoute(
-      path: AppRoutes.studentAgenda.path,
-      builder: (context, state) {
-        return const StudentAgendaScreen();
-      },
+      path: AppRoutes.scholarships.path,
+      name: AppRoutes.scholarships.name,
+      builder: (context, state) => const ScholarshipsScreen(),
     ),
-
     GoRoute(
       path: AppRoutes.events.path,
-      builder: (context, state) {
-        return const EventsScreen();
-      },
+      name: AppRoutes.events.name,
+      builder: (context, state) => const EventsScreen(),
     ),
-
-    // =========================================================
-    // MINIJUEGOS
-    // =========================================================
-
     GoRoute(
-      path: AppRoutes.games.path,
-      builder: (context, state) {
-        return const GamesListScreen();
-      },
+      path: AppRoutes.alumniList.path,
+      name: AppRoutes.alumniList.name,
+      builder: (context, state) => const AlumniListScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.favorites.path,
+      name: AppRoutes.favorites.name,
+      builder: (context, state) => const FavoritesScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.requestSupport.path,
+      name: AppRoutes.requestSupport.name,
+      builder: (context, state) => const RequestSupportScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.vocationalRoute.path,
+      name: AppRoutes.vocationalRoute.name,
+      builder: (context, state) => const VocationalRouteScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.studentAgenda.path,
+      name: AppRoutes.studentAgenda.name,
+      builder: (context, state) => const StudentAgendaScreen(),
     ),
 
-    // =========================================================
-    // CHAT
-    // =========================================================
-
+    // Chat
     GoRoute(
       path: AppRoutes.chat.path,
-      builder: (context, state) {
-        return const ChatScreen();
-      },
+      name: AppRoutes.chat.name,
+      builder: (context, state) => const ChatScreen(),
     ),
-
     GoRoute(
       path: AppRoutes.chatContacts.path,
-      builder: (context, state) {
-        return const ChatContactsScreen();
-      },
+      name: AppRoutes.chatContacts.name,
+      builder: (context, state) => const ChatContactsScreen(),
     ),
-
     GoRoute(
       path: AppRoutes.realChat.path,
+      name: AppRoutes.realChat.name,
       builder: (context, state) {
-        final args =
-            state.extra as Map<String, dynamic>? ?? {};
-
+        final extras = state.extra as Map<String, dynamic>;
         return RealChatScreen(
-          contactId:
-          args['contactId']?.toString() ?? '',
-          contactName:
-          args['contactName']?.toString() ??
-              'Contacto',
+          contactId: extras['contactId']?.toString() ?? '',
+          contactName: extras['contactName']?.toString() ?? 'Contacto',
         );
       },
     ),
 
-    // =========================================================
-    // ORIENTADOR
-    // =========================================================
+    // Games
+    GoRoute(
+      path: AppRoutes.games.path,
+      name: AppRoutes.games.name,
+      builder: (context, state) => const GamesListScreen(),
+    ),
 
+    // Counselor
     GoRoute(
       path: AppRoutes.counselorHome.path,
-      builder: (context, state) {
-        return const CounselorHomeScreen();
-      },
+      name: AppRoutes.counselorHome.name,
+      builder: (context, state) => const CounselorHomeScreen(),
     ),
-
     GoRoute(
       path: AppRoutes.counselorProfile.path,
-      builder: (context, state) {
-        return const CounselorProfileScreen();
-      },
+      name: AppRoutes.counselorProfile.name,
+      builder: (context, state) => const CounselorProfileScreen(),
     ),
 
-    GoRoute(
-      path: AppRoutes.vocationalMap.path,
-      builder: (context, state) {
-        return const VocationalMapScreen();
-      },
-    ),
-
-    GoRoute(
-      path: AppRoutes.studentFile.path,
-      builder: (context, state) {
-        final args =
-            state.extra as Map<String, dynamic>? ?? {};
-
-        return StudentFileScreen(
-          studentId:
-          args['studentId']?.toString() ?? '',
-          studentName:
-          args['studentName']?.toString() ??
-              'Estudiante',
-        );
-      },
-    ),
-
-    GoRoute(
-      path: AppRoutes.groupStudents.path,
-      builder: (context, state) {
-        final args =
-            state.extra as Map<String, dynamic>? ?? {};
-
-        return GroupStudentsScreen(
-          groupId:
-          args['groupId']?.toString() ?? '',
-          groupName:
-          args['groupName']?.toString() ??
-              'Grupo',
-        );
-      },
-    ),
-
-    GoRoute(
-      path: AppRoutes.counselorStudents.path,
-      builder: (context, state) {
-        return const CounselorStudentsScreen();
-      },
-    ),
-
-    // =========================================================
-    // ADMINISTRADOR
-    // =========================================================
-
-    GoRoute(
-      path: AppRoutes.adminHome.path,
-      builder: (context, state) {
-        return const AdminHomeScreen();
-      },
-    ),
-
-    // =========================================================
-    // ALUMNI
-    // =========================================================
-
-    GoRoute(
-      path: AppRoutes.alumniHome.path,
-      builder: (context, state) {
-        return const AlumniHomeScreen();
-      },
-    ),
-
-    GoRoute(
-      path: AppRoutes.alumniProfile.path,
-      builder: (context, state) {
-        return const AlumniProfileScreen();
-      },
-    ),
-
-    GoRoute(
-      path: AppRoutes.successStories.path,
-      builder: (context, state) {
-        return const SuccessStoriesScreen();
-      },
-    ),
-
-    GoRoute(
-      path: AppRoutes.alumniProfileForm.path,
-      builder: (context, state) {
-        return const AlumniProfileFormScreen();
-      },
-    ),
-
-    GoRoute(
-      path: AppRoutes.writeStory.path,
-      builder: (context, state) {
-        return const WriteStoryScreen();
-      },
-    ),
-
-    // =========================================================
-    // UNIVERSIDAD
-    // =========================================================
-
+    // University Admin
     GoRoute(
       path: AppRoutes.universityHome.path,
-      builder: (context, state) {
-        return const UniversityHomeScreen();
-      },
+      name: AppRoutes.universityHome.name,
+      builder: (context, state) => const UniversityHomeScreen(),
     ),
-
     GoRoute(
       path: AppRoutes.manageCareers.path,
-      builder: (context, state) {
-        return const ManageCareersScreen();
-      },
+      name: AppRoutes.manageCareers.name,
+      builder: (context, state) => const ManageCareersScreen(),
     ),
 
+    // Alumni Feature
     GoRoute(
-      path: AppRoutes.universityVerification.path,
-      builder: (context, state) {
-        return const UniversityVerificationScreen();
-      },
+      path: AppRoutes.alumniHome.path,
+      name: AppRoutes.alumniHome.name,
+      builder: (context, state) => const AlumniHomeScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.alumniProfile.path,
+      name: AppRoutes.alumniProfile.name,
+      builder: (context, state) => const AlumniProfileScreen(),
     ),
 
+    // Admin
     GoRoute(
-      path: AppRoutes.manageEvents.path,
-      builder: (context, state) {
-        return const ManageEventsScreen();
-      },
+      path: AppRoutes.adminHome.path,
+      name: AppRoutes.adminHome.name,
+      builder: (context, state) => const AdminHomeScreen(),
     ),
-
     GoRoute(
-      path: AppRoutes.manageAnnouncements.path,
-      builder: (context, state) {
-        return const ManageAnnouncementsScreen();
-      },
-    ),
-
-    GoRoute(
-      path: AppRoutes.manageAlumni.path,
-      builder: (context, state) {
-        return const ManageAlumniScreen();
-      },
+      path: AppRoutes.adminUsers.path,
+      name: AppRoutes.adminUsers.name,
+      builder: (context, state) => const UserManagementScreen(),
     ),
   ],
+  errorBuilder: (context, state) => Scaffold(
+    body: Center(
+      child: Text('Página no encontrada: ${state.error}'),
+    ),
+  ),
 );

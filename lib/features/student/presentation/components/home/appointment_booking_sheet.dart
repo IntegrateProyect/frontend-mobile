@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../../providers/student_home_provider.dart';
+import '../../providers/student_appointments_provider.dart';
 import '../common/student_ui_colors.dart';
 
 class AppointmentBookingSheet extends StatefulWidget {
@@ -66,7 +66,7 @@ class _AppointmentBookingSheetState
       _isSubmitting = true;
     });
 
-    final provider = context.read<StudentHomeProvider>();
+    final provider = context.read<StudentAppointmentsProvider>();
 
     final success = await provider.scheduleAppointment(
       sessionDate,
@@ -138,8 +138,6 @@ class _AppointmentBookingSheetState
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.bold,
-
-                    // Se cambió darkBlue porque no existe.
                     color: StudentUiColors.primary,
                   ),
                 ),

@@ -59,6 +59,7 @@ class _StudentProfileSetupScreenState extends State<StudentProfileSetupScreen> {
   }
 
   void _showSnack(String msg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -104,6 +105,7 @@ class _StudentProfileSetupScreenState extends State<StudentProfileSetupScreen> {
     if (success) {
       if (_wantsToJoinGroup && _groupCodeController.text.isNotEmpty) {
         await authProvider.joinStudentGroup(_groupCodeController.text.trim());
+        if (!mounted) return;
       }
       context.go(AppRoutes.home.path);
     } else {

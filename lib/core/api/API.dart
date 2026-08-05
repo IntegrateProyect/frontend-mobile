@@ -16,14 +16,6 @@ class API implements IApi {
     '',
   );
 
-  static final String _recommendationBaseUrl = (
-      dotenv.env['API_URL'] ??
-          'https://orientate-backend.shop/api/v1/recommendations'
-  ).replaceFirst(
-    RegExp(r'/$'),
-    '',
-  );
-
   Map<String, String> getHeaders([
     String? token,
   ]) {
@@ -715,13 +707,17 @@ class API implements IApi {
 
   @override
   Future<Map<String, dynamic>> getStudentCounselor(String token) async {
-    final result = await _request(
-      method: 'GET',
-      path: '/students/counselor',
-      token: token,
-    );
+    final url = '$_baseUrl/students/counselor';
+    final response = await http.get(Uri.parse(url), headers: getHeaders(token));
+    return processResponse(response);
+  }
 
-    return _asMap(result);
+  @override
+  Future<List<dynamic>> getCounselorAvailabilityForStudent(String token) async {
+    final url = '$_baseUrl/students/counselor/availability';
+    final response = await http.get(Uri.parse(url), headers: getHeaders(token));
+    final result = processResponse(response);
+    return result is List ? result : (result['data'] ?? []);
   }
 
   @override
@@ -852,43 +848,6 @@ class API implements IApi {
     return _asMap(result);
   }
 
-
-  @override
-  Future<void> updateStudentParents(
-      String token,
-      String studentId,
-      String? email1,
-      String? email2,
-      ) async {
-    await _request(
-      method: 'POST',
-      path: '/counselors/students/$studentId/parents',
-      token: token,
-      body: {
-        'email1': email1,
-        'email2': email2,
-      },
-    );
-  }
-
-  @override
-  Future<void> sendStudentReport(
-      String token,
-      String studentId,
-      List<String> emails,
-      String format,
-      ) async {
-    await _request(
-      method: 'POST',
-      path: '/counselors/students/$studentId/report/send',
-      token: token,
-      body: {
-        'emails': emails,
-        'format': format,
-      },
-    );
-  }
-
   @override
   Future<Map<String, dynamic>>
   registerSession(
@@ -973,6 +932,48 @@ class API implements IApi {
     );
 
     return _mapFromData(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> saveAvailability(
+      String token,
+      Map<String, dynamic> data,
+      ) async {
+    final result = await _request(
+      method: 'POST',
+      path: '/counselors/availability',
+      token: token,
+      body: data,
+    );
+    return _asMap(result);
+  }
+
+  @override
+  Future<List<dynamic>> getOwnAvailability(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/counselors/availability',
+      token: token,
+    );
+    return _asList(result, keys: const ['data', 'availability']);
+  }
+
+  @override
+  Future<List<dynamic>> getCounselorAvailability(String token) {
+    return getOwnAvailability(token);
+  }
+
+  @override
+  Future<void> saveCounselorAvailability(
+      String token,
+      List<Map<String, dynamic>> slots,
+      ) async {
+    await saveAvailability(
+      token,
+      <String, dynamic>{
+        'availability': slots,
+      },
+    );
   }
 
   @override
@@ -1088,36 +1089,6 @@ class API implements IApi {
     return _asMap(result);
   }
 
-  @override
-  Future<List<dynamic>> getPendingSuccessStories(String token) async {
-    final result = await _request(
-      method: 'GET',
-      path: '/university/stories/pending',
-      token: token,
-    );
-    return _asList(result);
-  }
-
-  @override
-  Future<Map<String, dynamic>> approveSuccessStory(String token, String storyId) async {
-    final result = await _request(
-      method: 'POST',
-      path: '/university/stories/$storyId/approve',
-      token: token,
-    );
-    return _asMap(result);
-  }
-
-  @override
-  Future<Map<String, dynamic>> rejectSuccessStory(String token, String storyId) async {
-    final result = await _request(
-      method: 'POST',
-      path: '/university/stories/$storyId/reject',
-      token: token,
-    );
-    return _asMap(result);
-  }
-
   // ==========================================================
   // CHAT
   // ==========================================================
@@ -1179,11 +1150,10 @@ class API implements IApi {
   }
 
   @override
-  Future<List<dynamic>> getGames(String token) async {
+  Future<List<dynamic>> getGames() async {
     final result = await _request(
       method: 'GET',
       path: '/games',
-      token: token,
     );
 
     return _asList(
@@ -1262,11 +1232,7 @@ class API implements IApi {
       String gameId,
       Map<String, dynamic> data,
       ) async {
-    /*
-     * Es importante procesar la respuesta.
-     * Antes solamente se ejecutaba el POST y un error
-     * 400/401/500 podía pasar sin ser detectado.
-     */
+
     await _request(
       method: 'POST',
       path: '/games/$gameId/answers',
@@ -1308,42 +1274,6 @@ class API implements IApi {
         'results',
       ],
     );
-  }
-
-  // ==========================================================
-  // RECOMENDACIONES VOCACIONALES
-  // ==========================================================
-
-  // ==========================================================
-// RECOMENDACIONES VOCACIONALES
-// ==========================================================
-
-  @override
-  Future<Map<String, dynamic>> generateRecommendations(
-      String token, {
-        int topN = 5,
-      }) async {
-    if (token.trim().isEmpty) {
-      throw Exception(
-        'No hay una sesión activa para generar recomendaciones',
-      );
-    }
-
-    final int safeTopN = topN.clamp(1, 20).toInt();
-
-    final dynamic result = await _request(
-      method: 'POST',
-      path: '/recommendations',
-      token: token,
-      queryParameters: {
-        'top_n': safeTopN.toString(),
-      },
-      logData: {
-        'top_n': safeTopN,
-      },
-    );
-
-    return _asMap(result);
   }
 
   // ==========================================================
@@ -1414,14 +1344,17 @@ class API implements IApi {
   Future<List<dynamic>> getAvailableCatalogCareers(String token) async {
     final result = await _request(
       method: 'GET',
-      path: '/catalog/universities/available-careers',
+      path: '/catalog/careers/available',
       token: token,
     );
-    return _asList(result, keys: const ['data']);
+    return _asList(result, keys: const ['data', 'careers']);
   }
 
   @override
-  Future<Map<String, dynamic>> createCustomUniversityCareer(String token, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> createCustomUniversityCareer(
+      String token,
+      Map<String, dynamic> data,
+      ) async {
     final result = await _request(
       method: 'POST',
       path: '/catalog/universities/careers/custom',
@@ -1515,7 +1448,7 @@ class API implements IApi {
       path: '/catalog/events',
       token: token,
     );
-    return _asList(result, keys: const ['data']);
+    return _asList(result, keys: const ['data', 'events']);
   }
 
   @override
@@ -1549,17 +1482,6 @@ class API implements IApi {
     );
   }
 
-  // --- 📢 ANUNCIOS / CONVOCATORIAS ---
-  @override
-  Future<List<dynamic>> getStudentAnnouncements(String token) async {
-    final result = await _request(
-      method: 'GET',
-      path: '/catalog/announcements',
-      token: token,
-    );
-    return _asList(result, keys: const ['data']);
-  }
-
   @override
   Future<List<dynamic>> getUniversityAnnouncements(String token) async {
     final result = await _request(
@@ -1568,6 +1490,16 @@ class API implements IApi {
       token: token,
     );
     return _asList(result, keys: const ['data']);
+  }
+
+  @override
+  Future<List<dynamic>> getStudentAnnouncements(String token) async {
+    final result = await _request(
+      method: 'GET',
+      path: '/students/announcements',
+      token: token,
+    );
+    return _asList(result, keys: const ['data', 'announcements']);
   }
 
   @override
@@ -1600,83 +1532,188 @@ class API implements IApi {
       token: token,
     );
   }
-
-  // --- 🎓 GESTIÓN DE EGRESADOS (ALUMNI) ---
-  @override
-  Future<List<dynamic>> getUniversityAlumni(String token) async {
-    final result = await _request(
-      method: 'GET',
-      path: '/university/alumni',
-      token: token,
-    );
-    return _asList(result, keys: const ['data']);
-  }
+  // ==========================================================
+// PAGOS
+// ==========================================================
 
   @override
-  Future<Map<String, dynamic>> createUniversityAlumni(String token, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> createPaymentPreference(
+      String token,
+      Map<String, dynamic> data,
+      ) async {
     final result = await _request(
       method: 'POST',
-      path: '/university/alumni',
+      path: '/payments/create-preference',
       token: token,
       body: data,
     );
+
     return _asMap(result);
   }
-
-  @override
-  Future<Map<String, dynamic>> updateUniversityAlumni(String token, String alumniId, Map<String, dynamic> data) async {
-    final result = await _request(
-      method: 'PUT',
-      path: '/university/alumni/$alumniId',
-      token: token,
-      body: data,
-    );
-    return _asMap(result);
-  }
-
-  @override
-  Future<void> deleteUniversityAlumni(String token, String alumniId) async {
-    await _request(
-      method: 'DELETE',
-      path: '/university/alumni/$alumniId',
-      token: token,
-    );
-  }
-// ============================================================
-// ORIENTADOR - ELIMINAR GRUPO
-// ============================================================
-
   @override
   Future<void> deleteGroup(
       String token,
       String groupId,
       ) async {
-    final cleanGroupId = groupId.trim();
-
-    if (cleanGroupId.isEmpty) {
-      throw Exception(
-        'El identificador del grupo está vacío.',
+    if (groupId.trim().isEmpty) {
+      throw ArgumentError(
+        'El identificador del grupo es obligatorio',
       );
     }
 
     await _request(
       method: 'DELETE',
-      path: '/counselors/groups/$cleanGroupId',
+      path: '/counselors/groups/${groupId.trim()}',
       token: token,
     );
   }
 
-// ============================================================
-// ORIENTADOR - OBTENER DISPONIBILIDAD
-// ============================================================
+  @override
+  Future<void> updateStudentParents(
+      String token,
+      String studentId,
+      String? email1,
+      String? email2,
+      ) async {
+    if (studentId.trim().isEmpty) {
+      throw ArgumentError(
+        'El identificador del estudiante es obligatorio',
+      );
+    }
+
+    final body = <String, dynamic>{};
+
+    final cleanEmail1 = email1?.trim() ?? '';
+    final cleanEmail2 = email2?.trim() ?? '';
+
+    if (cleanEmail1.isNotEmpty) {
+      body['email1'] = cleanEmail1;
+    }
+
+    if (cleanEmail2.isNotEmpty) {
+      body['email2'] = cleanEmail2;
+    }
+
+    await _request(
+      method: 'PUT',
+      path:
+      '/counselors/students/${studentId.trim()}/parents',
+      token: token,
+      body: body,
+    );
+  }
+
+// ==========================================================
+// ENVIAR REPORTE DEL ESTUDIANTE
+// ==========================================================
 
   @override
-  Future<List<dynamic>> getCounselorAvailability(
+  Future<void> sendStudentReport(
+      String token,
+      String studentId,
+      List<String> emails,
+      String format,
+      ) async {
+    if (studentId.trim().isEmpty) {
+      throw ArgumentError(
+        'El identificador del estudiante es obligatorio',
+      );
+    }
+
+    final cleanEmails = emails
+        .map((email) => email.trim())
+        .where((email) => email.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (cleanEmails.isEmpty) {
+      throw ArgumentError(
+        'Debes proporcionar al menos un correo',
+      );
+    }
+
+    await _request(
+      method: 'POST',
+      path:
+      '/counselors/students/${studentId.trim()}/report',
+      token: token,
+      body: {
+        'emails': cleanEmails,
+        'format': format.trim().isEmpty
+            ? 'pdf'
+            : format.trim().toLowerCase(),
+      },
+    );
+  }
+
+  // ==========================================================
+  // RECOMENDACIONES VOCACIONALES
+  // ==========================================================
+
+  @override
+  Future<Map<String, dynamic>> generateRecommendations(
+      String token, {
+        int topN = 5,
+      }) async {
+    if (token.trim().isEmpty) {
+      throw ArgumentError(
+        'El token de autenticación es obligatorio',
+      );
+    }
+
+    final safeTopN = topN.clamp(1, 20).toInt();
+
+    final result = await _request(
+      method: 'POST',
+      path: '/recommendations',
+      token: token,
+      queryParameters: {
+        'top_n': safeTopN.toString(),
+      },
+    );
+
+    final response = _asMap(result);
+
+    if (response.isEmpty) {
+      throw const FormatException(
+        'El servicio de recomendaciones devolvió una respuesta inválida',
+      );
+    }
+
+    return response;
+  }
+
+  // ==========================================================
+  // EGRESADOS DE UNIVERSIDAD Y MODERACIÓN DE HISTORIAS
+  // ==========================================================
+
+  @override
+  Future<void> deleteUniversityAlumni(
+      String token,
+      String alumniId,
+      ) async {
+    final cleanAlumniId = alumniId.trim();
+
+    if (cleanAlumniId.isEmpty) {
+      throw ArgumentError(
+        'El identificador del egresado es obligatorio',
+      );
+    }
+
+    await _request(
+      method: 'DELETE',
+      path: '/catalog/universities/alumni/$cleanAlumniId',
+      token: token,
+    );
+  }
+
+  @override
+  Future<List<dynamic>> getUniversityAlumni(
       String token,
       ) async {
-    final dynamic result = await _request(
+    final result = await _request(
       method: 'GET',
-      path: '/counselors/availability',
+      path: '/catalog/universities/alumni',
       token: token,
     );
 
@@ -1684,57 +1721,58 @@ class API implements IApi {
       result,
       keys: const [
         'data',
-        'slots',
-        'availability',
+        'alumni',
+        'graduates',
       ],
     );
   }
 
-// ============================================================
-// ORIENTADOR - GUARDAR DISPONIBILIDAD
-// ============================================================
-
   @override
-  Future<Map<String, dynamic>> saveCounselorAvailability(
+  Future<Map<String, dynamic>> createUniversityAlumni(
       String token,
-      List<Map<String, dynamic>> slots,
+      Map<String, dynamic> data,
       ) async {
-    final List<Map<String, dynamic>> cleanSlots =
-    slots.map((slot) {
-      return {
-        'dayOfWeek': slot['dayOfWeek'],
-        'startTime': _normalizeTime(
-          slot['startTime'],
-        ),
-        'endTime': _normalizeTime(
-          slot['endTime'],
-        ),
-      };
-    }).toList();
-
-    final dynamic result = await _request(
+    final result = await _request(
       method: 'POST',
-      path: '/counselors/availability',
+      path: '/catalog/universities/alumni',
       token: token,
-      body: {
-        'slots': cleanSlots,
-      },
+      body: data,
     );
 
     return _asMap(result);
   }
 
-// ============================================================
-// ESTUDIANTE - DISPONIBILIDAD DE SU ORIENTADOR
-// ============================================================
+  @override
+  Future<Map<String, dynamic>> updateUniversityAlumni(
+      String token,
+      String alumniId,
+      Map<String, dynamic> data,
+      ) async {
+    final cleanAlumniId = alumniId.trim();
+
+    if (cleanAlumniId.isEmpty) {
+      throw ArgumentError(
+        'El identificador del egresado es obligatorio',
+      );
+    }
+
+    final result = await _request(
+      method: 'PUT',
+      path: '/catalog/universities/alumni/$cleanAlumniId',
+      token: token,
+      body: data,
+    );
+
+    return _asMap(result);
+  }
 
   @override
-  Future<List<dynamic>> getStudentCounselorAvailability(
+  Future<List<dynamic>> getPendingSuccessStories(
       String token,
       ) async {
-    final dynamic result = await _request(
+    final result = await _request(
       method: 'GET',
-      path: '/students/counselor/availability',
+      path: '/catalog/universities/success-stories/pending',
       token: token,
     );
 
@@ -1742,41 +1780,55 @@ class API implements IApi {
       result,
       keys: const [
         'data',
-        'slots',
-        'availability',
+        'stories',
+        'successStories',
       ],
     );
   }
 
-// ============================================================
-// UTILIDAD PARA HORARIOS
-// ============================================================
-
-  String _normalizeTime(dynamic value) {
-    final String time = (value ?? '')
-        .toString()
-        .trim();
-
-    if (time.isEmpty) {
-      return '';
-    }
-
-    // El backend recibe HH:mm.
-    // Si devuelve HH:mm:ss, se eliminan los segundos.
-    if (time.length >= 5) {
-      return time.substring(0, 5);
-    }
-
-    return time;
-  }
   @override
-  Future<Map<String, dynamic>> createPaymentPreference(String token, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> approveSuccessStory(
+      String token,
+      String storyId,
+      ) async {
+    final cleanStoryId = storyId.trim();
+
+    if (cleanStoryId.isEmpty) {
+      throw ArgumentError(
+        'El identificador de la historia es obligatorio',
+      );
+    }
+
     final result = await _request(
-      method: 'POST',
-      path: '/payments/preference',
+      method: 'PATCH',
+      path:
+      '/catalog/universities/success-stories/$cleanStoryId/approve',
       token: token,
-      body: data,
     );
+
+    return _asMap(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> rejectSuccessStory(
+      String token,
+      String storyId,
+      ) async {
+    final cleanStoryId = storyId.trim();
+
+    if (cleanStoryId.isEmpty) {
+      throw ArgumentError(
+        'El identificador de la historia es obligatorio',
+      );
+    }
+
+    final result = await _request(
+      method: 'PATCH',
+      path:
+      '/catalog/universities/success-stories/$cleanStoryId/reject',
+      token: token,
+    );
+
     return _asMap(result);
   }
 }
