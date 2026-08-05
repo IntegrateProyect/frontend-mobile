@@ -8,14 +8,14 @@ import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 
-import 'auth_validators.dart';
-import 'auth_error_helper.dart';
-import 'auth_role_helper.dart';
-import 'auth_session_service.dart';
-import 'student_account_service.dart';
 import 'auth_avatar_service.dart';
+import 'auth_error_helper.dart';
 import 'auth_password_service.dart';
 import 'auth_payment_service.dart';
+import 'auth_role_helper.dart';
+import 'auth_session_service.dart';
+import 'auth_validators.dart';
+import 'student_account_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUseCase;
@@ -59,9 +59,13 @@ class AuthProvider extends ChangeNotifier {
   // =========================================================
 
   UserEntity? get user => _user;
+
   bool get isLoading => _isLoading;
+
   bool get sessionChecked => _sessionChecked;
+
   bool get isAuthenticated => _user != null;
+
   String? get errorMessage => _errorMessage;
 
   // =========================================================
@@ -75,11 +79,14 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final restoredUser = await _sessionService.restoreSession();
+
       _user = restoredUser;
+
       return restoredUser != null;
     } catch (error) {
       _user = null;
       _errorMessage = null;
+
       return false;
     } finally {
       _sessionChecked = true;
@@ -113,33 +120,40 @@ class AuthProvider extends ChangeNotifier {
   // INICIAR SESIÓN
   // =========================================================
 
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(
+      String email,
+      String password,
+      ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       final normalizedEmail = email.trim().toLowerCase();
-      final emailError = AuthValidators.validateEmail(normalizedEmail);
+
+      final emailError = AuthValidators.validateEmail(
+        normalizedEmail,
+      );
 
       if (emailError != null) {
         throw Exception(emailError);
       }
 
       if (password.isEmpty) {
-        throw Exception('La contraseña es obligatoria');
+        throw Exception(
+          'La contraseña es obligatoria',
+        );
       }
 
-      _user = await _loginUseCase(normalizedEmail, password);
-
-      if (_user == null) {
-        throw Exception('No fue posible obtener los datos del usuario');
-      }
+      _user = await _loginUseCase(
+        normalizedEmail,
+        password,
+      );
 
       return true;
     } catch (error) {
-      _user = null;
       _errorMessage = AuthErrorHelper.cleanError(error);
+
       return false;
     } finally {
       _isLoading = false;
@@ -148,7 +162,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // =========================================================
-  // REGISTRO
+  // REGISTRAR USUARIO
   // =========================================================
 
   Future<bool> register({
@@ -171,20 +185,42 @@ class AuthProvider extends ChangeNotifier {
       final normalizedName = name.trim();
       final normalizedRole = AuthRoleHelper.normalizeRole(role);
 
-      final nameError = AuthValidators.validateName(normalizedName);
-      if (nameError != null) throw Exception(nameError);
+      final nameError = AuthValidators.validateName(
+        normalizedName,
+      );
 
-      final emailError = AuthValidators.validateEmail(normalizedEmail);
-      if (emailError != null) throw Exception(emailError);
+      if (nameError != null) {
+        throw Exception(nameError);
+      }
 
-      final passwordError = AuthValidators.validatePassword(password);
-      if (passwordError != null) throw Exception(passwordError);
+      final emailError = AuthValidators.validateEmail(
+        normalizedEmail,
+      );
 
-      final roleError = AuthValidators.validateRole(normalizedRole);
-      if (roleError != null) throw Exception(roleError);
+      if (emailError != null) {
+        throw Exception(emailError);
+      }
+
+      final passwordError = AuthValidators.validatePassword(
+        password,
+      );
+
+      if (passwordError != null) {
+        throw Exception(passwordError);
+      }
+
+      final roleError = AuthValidators.validateRole(
+        normalizedRole,
+      );
+
+      if (roleError != null) {
+        throw Exception(roleError);
+      }
 
       if (!privacyAccepted) {
-        throw Exception('Debes aceptar el aviso de privacidad para poder registrarte.');
+        throw Exception(
+          'Debes aceptar el aviso de privacidad para poder registrarte.',
+        );
       }
 
       _user = await _registerUseCase(
@@ -198,22 +234,62 @@ class AuthProvider extends ChangeNotifier {
       );
 
       final token = await _userService.getToken();
+
       if (token == null || token.isEmpty) {
-        throw Exception('No se encontró el token después del registro');
+        throw Exception(
+          'No se encontró el token después del registro',
+        );
       }
 
       if (normalizedRole == 'orientador') {
-        if (additionalData == null) throw Exception('Faltan datos del orientador');
-        final group = additionalData['group'];
-        if (group is Map) {
-          await _api.createGroup(token, Map<String, dynamic>.from(group));
+        if (additionalData == null) {
+          throw Exception(
+            'Faltan datos del orientador',
+          );
         }
+
+        final group = additionalData['group'];
+
+        if (group is Map) {
+          await _api.createGroup(
+            token,
+            Map<String, dynamic>.from(group),
+          );
+        }
+      }
+
+      /*
+       * Si el registro corresponde a un estudiante y se recibió
+       * un perfil vocacional, se crea después del registro.
+       */
+      if (normalizedRole == 'estudiante' &&
+          studentProfile != null &&
+          studentProfile.isNotEmpty) {
+        await _studentService.createStudentVocationalProfile(
+          studentProfile,
+        );
+      }
+
+      /*
+       * Si también se recibió un código de acceso, se intenta
+       * unir al estudiante al grupo.
+       */
+      if (normalizedRole == 'estudiante' &&
+          accessCode != null &&
+          accessCode.trim().isNotEmpty) {
+        await _studentService.joinStudentGroup(
+          accessCode.trim(),
+        );
       }
 
       return true;
     } catch (error) {
-      debugPrint('Error durante el registro: $error');
+      debugPrint(
+        'Error durante el registro: $error',
+      );
+
       _errorMessage = AuthErrorHelper.cleanError(error);
+
       return false;
     } finally {
       _isLoading = false;
@@ -231,10 +307,10 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final exists = await _studentService.studentProfileExists();
-      return exists;
+      return await _studentService.studentProfileExists();
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+
       return null;
     } finally {
       _isLoading = false;
@@ -246,15 +322,20 @@ class AuthProvider extends ChangeNotifier {
   // CREAR PERFIL VOCACIONAL
   // =========================================================
 
-  Future<bool> createStudentVocationalProfile(Map<String, dynamic> profile) async {
+  Future<bool> createStudentVocationalProfile(
+      Map<String, dynamic> profile,
+      ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      return await _studentService.createStudentVocationalProfile(profile);
+      return await _studentService.createStudentVocationalProfile(
+        profile,
+      );
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+
       return false;
     } finally {
       _isLoading = false;
@@ -266,15 +347,28 @@ class AuthProvider extends ChangeNotifier {
   // UNIRSE A GRUPO
   // =========================================================
 
-  Future<bool> joinStudentGroup(String accessCode) async {
+  Future<bool> joinStudentGroup(
+      String accessCode,
+      ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      return await _studentService.joinStudentGroup(accessCode);
+      final normalizedCode = accessCode.trim();
+
+      if (normalizedCode.isEmpty) {
+        throw Exception(
+          'El código de acceso es obligatorio',
+        );
+      }
+
+      return await _studentService.joinStudentGroup(
+        normalizedCode,
+      );
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+
       return false;
     } finally {
       _isLoading = false;
@@ -286,16 +380,28 @@ class AuthProvider extends ChangeNotifier {
   // ACTUALIZAR AVATAR
   // =========================================================
 
-  Future<bool> updateAvatar(Uint8List imageBytes) async {
+  Future<bool> updateAvatar(
+      Uint8List imageBytes,
+      ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _user = await _avatarService.updateAvatar(imageBytes);
+      if (imageBytes.isEmpty) {
+        throw Exception(
+          'La imagen seleccionada está vacía',
+        );
+      }
+
+      _user = await _avatarService.updateAvatar(
+        imageBytes,
+      );
+
       return true;
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+
       return false;
     } finally {
       _isLoading = false;
@@ -304,15 +410,37 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> updateAvatarFromGallery() async {
-    final bytes = await _avatarService.pickImageFromGallery();
-    if (bytes == null) return false;
-    return updateAvatar(bytes);
+    try {
+      final bytes = await _avatarService.pickImageFromGallery();
+
+      if (bytes == null) {
+        return false;
+      }
+
+      return updateAvatar(bytes);
+    } catch (error) {
+      _errorMessage = AuthErrorHelper.cleanError(error);
+      notifyListeners();
+
+      return false;
+    }
   }
 
   Future<bool> updateAvatarFromCamera() async {
-    final bytes = await _avatarService.takePhoto();
-    if (bytes == null) return false;
-    return updateAvatar(bytes);
+    try {
+      final bytes = await _avatarService.takePhoto();
+
+      if (bytes == null) {
+        return false;
+      }
+
+      return updateAvatar(bytes);
+    } catch (error) {
+      _errorMessage = AuthErrorHelper.cleanError(error);
+      notifyListeners();
+
+      return false;
+    }
   }
 
   // =========================================================
@@ -340,15 +468,30 @@ class AuthProvider extends ChangeNotifier {
   // RECUPERAR CONTRASEÑA
   // =========================================================
 
-  Future<bool> recoverPassword(String email) async {
+  Future<bool> recoverPassword(
+      String email,
+      ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      return await _passwordService.recoverPassword(email);
+      final normalizedEmail = email.trim().toLowerCase();
+
+      final emailError = AuthValidators.validateEmail(
+        normalizedEmail,
+      );
+
+      if (emailError != null) {
+        throw Exception(emailError);
+      }
+
+      return await _passwordService.recoverPassword(
+        normalizedEmail,
+      );
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+
       return false;
     } finally {
       _isLoading = false;
@@ -360,15 +503,36 @@ class AuthProvider extends ChangeNotifier {
   // RESTABLECER CONTRASEÑA
   // =========================================================
 
-  Future<bool> resetPassword(String token, String newPassword) async {
+  Future<bool> resetPassword(
+      String token,
+      String newPassword,
+      ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      return await _passwordService.resetPassword(token, newPassword);
+      if (token.trim().isEmpty) {
+        throw Exception(
+          'El token para restablecer la contraseña no es válido',
+        );
+      }
+
+      final passwordError = AuthValidators.validatePassword(
+        newPassword,
+      );
+
+      if (passwordError != null) {
+        throw Exception(passwordError);
+      }
+
+      return await _passwordService.resetPassword(
+        token.trim(),
+        newPassword,
+      );
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+
       return false;
     } finally {
       _isLoading = false;
@@ -381,17 +545,21 @@ class AuthProvider extends ChangeNotifier {
   // =========================================================
 
   Future<String?> createPaymentPreference(
-    double amount, {
-    String paymentMethod = 'card',
-  }) async {
+      double amount, {
+        String paymentMethod = 'card',
+      }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      return await _paymentService.createPaymentPreference(amount, paymentMethod: paymentMethod);
+      return await _paymentService.createPaymentPreference(
+        amount,
+        paymentMethod: paymentMethod,
+      );
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+
       return null;
     } finally {
       _isLoading = false;
@@ -405,7 +573,10 @@ class AuthProvider extends ChangeNotifier {
 
   void setPremium(bool value) {
     final currentUser = _user;
-    if (currentUser == null) return;
+
+    if (currentUser == null) {
+      return;
+    }
 
     _user = UserEntity(
       id: currentUser.id,

@@ -16,14 +16,18 @@ abstract class IApi {
       Map<String, dynamic> data,
       );
 
-  Future<Map<String, dynamic>> getMe(String token);
+  Future<Map<String, dynamic>> getMe(
+      String token,
+      );
 
   Future<Map<String, dynamic>> updateProfile(
       String token,
       Map<String, dynamic> data,
       );
 
-  Future<void> logout(String token);
+  Future<void> logout(
+      String token,
+      );
 
   Future<Map<String, dynamic>> recoverPassword(
       String email,
@@ -34,7 +38,9 @@ abstract class IApi {
       String newPassword,
       );
 
-  Future<Map<String, dynamic>> getRoles(String token);
+  Future<Map<String, dynamic>> getRoles(
+      String token,
+      );
 
   Future<Map<String, dynamic>> updateUserRole(
       String token,
@@ -43,7 +49,7 @@ abstract class IApi {
       );
 
   // ============================================================
-  // AVATAR
+  // AVATAR (AWS S3)
   // ============================================================
 
   Future<Map<String, dynamic>> getAvatarUploadUrl(
@@ -68,7 +74,9 @@ abstract class IApi {
       String token,
       );
 
-  Future<List<dynamic>> getAllUsers(String token);
+  Future<List<dynamic>> getAllUsers(
+      String token,
+      );
 
   Future<Map<String, dynamic>> toggleUserStatus(
       String token,
@@ -119,14 +127,9 @@ abstract class IApi {
       String token,
       );
 
-  /// POST /recommendations/?top_n=5
-  ///
-  /// Consume el microservicio de recomendaciones usando
-  /// el mismo JWT del alumno autenticado.
-  Future<Map<String, dynamic>> generateRecommendations(
-      String token, {
-        int topN = 5,
-      });
+  Future<List<dynamic>> getCounselorAvailabilityForStudent(
+      String token,
+      );
 
   // ============================================================
   // CITAS DEL ESTUDIANTE
@@ -141,14 +144,8 @@ abstract class IApi {
       String token,
       );
 
-  /// Permite que el estudiante consulte la disponibilidad
-  /// del orientador asignado a su grupo.
-  Future<List<dynamic>> getStudentCounselorAvailability(
-      String token,
-      );
-
   // ============================================================
-  // ORIENTADORES - GRUPOS
+  // ORIENTADORES
   // ============================================================
 
   Future<Map<String, dynamic>> createGroup(
@@ -156,7 +153,9 @@ abstract class IApi {
       Map<String, dynamic> data,
       );
 
-  Future<List<dynamic>> getGroups(String token);
+  Future<List<dynamic>> getGroups(
+      String token,
+      );
 
   Future<Map<String, dynamic>> getGroupDetail(
       String token,
@@ -169,20 +168,10 @@ abstract class IApi {
       Map<String, dynamic> data,
       );
 
-  /// Elimina el grupo, pero no elimina las cuentas de sus alumnos.
-  Future<void> deleteGroup(
-      String token,
-      String groupId,
-      );
-
   Future<List<dynamic>> getGroupStudents(
       String token,
       String groupId,
       );
-
-  // ============================================================
-  // ORIENTADORES - ALUMNOS
-  // ============================================================
 
   Future<Map<String, dynamic>> getStudentFile(
       String token,
@@ -200,21 +189,6 @@ abstract class IApi {
       Map<String, dynamic> data,
       );
 
-  Future<void> updateStudentParents(
-      String token,
-      String studentId,
-      String? email1,
-      String? email2,
-      );
-
-  Future<void> sendStudentReport(
-      String token,
-      String studentId,
-      List<String> emails,
-      String format,
-      );
-
-
   Future<List<dynamic>> getCounselorStudents(
       String token,
       );
@@ -228,7 +202,29 @@ abstract class IApi {
       );
 
   // ============================================================
-  // CITAS DEL ORIENTADOR (CRUD)
+  // DISPONIBILIDAD DEL ORIENTADOR
+  // ============================================================
+
+  Future<Map<String, dynamic>> saveAvailability(
+      String token,
+      Map<String, dynamic> data,
+      );
+
+  Future<List<dynamic>> getOwnAvailability(
+      String token,
+      );
+
+  Future<List<dynamic>> getCounselorAvailability(
+      String token,
+      );
+
+  Future<void> saveCounselorAvailability(
+      String token,
+      List<Map<String, dynamic>> slots,
+      );
+
+  // ============================================================
+  // CITAS DEL ORIENTADOR
   // ============================================================
 
   Future<List<dynamic>> getCounselorAppointments(
@@ -257,22 +253,7 @@ abstract class IApi {
       );
 
   // ============================================================
-  // DISPONIBILIDAD DEL ORIENTADOR
-  // ============================================================
-
-  /// GET /counselors/availability
-  Future<List<dynamic>> getCounselorAvailability(
-      String token,
-      );
-
-  /// POST /counselors/availability
-  Future<Map<String, dynamic>> saveCounselorAvailability(
-      String token,
-      List<Map<String, dynamic>> slots,
-      );
-
-  // ============================================================
-  // ALUMNI
+  // ALUMNI / EGRESADOS
   // ============================================================
 
   Future<Map<String, dynamic>> getAlumniProfile(
@@ -314,9 +295,7 @@ abstract class IApi {
 
   Future<Map<String, dynamic>> checkGamesHealth();
 
-  Future<List<dynamic>> getGames(
-      String token,
-      );
+  Future<List<dynamic>> getGames();
 
   Future<Map<String, dynamic>> getGameDetail(
       String token,
@@ -327,13 +306,6 @@ abstract class IApi {
       String token,
       String gameId,
       );
-
-  Future<Map<String, dynamic>> getCatalogUniversities(
-      String token, {
-        int page = 1,
-        int limit = 20,
-        String search = '',
-      });
 
   Future<Map<String, dynamic>> startGame(
       String token,
@@ -357,8 +329,15 @@ abstract class IApi {
       );
 
   // ============================================================
-  // UNIVERSIDADES
+  // CATÁLOGO DE UNIVERSIDADES Y CARRERAS
   // ============================================================
+
+  Future<Map<String, dynamic>> getCatalogUniversities(
+      String token, {
+        int page = 1,
+        int limit = 20,
+        String search = '',
+      });
 
   Future<List<dynamic>> getCatalogCareers(
       String token,
@@ -372,6 +351,10 @@ abstract class IApi {
       String token,
       Map<String, dynamic> data,
       );
+
+  // ============================================================
+  // UNIVERSIDAD REPRESENTANTE
+  // ============================================================
 
   Future<Map<String, dynamic>> claimUniversity(
       String token, {
@@ -398,6 +381,10 @@ abstract class IApi {
       String token,
       String careerId,
       );
+
+  // ============================================================
+  // EVENTOS DE UNIVERSIDAD
+  // ============================================================
 
   Future<Map<String, dynamic>> getEventPresignedUrl(
       String token, {
@@ -429,7 +416,7 @@ abstract class IApi {
       );
 
   // ============================================================
-  // ANUNCIOS
+  // ANUNCIOS Y CONVOCATORIAS
   // ============================================================
 
   Future<List<dynamic>> getStudentAnnouncements(
@@ -455,10 +442,45 @@ abstract class IApi {
       String token,
       String announcementId,
       );
+  Future<Map<String, dynamic>> createPaymentPreference(
+      String token,
+      Map<String, dynamic> data,
+      );
+  Future<void> deleteGroup(
+      String token,
+      String groupId,
+      );
+  Future<void> updateStudentParents(
+      String token,
+      String studentId,
+      String? email1,
+      String? email2,
+      );
+
+  Future<void> sendStudentReport(
+      String token,
+      String studentId,
+      List<String> emails,
+      String format,
+      );
 
   // ============================================================
-  // EGRESADOS DE UNIVERSIDAD
+  // RECOMENDACIONES VOCACIONALES
   // ============================================================
+
+  Future<Map<String, dynamic>> generateRecommendations(
+      String token, {
+        int topN = 5,
+      });
+
+  // ============================================================
+  // EGRESADOS DE UNIVERSIDAD Y MODERACIÓN DE HISTORIAS
+  // ============================================================
+
+  Future<void> deleteUniversityAlumni(
+      String token,
+      String alumniId,
+      );
 
   Future<List<dynamic>> getUniversityAlumni(
       String token,
@@ -475,11 +497,6 @@ abstract class IApi {
       Map<String, dynamic> data,
       );
 
-  Future<void> deleteUniversityAlumni(
-      String token,
-      String alumniId,
-      );
-
   Future<List<dynamic>> getPendingSuccessStories(
       String token,
       );
@@ -492,14 +509,5 @@ abstract class IApi {
   Future<Map<String, dynamic>> rejectSuccessStory(
       String token,
       String storyId,
-      );
-
-  // ============================================================
-  // PAGOS
-  // ============================================================
-
-  Future<Map<String, dynamic>> createPaymentPreference(
-      String token,
-      Map<String, dynamic> data,
       );
 }
