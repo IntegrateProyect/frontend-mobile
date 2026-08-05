@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/vocational_mini_game_entity.dart';
 
-enum MiniGameStatus { notStarted, inProgress, completed }
+// Definición local eliminada para usar la de vocational_mini_game_entity.dart
 
 class GamePersistenceProvider extends ChangeNotifier {
   final Map<String, MiniGameStatus> _miniGameStatus = {};

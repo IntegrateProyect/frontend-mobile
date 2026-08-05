@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../presentation/providers/counselor_provider.dart';
+
+import '../../providers/counselor_provider.dart';
 import 'counselor_home_shared_widgets.dart';
 
 class CounselorGroupsTabView extends StatelessWidget {

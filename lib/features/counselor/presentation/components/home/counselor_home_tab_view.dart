@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
-import '../../domain/entities/appointment_entity.dart';
-import '../../domain/entities/student_consultation_entity.dart';
-import '../providers/counselor_provider.dart';
+
+import '../../../domain/entities/appointment_entity.dart';
+import '../../../domain/entities/student_consultation_entity.dart';
+import '../../providers/counselor_provider.dart';
 import 'counselor_home_shared_widgets.dart';
 
 class CounselorHomeTabView extends StatelessWidget {
@@ -89,7 +90,7 @@ class CounselorHomeTabView extends StatelessWidget {
   Widget _hero() {
     final name = provider.profile?.name.trim() ?? '';
     final firstName =
-        name.isEmpty ? 'orientador' : name.split(RegExp(r'\s+')).first;
+    name.isEmpty ? 'orientador' : name.split(RegExp(r'\s+')).first;
 
     return Container(
       padding: EdgeInsets.all(20.w),
@@ -313,13 +314,13 @@ class CounselorHomeTabView extends StatelessWidget {
     );
   }
 
-  Widget _metric(
-    int value,
-    String label,
-    IconData icon,
-    Color color,
+  Widget _metric({
+    required int value,
+    required String label,
+    required IconData icon,
+    required Color color,
     VoidCallback? onTap,
-  ) {
+  }) {
     return Expanded(
       child: Material(
         color: Colors.transparent,
@@ -357,10 +358,10 @@ class CounselorHomeTabView extends StatelessWidget {
   }
 
   Widget _metricDivider() => Container(
-        width: 1,
-        height: 53.h,
-        color: const Color(0xFFECECF3),
-      );
+    width: 1,
+    height: 53.h,
+    color: const Color(0xFFECECF3),
+  );
 
   Widget _nextAppointmentWidget() {
     if (nextAppointment == null) {
@@ -473,7 +474,7 @@ class CounselorHomeTabView extends StatelessWidget {
       child: Column(
         children: List.generate(
           pendingConsultations.take(3).length,
-          (index) {
+              (index) {
             final item = pendingConsultations[index];
             final name = _getConsultationName(item);
             return Column(
