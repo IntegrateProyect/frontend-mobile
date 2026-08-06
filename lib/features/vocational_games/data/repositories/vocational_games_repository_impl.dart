@@ -41,7 +41,8 @@ class VocationalGamesRepositoryImpl
 
   @override
   Future<List<GameEntity>> getAvailableGames() async {
-    final data = await api.getGames();
+    final token = await _getToken();
+    final data = await api.getGames(token);
 
     return data
         .whereType<Map>()

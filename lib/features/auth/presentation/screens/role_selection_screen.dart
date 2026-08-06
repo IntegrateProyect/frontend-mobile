@@ -16,10 +16,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PlatformScaffold(
+    return Scaffold(
       backgroundColor: Colors.white,
-      appBar: PlatformAppBar(
-        leading: PlatformIconButton(
+      appBar: AppBar(
+        leading: IconButton(
           icon: Icon(Icons.chevron_left, color: Colors.black, size: 28.sp),
           onPressed: () => context.pop(),
         ),
@@ -28,6 +28,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           style: TextStyle(color: Colors.black, fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SafeArea(
         child: Column(

@@ -295,7 +295,7 @@ abstract class IApi {
 
   Future<Map<String, dynamic>> checkGamesHealth();
 
-  Future<List<dynamic>> getGames();
+  Future<List<dynamic>> getGames(String token);
 
   Future<Map<String, dynamic>> getGameDetail(
       String token,

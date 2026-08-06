@@ -33,6 +33,9 @@ import 'package:orientate/features/university/presentation/screens/university_de
 import 'package:orientate/features/university/presentation/screens/scholarships_screen.dart';
 import 'package:orientate/features/university/presentation/screens/university_home_screen.dart';
 import 'package:orientate/features/university/presentation/screens/manage_careers_screen.dart';
+import 'package:orientate/features/university/presentation/screens/manage_alumni_screen.dart';
+import 'package:orientate/features/university/presentation/screens/manage_announcements_screen.dart';
+import 'package:orientate/features/university/presentation/screens/manage_events_screen.dart';
 
 // Chat y Chatbot
 import 'package:orientate/features/chatbot/presentation/screens/chat_screen.dart';
@@ -222,6 +225,21 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.manageCareers.path,
       name: AppRoutes.manageCareers.name,
       builder: (context, state) => const ManageCareersScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.manageAlumni.path,
+      name: AppRoutes.manageAlumni.name,
+      builder: (context, state) => const ManageAlumniScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.manageAnnouncements.path,
+      name: AppRoutes.manageAnnouncements.name,
+      builder: (context, state) => const ManageAnnouncementsScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.manageEvents.path,
+      name: AppRoutes.manageEvents.name,
+      builder: (context, state) => const ManageEventsScreen(),
     ),
 
     // Alumni Feature

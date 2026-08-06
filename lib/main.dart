@@ -53,8 +53,7 @@ import 'features/chat/presentation/providers/chat_provider.dart';
 // CHATBOT
 import 'features/chatbot/presentation/providers/chat_provider.dart' as chatbot;
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> main() async {  WidgetsFlutterBinding.ensureInitialized();
 
   // Inicializa los formatos de fecha en español.
   await initializeDateFormatting('es', null);

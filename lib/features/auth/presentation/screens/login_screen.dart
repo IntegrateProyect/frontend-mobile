@@ -180,9 +180,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
 
-    return PlatformScaffold(
+    return Scaffold(
       backgroundColor: Colors.white,
-      material: (_, __) => MaterialScaffoldData(resizeToAvoidBottomInset: true),
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
