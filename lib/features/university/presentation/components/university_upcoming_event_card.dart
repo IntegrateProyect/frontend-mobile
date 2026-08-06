@@ -18,13 +18,15 @@ class UniversityUpcomingEventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF311B92);
     const Color accentColor = Color(0xFF1D1B4B);
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (provider.isLoading) {
       return Container(
         height: 70.h,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E1F38) : Colors.white,
           borderRadius: BorderRadius.circular(10.r),
+          border: isDark ? Border.all(color: const Color(0xFF2E305C)) : null,
         ),
         child: const Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 2)),
       );
@@ -34,12 +36,11 @@ class UniversityUpcomingEventCard extends StatelessWidget {
 
     if (events.isEmpty) {
       return Container(
-        // Padding horizontal mínimo para evitar desbordamiento por redondeo de píxeles
         padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E1F38) : Colors.white,
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: const Color(0xFFF1F5F9)),
+          border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFF1F5F9)),
         ),
         child: Row(
           children: [
@@ -65,7 +66,7 @@ class UniversityUpcomingEventCard extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 9.sp,
-                        color: accentColor,
+                        color: isDark ? Colors.white : accentColor,
                         height: 1.1,
                       ),
                     ),
@@ -76,7 +77,7 @@ class UniversityUpcomingEventCard extends StatelessWidget {
                     child: Text(
                       'Publica ferias para conectar.',
                       style: TextStyle(
-                        color: Colors.grey[500],
+                        color: isDark ? Colors.grey.shade400 : Colors.grey[500],
                         fontSize: 7.5.sp,
                         fontWeight: FontWeight.w600,
                         height: 1.1,
@@ -90,8 +91,8 @@ class UniversityUpcomingEventCard extends StatelessWidget {
             TextButton(
               onPressed: () => context.push(AppRoutes.manageEvents.path),
               style: TextButton.styleFrom(
-                foregroundColor: primaryColor,
-                backgroundColor: primaryColor.withValues(alpha: 0.05),
+                foregroundColor: isDark ? const Color(0xFFB59AFF) : primaryColor,
+                backgroundColor: isDark ? const Color(0xFFB59AFF).withOpacity(0.12) : primaryColor.withValues(alpha: 0.05),
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
                 minimumSize: const Size(0, 0),
@@ -113,9 +114,9 @@ class UniversityUpcomingEventCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(10.r),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFF1F5F9)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.015),
@@ -133,7 +134,7 @@ class UniversityUpcomingEventCard extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(6.r),
                 decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
+                    color: isDark ? const Color(0xFF162E1C) : const Color(0xFFF0FDF4),
                     borderRadius: BorderRadius.circular(8.r)),
                 child: Icon(Icons.event_note_rounded,
                     color: const Color(0xFF16A34A), size: 16.sp),
@@ -151,7 +152,7 @@ class UniversityUpcomingEventCard extends StatelessWidget {
                         style: TextStyle(
                             fontSize: 11.sp,
                             fontWeight: FontWeight.w900,
-                            color: accentColor,
+                            color: isDark ? Colors.white : accentColor,
                             height: 1.1),
                       ),
                     ),
@@ -162,7 +163,7 @@ class UniversityUpcomingEventCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                           fontSize: 8.5.sp,
-                          color: Colors.grey[500],
+                          color: isDark ? Colors.grey.shade400 : Colors.grey[500],
                           fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -177,7 +178,7 @@ class UniversityUpcomingEventCard extends StatelessWidget {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
+                  color: isDark ? const Color(0xFF162E1C) : const Color(0xFFDCFCE7),
                   borderRadius: BorderRadius.circular(4.r),
                 ),
                 child: Row(
@@ -190,7 +191,7 @@ class UniversityUpcomingEventCard extends StatelessWidget {
                       'ACTIVO',
                       style: TextStyle(
                           fontSize: 7.5.sp,
-                          color: const Color(0xFF15803D),
+                          color: isDark ? const Color(0xFF4EE27D) : const Color(0xFF15803D),
                           fontWeight: FontWeight.w900),
                     ),
                   ],
@@ -209,7 +210,7 @@ class UniversityUpcomingEventCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 9.5.sp,
                     fontWeight: FontWeight.w900,
-                    color: primaryColor,
+                    color: isDark ? const Color(0xFFB59AFF) : primaryColor,
                   ),
                 ),
               ),

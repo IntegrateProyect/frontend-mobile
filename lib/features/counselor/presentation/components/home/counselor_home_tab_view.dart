@@ -55,14 +55,14 @@ class CounselorHomeTabView extends StatelessWidget {
         children: [
           _hero(),
           SizedBox(height: 18.h),
-          _quickActions(),
+          _quickActions(context),
           SizedBox(height: 25.h),
           const CounselorSectionHeader(
             title: 'Resumen',
             subtitle: 'Actividad de tus grupos',
           ),
           SizedBox(height: 12.h),
-          _metrics(),
+          _metrics(context),
           SizedBox(height: 25.h),
           CounselorSectionHeader(
             title: 'Tu día',
@@ -72,7 +72,7 @@ class CounselorHomeTabView extends StatelessWidget {
             ).format(DateTime.now()),
           ),
           SizedBox(height: 12.h),
-          _nextAppointmentWidget(),
+          _nextAppointmentWidget(context),
           SizedBox(height: 25.h),
           CounselorSectionHeader(
             title: 'Seguimiento prioritario',
@@ -81,7 +81,7 @@ class CounselorHomeTabView extends StatelessWidget {
                 : '${pendingConsultations.length} ${pendingConsultations.length == 1 ? 'alumno requiere' : 'alumnos requieren'} atención',
           ),
           SizedBox(height: 12.h),
-          _priorityList(),
+          _priorityList(context),
         ],
       ),
     );
@@ -90,7 +90,7 @@ class CounselorHomeTabView extends StatelessWidget {
   Widget _hero() {
     final name = provider.profile?.name.trim() ?? '';
     final firstName =
-    name.isEmpty ? 'orientador' : name.split(RegExp(r'\s+')).first;
+        name.isEmpty ? 'orientador' : name.split(RegExp(r'\s+')).first;
 
     return Container(
       padding: EdgeInsets.all(20.w),
@@ -189,11 +189,12 @@ class CounselorHomeTabView extends StatelessWidget {
     );
   }
 
-  Widget _quickActions() {
+  Widget _quickActions(BuildContext context) {
     return Row(
       children: [
         Expanded(
           child: _actionButton(
+            context,
             icon: Icons.add_rounded,
             label: 'Nuevo grupo',
             color: _primary,
@@ -203,6 +204,7 @@ class CounselorHomeTabView extends StatelessWidget {
         SizedBox(width: 10.w),
         Expanded(
           child: _actionButton(
+            context,
             icon: Icons.event_available_rounded,
             label: 'Nueva cita',
             color: const Color(0xFF1597D4),
@@ -212,6 +214,7 @@ class CounselorHomeTabView extends StatelessWidget {
         SizedBox(width: 10.w),
         Expanded(
           child: _actionButton(
+            context,
             icon: Icons.schedule_rounded,
             label: 'Horario',
             color: const Color(0xFF159947),
@@ -222,14 +225,17 @@ class CounselorHomeTabView extends StatelessWidget {
     );
   }
 
-  Widget _actionButton({
+  Widget _actionButton(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF1E1F38) : Colors.white,
       borderRadius: BorderRadius.circular(17.r),
       child: InkWell(
         onTap: onTap,
@@ -238,7 +244,7 @@ class CounselorHomeTabView extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: 13.h),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(17.r),
-            border: Border.all(color: color.withOpacity(.1)),
+            border: Border.all(color: isDark ? const Color(0xFF2E305C) : color.withOpacity(.1)),
           ),
           child: Column(
             children: [
@@ -246,17 +252,17 @@ class CounselorHomeTabView extends StatelessWidget {
                 width: 37.w,
                 height: 37.w,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(.1),
+                  color: isDark ? color.withOpacity(.18) : color.withOpacity(.1),
                   borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: Icon(icon, color: color, size: 21.sp),
+                child: Icon(icon, color: isDark ? const Color(0xFFB59AFF) : color, size: 21.sp),
               ),
               SizedBox(height: 7.h),
               Text(
                 label,
                 maxLines: 1,
                 style: TextStyle(
-                  color: _dark,
+                  color: isDark ? Colors.white : _dark,
                   fontSize: 9.5.sp,
                   fontWeight: FontWeight.w800,
                 ),
@@ -268,41 +274,47 @@ class CounselorHomeTabView extends StatelessWidget {
     );
   }
 
-  Widget _metrics() {
+  Widget _metrics(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.all(5.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(22.r),
-        border: Border.all(color: const Color(0xFFECECF3)),
+        border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECECF3)),
       ),
       child: Row(
         children: [
           _metric(
+            context,
             value: provider.totalStudentsCount,
             label: 'Alumnos',
             icon: Icons.people_alt_outlined,
             color: const Color(0xFF1597D4),
             onTap: onViewStudents,
           ),
-          _metricDivider(),
+          _metricDivider(context),
           _metric(
+            context,
             value: provider.groupsCount,
             label: 'Grupos',
             icon: Icons.groups_2_outlined,
             color: const Color(0xFF9C27B0),
             onTap: onViewGroups,
           ),
-          _metricDivider(),
+          _metricDivider(context),
           _metric(
+            context,
             value: todayAppointmentsCount,
             label: 'Citas hoy',
             icon: Icons.event_outlined,
             color: _primary,
             onTap: onViewAgenda,
           ),
-          _metricDivider(),
+          _metricDivider(context),
           _metric(
+            context,
             value: pendingConsultations.length,
             label: 'Pendientes',
             icon: Icons.notifications_active_outlined,
@@ -314,13 +326,16 @@ class CounselorHomeTabView extends StatelessWidget {
     );
   }
 
-  Widget _metric({
+  Widget _metric(
+    BuildContext context, {
     required int value,
     required String label,
     required IconData icon,
     required Color color,
     VoidCallback? onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Expanded(
       child: Material(
         color: Colors.transparent,
@@ -331,12 +346,12 @@ class CounselorHomeTabView extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: 12.h),
             child: Column(
               children: [
-                Icon(icon, color: color, size: 21.sp),
+                Icon(icon, color: isDark ? const Color(0xFFB59AFF) : color, size: 21.sp),
                 SizedBox(height: 5.h),
                 Text(
                   '$value',
                   style: TextStyle(
-                    color: _dark,
+                    color: isDark ? Colors.white : _dark,
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w900,
                   ),
@@ -345,7 +360,7 @@ class CounselorHomeTabView extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     fontSize: 8.5.sp,
                   ),
                 ),
@@ -357,13 +372,18 @@ class CounselorHomeTabView extends StatelessWidget {
     );
   }
 
-  Widget _metricDivider() => Container(
-    width: 1,
-    height: 53.h,
-    color: const Color(0xFFECECF3),
-  );
+  Widget _metricDivider(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: 1,
+      height: 53.h,
+      color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECECF3),
+    );
+  }
 
-  Widget _nextAppointmentWidget() {
+  Widget _nextAppointmentWidget(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (nextAppointment == null) {
       return CounselorEmptyFocusCard(
         icon: Icons.edit_calendar_outlined,
@@ -383,9 +403,9 @@ class CounselorHomeTabView extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(21.r),
-        border: Border.all(color: _primary.withOpacity(.14)),
+        border: Border.all(color: isDark ? const Color(0xFF2E305C) : _primary.withOpacity(.14)),
       ),
       child: Row(
         children: [
@@ -393,7 +413,7 @@ class CounselorHomeTabView extends StatelessWidget {
             width: 52.w,
             height: 52.w,
             decoration: BoxDecoration(
-              color: _primary.withOpacity(.09),
+              color: isDark ? _primary.withOpacity(.18) : _primary.withOpacity(.09),
               borderRadius: BorderRadius.circular(16.r),
             ),
             child: const Icon(
@@ -409,7 +429,7 @@ class CounselorHomeTabView extends StatelessWidget {
                 Text(
                   'Próxima cita',
                   style: TextStyle(
-                    color: _primary,
+                    color: isDark ? const Color(0xFFB59AFF) : _primary,
                     fontSize: 10.sp,
                     fontWeight: FontWeight.w800,
                   ),
@@ -420,7 +440,7 @@ class CounselorHomeTabView extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: _dark,
+                    color: isDark ? Colors.white : _dark,
                     fontSize: 15.sp,
                     fontWeight: FontWeight.w900,
                   ),
@@ -430,7 +450,7 @@ class CounselorHomeTabView extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     fontSize: 10.sp,
                   ),
                 ),
@@ -439,7 +459,7 @@ class CounselorHomeTabView extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.grey.shade500,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
                     fontSize: 9.sp,
                   ),
                 ),
@@ -448,14 +468,16 @@ class CounselorHomeTabView extends StatelessWidget {
           ),
           IconButton(
             onPressed: onViewAgenda,
-            icon: const Icon(Icons.arrow_forward_rounded),
+            icon: Icon(Icons.arrow_forward_rounded, color: isDark ? Colors.white70 : null),
           ),
         ],
       ),
     );
   }
 
-  Widget _priorityList() {
+  Widget _priorityList(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (pendingConsultations.isEmpty) {
       return const CounselorEmptyFocusCard(
         icon: Icons.verified_rounded,
@@ -467,14 +489,14 @@ class CounselorHomeTabView extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(21.r),
-        border: Border.all(color: const Color(0xFFECECF3)),
+        border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECECF3)),
       ),
       child: Column(
         children: List.generate(
           pendingConsultations.take(3).length,
-              (index) {
+          (index) {
             final item = pendingConsultations[index];
             final name = _getConsultationName(item);
             return Column(
@@ -492,8 +514,8 @@ class CounselorHomeTabView extends StatelessWidget {
                     name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _dark,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : _dark,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -501,11 +523,14 @@ class CounselorHomeTabView extends StatelessWidget {
                     item.message,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                    ),
                   ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                  trailing: Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white54 : null),
                 ),
                 if (index < pendingConsultations.take(3).length - 1)
-                  const Divider(height: 1, indent: 70),
+                  Divider(height: 1, indent: 70, color: isDark ? const Color(0xFF2E305C) : null),
               ],
             );
           },

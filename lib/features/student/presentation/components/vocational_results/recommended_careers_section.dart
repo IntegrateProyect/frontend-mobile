@@ -16,13 +16,15 @@ class RecommendedCareersSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.all(18.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(24.r),
         border: Border.all(
-          color: const Color(0xFFE8E6F2),
+          color: isDark ? const Color(0xFF2E305C) : const Color(0xFFE8E6F2),
         ),
         boxShadow: [
           BoxShadow(
@@ -44,7 +46,7 @@ class RecommendedCareersSection extends StatelessWidget {
                     Text(
                       'Carreras recomendadas',
                       style: TextStyle(
-                        color: StudentUiColors.darkText,
+                        color: isDark ? Colors.white : StudentUiColors.darkText,
                         fontSize: 18.sp,
                         fontWeight: FontWeight.w900,
                       ),
@@ -53,7 +55,7 @@ class RecommendedCareersSection extends StatelessWidget {
                     Text(
                       'Ordenadas según tus resultados y factores personales.',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: isDark ? Colors.grey.shade400 : Colors.grey[600],
                         fontSize: 11.sp,
                         height: 1.3,
                       ),
@@ -65,9 +67,9 @@ class RecommendedCareersSection extends StatelessWidget {
                 IconButton(
                   tooltip: 'Actualizar recomendaciones',
                   onPressed: provider.refresh,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.refresh_rounded,
-                    color: StudentUiColors.primary,
+                    color: isDark ? const Color(0xFFB59AFF) : StudentUiColors.primary,
                   ),
                 ),
             ],

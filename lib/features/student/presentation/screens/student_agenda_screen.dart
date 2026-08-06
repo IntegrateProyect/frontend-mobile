@@ -39,16 +39,18 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<StudentAppointmentsProvider>();
     final appointments = provider.appointments;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: StudentUiColors.background,
+      backgroundColor: isDark ? const Color(0xFF0F1020) : StudentUiColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
         elevation: 0,
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
         title: Text(
           'Mi Agenda',
           style: TextStyle(
-            color: StudentUiColors.darkText,
+            color: isDark ? Colors.white : StudentUiColors.darkText,
             fontWeight: FontWeight.bold,
             fontSize: 20.sp,
           ),
@@ -59,7 +61,7 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
         child: Column(
           children: [
             Container(
-              color: Colors.white,
+              color: isDark ? const Color(0xFF1E1F38) : Colors.white,
               child: TableCalendar(
                 locale: 'es_ES',
                 firstDay: DateTime.now().subtract(const Duration(days: 30)),
@@ -73,14 +75,29 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
                   });
                 },
                 eventLoader: (day) => _getEventsForDay(day, appointments),
-                calendarStyle: const CalendarStyle(
-                  todayDecoration: BoxDecoration(color: StudentUiColors.teal, shape: BoxShape.circle),
-                  selectedDecoration: BoxDecoration(color: StudentUiColors.primary, shape: BoxShape.circle),
-                  markerDecoration: BoxDecoration(color: StudentUiColors.pink, shape: BoxShape.circle),
+                calendarStyle: CalendarStyle(
+                  defaultTextStyle: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  weekendTextStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+                  outsideTextStyle: TextStyle(color: isDark ? Colors.white30 : Colors.black26),
+                  todayTextStyle: TextStyle(color: isDark ? Colors.black : Colors.white),
+                  todayDecoration: const BoxDecoration(color: StudentUiColors.teal, shape: BoxShape.circle),
+                  selectedDecoration: const BoxDecoration(color: StudentUiColors.primary, shape: BoxShape.circle),
+                  markerDecoration: const BoxDecoration(color: StudentUiColors.pink, shape: BoxShape.circle),
                 ),
-                headerStyle: const HeaderStyle(
+                headerStyle: HeaderStyle(
                   formatButtonVisible: false,
                   titleCentered: true,
+                  titleTextStyle: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  leftChevronIcon: Icon(Icons.chevron_left, color: isDark ? Colors.white : Colors.black),
+                  rightChevronIcon: Icon(Icons.chevron_right, color: isDark ? Colors.white : Colors.black),
+                ),
+                daysOfWeekStyle: DaysOfWeekStyle(
+                  weekdayStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                  weekendStyle: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
                 ),
               ),
             ),
@@ -89,12 +106,12 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
               padding: EdgeInsets.symmetric(horizontal: 20.w),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                  Icon(Icons.info_outline, size: 16, color: isDark ? Colors.grey.shade400 : Colors.grey),
                   SizedBox(width: 8.w),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Tu orientador agenda y gestiona estas citas.',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                      style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey, fontSize: 12),
                     ),
                   ),
                 ],
@@ -113,17 +130,19 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
   }
 
   Widget _buildAppointmentList(List<AppointmentEntity> dayAppointments) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (dayAppointments.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(height: 20.h),
-            Icon(Icons.event_busy, size: 60.sp, color: Colors.grey[300]),
+            Icon(Icons.event_busy, size: 60.sp, color: isDark ? Colors.white24 : Colors.grey[300]),
             SizedBox(height: 16.h),
             Text(
               'No hay citas para este día',
-              style: TextStyle(color: Colors.grey[500], fontSize: 14.sp),
+              style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey[500], fontSize: 14.sp),
             ),
           ],
         ),
@@ -143,8 +162,9 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
           margin: EdgeInsets.only(bottom: 12.h),
           padding: EdgeInsets.all(16.w),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E1F38) : Colors.white,
             borderRadius: BorderRadius.circular(16.r),
+            border: isDark ? Border.all(color: const Color(0xFF2E305C)) : null,
             boxShadow: [
               BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
             ],
@@ -154,13 +174,13 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                 decoration: BoxDecoration(
-                  color: StudentUiColors.primary.withOpacity(0.1),
+                  color: isDark ? StudentUiColors.primary.withOpacity(0.2) : StudentUiColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Text(
                   timeStr,
-                  style: const TextStyle(
-                    color: StudentUiColors.primary,
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFFB59AFF) : StudentUiColors.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -175,12 +195,12 @@ class _StudentAgendaScreenState extends State<StudentAgendaScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15.sp,
-                        color: StudentUiColors.darkText,
+                        color: isDark ? Colors.white : StudentUiColors.darkText,
                       ),
                     ),
                     Text(
                       'Estado: ${apt.status}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+                      style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey[600], fontSize: 12.sp),
                     ),
                   ],
                 ),

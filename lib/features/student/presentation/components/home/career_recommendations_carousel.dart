@@ -288,8 +288,9 @@ class _EmptyAnnouncementsCard extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 24.h, horizontal: 16.w),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E2F) : Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(18.r),
+        border: isDark ? Border.all(color: const Color(0xFF2E305C)) : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -303,12 +304,12 @@ class _EmptyAnnouncementsCard extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(12.w),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2C2C40) : const Color(0xFFF3E5F5),
+              color: isDark ? const Color(0xFF2E2452) : const Color(0xFFF3E5F5),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.campaign_rounded,
-              color: isDark ? const Color(0xFFB39DDB) : const Color(0xFF7B1FA2),
+              color: isDark ? const Color(0xFFB59AFF) : const Color(0xFF7B1FA2),
               size: 32.sp,
             ),
           ),

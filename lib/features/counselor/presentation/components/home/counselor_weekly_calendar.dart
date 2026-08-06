@@ -49,9 +49,10 @@ class _CounselorWeeklyCalendarState
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final days = List.generate(
       5,
-          (index) => _weekStart.add(Duration(days: index)),
+      (index) => _weekStart.add(Duration(days: index)),
     );
     final selectedAppointments = widget.appointments.where((item) {
       return _sameDay(item.sessionDate.toLocal(), _selectedDay) &&
@@ -82,10 +83,10 @@ class _CounselorWeeklyCalendarState
             vertical: 13.h,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E1F38) : Colors.white,
             borderRadius: BorderRadius.circular(15.r),
             border: Border.all(
-              color: const Color(0xFFECECF3),
+              color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECECF3),
             ),
           ),
           child: Row(
@@ -94,7 +95,7 @@ class _CounselorWeeklyCalendarState
                 width: 38.w,
                 height: 38.w,
                 decoration: BoxDecoration(
-                  color: _primary.withOpacity(.08),
+                  color: isDark ? _primary.withOpacity(.18) : _primary.withOpacity(.08),
                   borderRadius: BorderRadius.circular(11.r),
                 ),
                 child: const Icon(
@@ -110,7 +111,7 @@ class _CounselorWeeklyCalendarState
                   softWrap: false,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: _dark,
+                    color: isDark ? Colors.white : _dark,
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w900,
                   ),
@@ -128,7 +129,7 @@ class _CounselorWeeklyCalendarState
         Text(
           'Citas del día',
           style: TextStyle(
-            color: _dark,
+            color: isDark ? Colors.white : _dark,
             fontSize: 15.sp,
             fontWeight: FontWeight.w900,
           ),
@@ -143,13 +144,14 @@ class _CounselorWeeklyCalendarState
   }
 
   Widget _weekHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final end = _weekStart.add(const Duration(days: 4));
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(17.r),
-        border: Border.all(color: const Color(0xFFECECF3)),
+        border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECECF3)),
       ),
       child: Row(
         children: [
@@ -162,7 +164,7 @@ class _CounselorWeeklyCalendarState
                 _selectedDay = _weekStart;
               });
             },
-            icon: const Icon(Icons.chevron_left_rounded),
+            icon: Icon(Icons.chevron_left_rounded, color: isDark ? Colors.white : null),
           ),
           Expanded(
             child: Column(
@@ -170,7 +172,7 @@ class _CounselorWeeklyCalendarState
                 Text(
                   'Semana laboral',
                   style: TextStyle(
-                    color: _dark,
+                    color: isDark ? Colors.white : _dark,
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w900,
                   ),
@@ -179,7 +181,7 @@ class _CounselorWeeklyCalendarState
                   '${DateFormat('d MMM', 'es_MX').format(_weekStart)}'
                       ' – ${DateFormat('d MMM', 'es_MX').format(end)}',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     fontSize: 9.5.sp,
                   ),
                 ),
@@ -194,7 +196,7 @@ class _CounselorWeeklyCalendarState
                 _selectedDay = _weekStart;
               });
             },
-            icon: const Icon(Icons.chevron_right_rounded),
+            icon: Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white : null),
           ),
         ],
       ),
@@ -202,6 +204,7 @@ class _CounselorWeeklyCalendarState
   }
 
   Widget _dayButton(DateTime day) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final selected = _sameDay(day, _selectedDay);
     final today = _sameDay(day, DateTime.now());
     final count = widget.appointments.where((item) {
@@ -222,12 +225,12 @@ class _CounselorWeeklyCalendarState
                 ? _primary
                 : today
                 ? _primary.withOpacity(.08)
-                : Colors.white,
+                : (isDark ? const Color(0xFF1E1F38) : Colors.white),
             borderRadius: BorderRadius.circular(15.r),
             border: Border.all(
               color: selected
                   ? _primary
-                  : const Color(0xFFECECF3),
+                  : (isDark ? const Color(0xFF2E305C) : const Color(0xFFECECF3)),
             ),
           ),
           child: Column(
@@ -238,7 +241,7 @@ class _CounselorWeeklyCalendarState
                     .substring(0, 2)
                     .toUpperCase(),
                 style: TextStyle(
-                  color: selected ? Colors.white70 : Colors.grey.shade600,
+                  color: selected ? Colors.white70 : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                   fontSize: 8.5.sp,
                   fontWeight: FontWeight.w700,
                 ),
@@ -247,7 +250,7 @@ class _CounselorWeeklyCalendarState
               Text(
                 '${day.day}',
                 style: TextStyle(
-                  color: selected ? Colors.white : _dark,
+                  color: selected ? Colors.white : (isDark ? Colors.white : _dark),
                   fontSize: 15.sp,
                   fontWeight: FontWeight.w900,
                 ),
@@ -273,13 +276,14 @@ class _CounselorWeeklyCalendarState
   }
 
   Widget _availabilityCard(AvailabilitySlotEntity slot) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       padding: EdgeInsets.all(13.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF8F1),
+        color: isDark ? const Color(0xFF162E1C) : const Color(0xFFEFF8F1),
         borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(color: const Color(0xFFCDEBD5)),
+        border: Border.all(color: isDark ? const Color(0xFF1B4F29) : const Color(0xFFCDEBD5)),
       ),
       child: Row(
         children: [
@@ -293,7 +297,7 @@ class _CounselorWeeklyCalendarState
               'Disponible de ${_displayTime(slot.startTime)} '
                   'a ${_displayTime(slot.endTime)}',
               style: TextStyle(
-                color: const Color(0xFF116B35),
+                color: isDark ? const Color(0xFF4EE27D) : const Color(0xFF116B35),
                 fontSize: 11.sp,
                 fontWeight: FontWeight.w800,
               ),
@@ -305,19 +309,24 @@ class _CounselorWeeklyCalendarState
   }
 
   Widget _availabilityMessage() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(13.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF4E5),
+        color: isDark ? const Color(0xFF2D251D) : const Color(0xFFFFF4E5),
         borderRadius: BorderRadius.circular(15.r),
+        border: isDark ? Border.all(color: const Color(0xFF5C4729)) : null,
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.info_outline_rounded, color: Color(0xFFE18400)),
+          const Icon(Icons.info_outline_rounded, color: Color(0xFFE18400)),
           SizedBox(width: 9),
           Expanded(
-            child: Text('No hay disponibilidad configurada para este día.'),
+            child: Text(
+              'No hay disponibilidad configurada para este día.',
+              style: TextStyle(color: isDark ? Colors.grey.shade300 : null),
+            ),
           ),
         ],
       ),
@@ -325,15 +334,16 @@ class _CounselorWeeklyCalendarState
   }
 
   Widget _appointmentCard(AppointmentEntity appointment) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final local = appointment.sessionDate.toLocal();
     final sName = widget.studentName(appointment.studentId);
     
     return Container(
       margin: EdgeInsets.only(bottom: 9.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(17.r),
-        border: Border.all(color: const Color(0xFFECECF3)),
+        border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECECF3)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -356,7 +366,7 @@ class _CounselorWeeklyCalendarState
                       Text(
                         DateFormat('hh:mm').format(local),
                         style: TextStyle(
-                          color: _primary,
+                          color: isDark ? const Color(0xFFB59AFF) : _primary,
                           fontSize: 13.sp,
                           fontWeight: FontWeight.w900,
                         ),
@@ -364,7 +374,7 @@ class _CounselorWeeklyCalendarState
                       Text(
                         DateFormat('a').format(local),
                         style: TextStyle(
-                          color: _primary,
+                          color: isDark ? const Color(0xFFB59AFF) : _primary,
                           fontSize: 8.sp,
                           fontWeight: FontWeight.w800,
                         ),
@@ -382,7 +392,7 @@ class _CounselorWeeklyCalendarState
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: _dark,
+                          color: isDark ? Colors.white : _dark,
                           fontSize: 14.sp,
                           fontWeight: FontWeight.w900,
                         ),
@@ -394,7 +404,7 @@ class _CounselorWeeklyCalendarState
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                           fontSize: 10.5.sp,
                         ),
                       ),
@@ -403,7 +413,7 @@ class _CounselorWeeklyCalendarState
                 ),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: Colors.grey.shade300,
+                  color: isDark ? Colors.white30 : Colors.grey.shade300,
                 ),
               ],
             ),
@@ -414,26 +424,27 @@ class _CounselorWeeklyCalendarState
   }
 
   Widget _emptyAppointments() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(17.r),
-        border: Border.all(color: const Color(0xFFECECF3)),
+        border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECECF3)),
       ),
       child: Column(
         children: [
           Icon(
             Icons.event_available,
-            color: Colors.grey.shade300,
+            color: isDark ? Colors.white24 : Colors.grey.shade300,
             size: 36.sp,
           ),
           SizedBox(height: 7.h),
           Text(
             'No hay citas para este día',
             style: TextStyle(
-              color: _dark,
+              color: isDark ? Colors.white70 : _dark,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -484,13 +495,13 @@ class _CounselorWeeklyCalendarState
     final parts = value.split(':');
     final hour = int.tryParse(parts.first) ?? 0;
     final minute =
-    parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+        parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
     final period = hour >= 12 ? 'PM' : 'AM';
     final displayHour = hour == 0
         ? 12
         : hour > 12
-        ? hour - 12
-        : hour;
+            ? hour - 12
+            : hour;
     return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
   }
 }

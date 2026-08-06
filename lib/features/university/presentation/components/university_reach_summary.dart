@@ -64,7 +64,7 @@ class UniversityReachSummary extends StatelessWidget {
     Color color,
     Color accentColor,
   ) {
-    // Tamaños ajustados para evitar el sobre-escalado y desbordamiento
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final double iconSize = context.responsiveValue(mobile: 14.sp, tablet: 16.sp, desktop: 18.sp);
     final double valueSize = context.responsiveValue(mobile: 14.sp, tablet: 16.sp, desktop: 18.sp);
     final double labelSize = context.responsiveValue(mobile: 8.5.sp, tablet: 9.5.sp, desktop: 10.5.sp);
@@ -72,9 +72,9 @@ class UniversityReachSummary extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 4.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFF1F5F9)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -89,7 +89,7 @@ class UniversityReachSummary extends StatelessWidget {
         children: [
           Icon(
             icon,
-            color: color,
+            color: isDark ? const Color(0xFFB59AFF) : color,
             size: iconSize,
           ),
           SizedBox(height: 6.h),
@@ -100,7 +100,7 @@ class UniversityReachSummary extends StatelessWidget {
               style: TextStyle(
                 fontSize: valueSize,
                 fontWeight: FontWeight.w900,
-                color: accentColor,
+                color: isDark ? Colors.white : accentColor,
                 height: 1.1,
               ),
             ),
@@ -113,7 +113,7 @@ class UniversityReachSummary extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: labelSize,
-                color: Colors.grey[600],
+                color: isDark ? Colors.grey.shade400 : Colors.grey[600],
                 fontWeight: FontWeight.w700,
                 height: 1.1,
               ),

@@ -19,16 +19,18 @@ class StudentHomeAppBar extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AppBar(
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
+      surfaceTintColor: isDark ? const Color(0xFF0F1020) : Colors.white,
       elevation: 0,
       centerTitle: true,
       automaticallyImplyLeading: false,
       title: Text(
         'Oriéntate+',
         style: TextStyle(
-          color: StudentUiColors.primary,
+          color: isDark ? Colors.white : StudentUiColors.primary,
           fontWeight: FontWeight.w900,
           fontSize: 20.sp,
         ),
@@ -37,9 +39,9 @@ class StudentHomeAppBar extends StatelessWidget
         IconButton(
           tooltip: 'Notificaciones',
           onPressed: onNotificationsPressed,
-          icon: const Icon(
+          icon: Icon(
             Icons.notifications_none_rounded,
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
           ),
         ),
 
@@ -47,9 +49,9 @@ class StudentHomeAppBar extends StatelessWidget
         IconButton(
           tooltip: 'Información de la cuenta',
           onPressed: onAccountPressed,
-          icon: const Icon(
+          icon: Icon(
             Icons.person_rounded,
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
           ),
         ),
 

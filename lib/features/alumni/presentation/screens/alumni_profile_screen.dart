@@ -20,7 +20,7 @@ class AlumniProfileScreen extends StatelessWidget {
     final provider = context.watch<AlumniHomeProvider>();
     final profile = provider.profile;
     final themeProvider = context.watch<ThemeProvider>();
-    final isDark = themeProvider.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
 

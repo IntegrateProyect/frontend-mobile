@@ -13,14 +13,16 @@ class ResultsErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: isDark ? const Color(0xFF3A2026) : Colors.red.shade50,
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
-          color: Colors.red.shade100,
+          color: isDark ? const Color(0xFF74343F) : Colors.red.shade100,
         ),
       ),
       child: Column(
@@ -36,7 +38,7 @@ class ResultsErrorCard extends StatelessWidget {
                 child: Text(
                   message,
                   style: TextStyle(
-                    color: Colors.red.shade700,
+                    color: isDark ? Colors.red.shade200 : Colors.red.shade700,
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
                   ),
@@ -47,8 +49,8 @@ class ResultsErrorCard extends StatelessWidget {
           SizedBox(height: 8.h),
           TextButton.icon(
             onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Reintentar'),
+            icon: const Icon(Icons.refresh, color: Colors.redAccent),
+            label: const Text('Reintentar', style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),

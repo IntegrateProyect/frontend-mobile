@@ -43,6 +43,7 @@ class UniversityBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
         boxShadow: [
@@ -55,11 +56,11 @@ class UniversityBottomNavigationBar extends StatelessWidget {
       ),
       child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
         elevation: 0,
         currentIndex: currentIndex < 0 ? 0 : currentIndex,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: Colors.grey[400],
+        selectedItemColor: isDark ? const Color(0xFFB59AFF) : _primaryColor,
+        unselectedItemColor: isDark ? Colors.white60 : Colors.grey[400],
         selectedFontSize: 10.sp,
         unselectedFontSize: 10.sp,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800),

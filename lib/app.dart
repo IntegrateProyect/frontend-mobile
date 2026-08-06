@@ -19,6 +19,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Oriéntate+',
+      useInheritedMediaQuery: true,
 
       // DevicePreview: locale del dispositivo simulado
       locale: DevicePreview.locale(context),

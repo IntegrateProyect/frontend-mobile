@@ -19,13 +19,15 @@ class QuickAccessGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Accesos rápidos',
           style: TextStyle(
-            color: StudentUiColors.darkText,
+            color: isDark ? Colors.white : StudentUiColors.darkText,
             fontSize: 18.sp,
             fontWeight: FontWeight.w900,
           ),
@@ -48,7 +50,6 @@ class QuickAccessGrid extends StatelessWidget {
               color: StudentUiColors.teal,
               onTap: onMessagesTap,
             ),
-
 
             _QuickAccessCard(
               icon: Icons.event_outlined,
@@ -81,14 +82,17 @@ class _QuickAccessCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20.r),
       child: Container(
         padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E1F38) : Colors.white,
           borderRadius: BorderRadius.circular(20.r),
+          border: isDark ? Border.all(color: const Color(0xFF2E305C)) : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.025),
@@ -103,12 +107,12 @@ class _QuickAccessCard extends StatelessWidget {
               width: 46.w,
               height: 46.w,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.13),
+                color: color.withOpacity(isDark ? 0.20 : 0.13),
                 borderRadius: BorderRadius.circular(15.r),
               ),
               child: Icon(
                 icon,
-                color: color,
+                color: isDark ? const Color(0xFF4EE27D) : color,
                 size: 25.sp,
               ),
             ),
@@ -125,7 +129,7 @@ class _QuickAccessCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: StudentUiColors.darkText,
+                      color: isDark ? Colors.white : StudentUiColors.darkText,
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w900,
                     ),
@@ -136,7 +140,7 @@ class _QuickAccessCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: isDark ? Colors.grey.shade400 : Colors.grey[600],
                       fontSize: 10.sp,
                       height: 1.1,
                       fontWeight: FontWeight.w600,
@@ -148,7 +152,7 @@ class _QuickAccessCard extends StatelessWidget {
 
             Icon(
               Icons.chevron_right_rounded,
-              color: Colors.grey[400],
+              color: isDark ? Colors.white30 : Colors.grey[400],
               size: 22.sp,
             ),
           ],

@@ -49,12 +49,14 @@ class StudentBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return BottomNavigationBar(
       currentIndex: currentIndex,
       type: BottomNavigationBarType.fixed,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      selectedItemColor: StudentUiColors.primary,
-      unselectedItemColor: Colors.grey.shade500,
+      backgroundColor: isDark ? const Color(0xFF0F1020) : Theme.of(context).colorScheme.surface,
+      selectedItemColor: isDark ? const Color(0xFFB59AFF) : StudentUiColors.primary,
+      unselectedItemColor: isDark ? Colors.white60 : Colors.grey.shade500,
       selectedLabelStyle: const TextStyle(
         fontWeight: FontWeight.w800,
       ),

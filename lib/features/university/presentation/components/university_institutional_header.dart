@@ -17,12 +17,14 @@ class UniversityInstitutionalHeader extends StatelessWidget {
     const Color primaryColor = Color(0xFF311B92);
     const Color accentColor = Color(0xFF1D1B4B);
     final bool isVerified = status == 'VERIFIED';
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(16.r),
+        border: isDark ? Border.all(color: const Color(0xFF2E305C)) : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -37,12 +39,12 @@ class UniversityInstitutionalHeader extends StatelessWidget {
             width: 44.r,
             height: 44.r,
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.06),
+              color: isDark ? primaryColor.withOpacity(0.18) : primaryColor.withOpacity(0.06),
               borderRadius: BorderRadius.circular(12.r),
             ),
             child: Icon(
               Icons.account_balance_rounded,
-              color: primaryColor,
+              color: isDark ? const Color(0xFFB59AFF) : primaryColor,
               size: 22.sp,
             ),
           ),
@@ -57,7 +59,7 @@ class UniversityInstitutionalHeader extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w900,
-                    color: accentColor,
+                    color: isDark ? Colors.white : accentColor,
                     height: 1.2,
                   ),
                   maxLines: 2,
@@ -67,7 +69,9 @@ class UniversityInstitutionalHeader extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.5.h),
                   decoration: BoxDecoration(
-                    color: isVerified ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
+                    color: isVerified
+                        ? (isDark ? const Color(0xFF162E1C) : const Color(0xFFDCFCE7))
+                        : (isDark ? const Color(0xFF2D251D) : const Color(0xFFFEF3C7)),
                     borderRadius: BorderRadius.circular(6.r),
                   ),
                   child: Row(
@@ -76,7 +80,9 @@ class UniversityInstitutionalHeader extends StatelessWidget {
                       Icon(
                         isVerified ? Icons.verified_rounded : Icons.info_outline_rounded,
                         size: 11.sp,
-                        color: isVerified ? Colors.green[800] : Colors.amber[900],
+                        color: isVerified
+                            ? (isDark ? const Color(0xFF4EE27D) : Colors.green[800])
+                            : (isDark ? const Color(0xFFF59E0B) : Colors.amber[900]),
                       ),
                       SizedBox(width: 4.w),
                       Text(
@@ -84,7 +90,9 @@ class UniversityInstitutionalHeader extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 8.5.sp,
                           fontWeight: FontWeight.w900,
-                          color: isVerified ? Colors.green[800] : Colors.amber[900],
+                          color: isVerified
+                              ? (isDark ? const Color(0xFF4EE27D) : Colors.green[800])
+                              : (isDark ? const Color(0xFFF59E0B) : Colors.amber[900]),
                         ),
                       ),
                     ],

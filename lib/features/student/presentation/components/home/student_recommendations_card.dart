@@ -13,11 +13,14 @@ class StudentRecommendationsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(24.r),
+        border: isDark ? Border.all(color: const Color(0xFF2E305C)) : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.035),
@@ -34,7 +37,7 @@ class StudentRecommendationsCard extends StatelessWidget {
                 width: 42.w,
                 height: 42.w,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4D8),
+                  color: isDark ? const Color(0xFF2D251D) : const Color(0xFFFFF4D8),
                   borderRadius: BorderRadius.circular(14.r),
                 ),
                 child: Icon(
@@ -51,7 +54,7 @@ class StudentRecommendationsCard extends StatelessWidget {
                     Text(
                       'Recomendaciones para ti',
                       style: TextStyle(
-                        color: StudentUiColors.darkText,
+                        color: isDark ? Colors.white : StudentUiColors.darkText,
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w900,
                       ),
@@ -60,7 +63,7 @@ class StudentRecommendationsCard extends StatelessWidget {
                     Text(
                       'Encuentra instituciones relacionadas con tu perfil.',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: isDark ? Colors.grey.shade400 : Colors.grey[600],
                         fontSize: 11.sp,
                       ),
                     ),
@@ -76,10 +79,10 @@ class StudentRecommendationsCard extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.all(12.w),
               decoration: BoxDecoration(
-                color: StudentUiColors.blue.withOpacity(0.05),
+                color: isDark ? const Color(0xFF15162D) : StudentUiColors.blue.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(18.r),
                 border: Border.all(
-                  color: StudentUiColors.blue.withOpacity(0.16),
+                  color: isDark ? const Color(0xFF2E305C) : StudentUiColors.blue.withOpacity(0.16),
                 ),
               ),
               child: Row(
@@ -88,12 +91,12 @@ class StudentRecommendationsCard extends StatelessWidget {
                     width: 48.w,
                     height: 48.w,
                     decoration: BoxDecoration(
-                      color: StudentUiColors.blue.withOpacity(0.13),
+                      color: isDark ? const Color(0xFF2E2452) : StudentUiColors.blue.withOpacity(0.13),
                       borderRadius: BorderRadius.circular(16.r),
                     ),
                     child: Icon(
                       Icons.account_balance_outlined,
-                      color: StudentUiColors.blue,
+                      color: isDark ? const Color(0xFFB59AFF) : StudentUiColors.blue,
                       size: 25.sp,
                     ),
                   ),
@@ -105,7 +108,7 @@ class StudentRecommendationsCard extends StatelessWidget {
                         Text(
                           'Universidades compatibles',
                           style: TextStyle(
-                            color: StudentUiColors.darkText,
+                            color: isDark ? Colors.white : StudentUiColors.darkText,
                             fontSize: 13.sp,
                             fontWeight: FontWeight.w900,
                           ),
@@ -114,7 +117,7 @@ class StudentRecommendationsCard extends StatelessWidget {
                         Text(
                           'Encuentra instituciones con carreras relacionadas.',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: isDark ? Colors.grey.shade400 : Colors.grey[600],
                             fontSize: 10.5.sp,
                             height: 1.2,
                           ),
@@ -124,7 +127,7 @@ class StudentRecommendationsCard extends StatelessWidget {
                   ),
                   Icon(
                     Icons.chevron_right_rounded,
-                    color: StudentUiColors.blue,
+                    color: isDark ? const Color(0xFFB59AFF) : StudentUiColors.blue,
                     size: 25.sp,
                   ),
                 ],

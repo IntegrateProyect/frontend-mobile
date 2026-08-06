@@ -12,6 +12,8 @@ class IncompleteGamesState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: ListView(
         shrinkWrap: true,
@@ -20,14 +22,14 @@ class IncompleteGamesState extends StatelessWidget {
           Icon(
             Icons.sports_esports_outlined,
             size: 80.sp,
-            color: StudentUiColors.primary.withOpacity(0.8),
+            color: isDark ? const Color(0xFFB59AFF) : StudentUiColors.primary.withOpacity(0.8),
           ),
           SizedBox(height: 20.h),
           Text(
             '¡Continúa tu aventura vocacional!',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: StudentUiColors.darkText,
+              color: isDark ? Colors.white : StudentUiColors.darkText,
               fontSize: 20.sp,
               fontWeight: FontWeight.w900,
             ),
@@ -38,7 +40,7 @@ class IncompleteGamesState extends StatelessWidget {
                 'resultados y carreras recomendadas.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: isDark ? Colors.grey.shade400 : Colors.grey[600],
               fontSize: 13.5.sp,
               height: 1.4,
               fontWeight: FontWeight.w600,
@@ -50,7 +52,7 @@ class IncompleteGamesState extends StatelessWidget {
             height: 52.h,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: StudentUiColors.primary,
+                backgroundColor: isDark ? const Color(0xFF6D28D9) : StudentUiColors.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16.r),

@@ -17,6 +17,8 @@ class RiasecScoreRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = RiasecStyles.riasecColors[letter] ?? StudentUiColors.primary;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: EdgeInsets.only(bottom: 14.h),
       child: Row(
@@ -49,7 +51,7 @@ class RiasecScoreRow extends StatelessWidget {
                       child: Text(
                         RiasecStyles.riasecNames[letter] ?? letter,
                         style: TextStyle(
-                          color: StudentUiColors.darkText,
+                          color: isDark ? Colors.white : StudentUiColors.darkText,
                           fontSize: 11.5.sp,
                           fontWeight: FontWeight.w800,
                         ),

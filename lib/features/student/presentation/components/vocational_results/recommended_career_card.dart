@@ -17,16 +17,17 @@ class RecommendedCareerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final university = career.universityName?.trim();
     final isFirst = position == 1;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
           color: isFirst
-              ? StudentUiColors.primary.withOpacity(0.32)
-              : const Color(0xFFE6E2F2),
+              ? StudentUiColors.primary.withOpacity(0.48)
+              : (isDark ? const Color(0xFF2E305C) : const Color(0xFFE6E2F2)),
         ),
         boxShadow: [
           BoxShadow(
@@ -88,8 +89,8 @@ class RecommendedCareerCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isFirst
-                        ? const Color(0xFFFFF4D8)
-                        : const Color(0xFFF1ECFF),
+                        ? (isDark ? const Color(0xFF2D251D) : const Color(0xFFFFF4D8))
+                        : (isDark ? const Color(0xFF2E2452) : const Color(0xFFF1ECFF)),
                     borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Text(
@@ -98,8 +99,8 @@ class RecommendedCareerCard extends StatelessWidget {
                         : 'OPCIÓN RECOMENDADA',
                     style: TextStyle(
                       color: isFirst
-                          ? const Color(0xFFB76A00)
-                          : StudentUiColors.primary,
+                          ? (isDark ? const Color(0xFFFFD166) : const Color(0xFFB76A00))
+                          : (isDark ? const Color(0xFFB59AFF) : StudentUiColors.primary),
                       fontSize: 8.5.sp,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.35,
@@ -112,7 +113,7 @@ class RecommendedCareerCard extends StatelessWidget {
                       ? 'Carrera sin nombre'
                       : career.name.trim(),
                   style: TextStyle(
-                    color: StudentUiColors.darkText,
+                    color: isDark ? Colors.white : StudentUiColors.darkText,
                     fontSize: 13.5.sp,
                     height: 1.25,
                     fontWeight: FontWeight.w900,
@@ -128,7 +129,7 @@ class RecommendedCareerCard extends StatelessWidget {
                       vertical: 8.h,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8F7FC),
+                      color: isDark ? const Color(0xFF15162D) : const Color(0xFFF8F7FC),
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: Row(
@@ -139,15 +140,16 @@ class RecommendedCareerCard extends StatelessWidget {
                           width: 27.w,
                           height: 27.w,
                           decoration: BoxDecoration(
-                            color: StudentUiColors.primary
-                                .withOpacity(0.10),
+                            color: isDark
+                                ? const Color(0xFF2E2452)
+                                : StudentUiColors.primary.withOpacity(0.10),
                             borderRadius:
                             BorderRadius.circular(8.r),
                           ),
                           child: Icon(
                             Icons.account_balance_rounded,
                             size: 15.sp,
-                            color: StudentUiColors.primary,
+                            color: isDark ? const Color(0xFFB59AFF) : StudentUiColors.primary,
                           ),
                         ),
                         SizedBox(width: 8.w),
@@ -155,7 +157,7 @@ class RecommendedCareerCard extends StatelessWidget {
                           child: Text(
                             university,
                             style: TextStyle(
-                              color: Colors.grey[700],
+                              color: isDark ? Colors.grey.shade300 : Colors.grey[700],
                               fontSize: 10.5.sp,
                               height: 1.25,
                               fontWeight: FontWeight.w700,
@@ -171,7 +173,7 @@ class RecommendedCareerCard extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.auto_awesome_rounded,
-                      color: StudentUiColors.primary,
+                      color: isDark ? const Color(0xFFB59AFF) : StudentUiColors.primary,
                       size: 15.sp,
                     ),
                     SizedBox(width: 6.w),
@@ -179,7 +181,7 @@ class RecommendedCareerCard extends StatelessWidget {
                       child: Text(
                         'Seleccionada a partir de tus resultados',
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: isDark ? Colors.grey.shade400 : Colors.grey[600],
                           fontSize: 9.8.sp,
                           fontWeight: FontWeight.w600,
                         ),

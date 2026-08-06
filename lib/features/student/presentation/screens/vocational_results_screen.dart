@@ -97,6 +97,7 @@ class _VocationalResultsScreenState
     final gamesProvider = context.watch<GamesProvider>();
     final persistenceProvider = context.watch<GamePersistenceProvider>();
     final careersProvider = context.watch<CareersProvider>();
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
       canPop: false,
@@ -106,8 +107,8 @@ class _VocationalResultsScreenState
         }
       },
       child: Scaffold(
-        backgroundColor: StudentUiColors.background,
-        appBar: _buildAppBar(),
+        backgroundColor: isDark ? const Color(0xFF0F1020) : StudentUiColors.background,
+        appBar: _buildAppBar(isDark),
         body: VocationalResultsBody(
           resultsProvider: resultsProvider,
           gamesProvider: gamesProvider,
@@ -123,24 +124,24 @@ class _VocationalResultsScreenState
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(bool isDark) {
     return AppBar(
       automaticallyImplyLeading: false,
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
+      surfaceTintColor: isDark ? const Color(0xFF0F1020) : Colors.white,
       elevation: 0,
       leading: IconButton(
         tooltip: 'Regresar al inicio',
-        icon: const Icon(
+        icon: Icon(
           Icons.arrow_back_ios_new,
-          color: Colors.black,
+          color: isDark ? Colors.white : Colors.black,
         ),
         onPressed: _goToStudentHome,
       ),
       title: Text(
         'Tus Resultados',
         style: TextStyle(
-          color: StudentUiColors.darkText,
+          color: isDark ? Colors.white : StudentUiColors.darkText,
           fontWeight: FontWeight.w900,
           fontSize: 18.sp,
         ),
@@ -148,9 +149,9 @@ class _VocationalResultsScreenState
       actions: [
         IconButton(
           tooltip: 'Notificaciones',
-          icon: const Icon(
+          icon: Icon(
             Icons.notifications_none,
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
           ),
           onPressed: () {
             _showMessage('Notificaciones próximamente');
@@ -158,9 +159,9 @@ class _VocationalResultsScreenState
         ),
         IconButton(
           tooltip: 'Más opciones',
-          icon: const Icon(
+          icon: Icon(
             Icons.more_vert,
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
           ),
           onPressed: () {
             _showMessage('Más opciones próximamente');

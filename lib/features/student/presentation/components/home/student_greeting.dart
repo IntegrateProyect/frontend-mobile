@@ -30,6 +30,8 @@ class StudentGreeting extends StatelessWidget {
       fallback: 'Por asignar',
     );
 
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -40,7 +42,7 @@ class StudentGreeting extends StatelessWidget {
           style: TextStyle(
             fontSize: 26.sp,
             fontWeight: FontWeight.w900,
-            color: const Color(0xFF1D1B4B),
+            color: isDark ? Colors.white : const Color(0xFF1D1B4B),
             letterSpacing: -0.5,
           ),
         ),
@@ -49,7 +51,7 @@ class StudentGreeting extends StatelessWidget {
           TextSpan(
             style: TextStyle(
               fontSize: 12.5.sp,
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               fontWeight: FontWeight.w500,
               height: 1.4,
             ),

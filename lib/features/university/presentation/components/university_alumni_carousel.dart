@@ -15,6 +15,7 @@ class UniversityAlumniCarousel extends StatelessWidget {
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF311B92);
     const Color accentColor = Color(0xFF1D1B4B);
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (provider.isLoading) {
       return SizedBox(
@@ -30,13 +31,13 @@ class UniversityAlumniCarousel extends StatelessWidget {
         height: 60.h,
         padding: EdgeInsets.all(8.r),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E1F38) : Colors.white,
           borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(color: const Color(0xFFF1F5F9)),
+          border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFF1F5F9)),
         ),
         child: Center(
           child: Text('Sin egresados',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10.sp, color: accentColor)),
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10.sp, color: isDark ? Colors.white70 : accentColor)),
         ),
       );
     }
@@ -57,9 +58,9 @@ class UniversityAlumniCarousel extends StatelessWidget {
             margin: EdgeInsets.only(right: 10.w),
             padding: EdgeInsets.all(12.r),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? const Color(0xFF1E1F38) : Colors.white,
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: const Color(0xFFF1F5F9)),
+              border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFF1F5F9)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,10 +69,10 @@ class UniversityAlumniCarousel extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 14.r,
-                      backgroundColor: primaryColor.withOpacity(0.08),
+                      backgroundColor: isDark ? primaryColor.withOpacity(0.18) : primaryColor.withOpacity(0.08),
                       child: Text(initial,
                           style: TextStyle(
-                              color: primaryColor,
+                              color: isDark ? const Color(0xFFB59AFF) : primaryColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 11.sp)),
                     ),
@@ -84,14 +85,14 @@ class UniversityAlumniCarousel extends StatelessWidget {
                               style: TextStyle(
                                   fontSize: 11.sp,
                                   fontWeight: FontWeight.w900,
-                                  color: accentColor,
+                                  color: isDark ? Colors.white : accentColor,
                                   height: 1.1),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis),
                           Text('Clase ${alumni.graduationYear}',
                               style: TextStyle(
                                   fontSize: 8.5.sp,
-                                  color: Colors.grey[400],
+                                  color: isDark ? Colors.grey.shade400 : Colors.grey[400],
                                   fontWeight: FontWeight.w700)),
                         ],
                       ),
@@ -107,7 +108,7 @@ class UniversityAlumniCarousel extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 10.5.sp,
                         fontWeight: FontWeight.w800,
-                        color: accentColor,
+                        color: isDark ? Colors.white70 : accentColor,
                         height: 1.1),
                   ),
                 ),
@@ -118,7 +119,7 @@ class UniversityAlumniCarousel extends StatelessWidget {
                     alumni.company,
                     style: TextStyle(
                         fontSize: 10.sp,
-                        color: primaryColor,
+                        color: isDark ? const Color(0xFFB59AFF) : primaryColor,
                         fontWeight: FontWeight.w900,
                         height: 1.1),
                   ),

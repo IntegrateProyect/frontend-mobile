@@ -79,15 +79,17 @@ class UniversityManagementGrid extends StatelessWidget {
     Color iconColor,
     Color accentColor,
   ) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       onTap: () => context.push(path),
       borderRadius: BorderRadius.circular(16.r),
       child: Container(
         padding: EdgeInsets.all(12.r),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E1F38) : Colors.white,
           borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: const Color(0xFFF1F5F9)),
+          border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFF1F5F9)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,10 +98,10 @@ class UniversityManagementGrid extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
-                color: bg,
+                color: isDark ? iconColor.withOpacity(0.18) : bg,
                 borderRadius: BorderRadius.circular(10.r),
               ),
-              child: Icon(icon, color: iconColor, size: 20.sp),
+              child: Icon(icon, color: isDark ? const Color(0xFFB59AFF) : iconColor, size: 20.sp),
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,7 +112,7 @@ class UniversityManagementGrid extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w900,
-                    color: accentColor,
+                    color: isDark ? Colors.white : accentColor,
                     height: 1.1,
                   ),
                   maxLines: 1,
@@ -121,7 +123,7 @@ class UniversityManagementGrid extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 10.sp,
-                    color: Colors.grey[400],
+                    color: isDark ? Colors.grey.shade400 : Colors.grey[400],
                     fontWeight: FontWeight.w700,
                     height: 1.05,
                   ),

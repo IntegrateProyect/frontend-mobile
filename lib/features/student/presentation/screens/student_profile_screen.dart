@@ -52,7 +52,7 @@ class _StudentProfileScreenState
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
-    final isDark = themeProvider.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final profileProvider =
     context.watch<StudentProfileProvider>();
 
@@ -120,6 +120,7 @@ class _StudentProfileScreenState
     required String? avatarUrl,
   }) {
     final profile = profileProvider.profile;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (profileProvider.isLoading && profile == null) {
       return const Center(
@@ -224,17 +225,17 @@ class _StudentProfileScreenState
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                 decoration: BoxDecoration(
-                  color: themeProvider.isDarkMode ? const Color(0xFF1E1F38) : const Color(0xFFF5F6FC),
+                  color: isDark ? const Color(0xFF1E1F38) : const Color(0xFFF5F6FC),
                   borderRadius: BorderRadius.circular(16.r),
                   border: Border.all(
-                    color: themeProvider.isDarkMode ? const Color(0xFF2E305C) : const Color(0xFFECECF3),
+                    color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECECF3),
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      themeProvider.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                      color: themeProvider.isDarkMode ? Colors.amberAccent : const Color(0xFF311B92),
+                      isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                      color: isDark ? Colors.amberAccent : const Color(0xFF311B92),
                     ),
                     SizedBox(width: 12.w),
                     Expanded(
@@ -244,13 +245,13 @@ class _StudentProfileScreenState
                           Text(
                             'Modo Oscuro',
                             style: TextStyle(
-                              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                              color: isDark ? Colors.white : Colors.black,
                               fontWeight: FontWeight.bold,
                               fontSize: 14.sp,
                             ),
                           ),
                           Text(
-                            themeProvider.isDarkMode ? 'Tema oscuro activado' : 'Tema claro activado',
+                            isDark ? 'Tema oscuro activado' : 'Tema claro activado',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 11.sp,
@@ -260,7 +261,7 @@ class _StudentProfileScreenState
                       ),
                     ),
                     Switch(
-                      value: themeProvider.isDarkMode,
+                      value: isDark,
                       onChanged: themeProvider.setDarkMode,
                       activeColor: Colors.amberAccent,
                     ),

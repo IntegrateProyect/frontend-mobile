@@ -16,9 +16,9 @@ class UniversityHomeAppBar extends StatelessWidget implements PreferredSizeWidge
 
   @override
   Widget build(BuildContext context) {
-    const Color accentColor = Color(0xFF1D1B4B);
     final themeProvider = context.watch<ThemeProvider>();
-    final isDark = themeProvider.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const Color accentColor = Color(0xFF1D1B4B);
 
     return AppBar(
       backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,

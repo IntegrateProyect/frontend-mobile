@@ -17,8 +17,7 @@ class AlumniHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AlumniHomeProvider>();
-    final themeProvider = context.watch<ThemeProvider>();
-    final isDark = themeProvider.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (provider.profile == null && !provider.isLoading && provider.errorMessage == null) {
       Future.microtask(() => provider.loadHomeData());

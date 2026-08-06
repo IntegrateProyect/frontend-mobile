@@ -24,6 +24,7 @@ class CounselorAgendaTabView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final appointments = List<AppointmentEntity>.from(provider.appointments)
       ..sort((a, b) => a.sessionDate.compareTo(b.sessionDate));
 
@@ -36,6 +37,7 @@ class CounselorAgendaTabView extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 30.h),
         children: [
           _pageHeader(
+            context,
             'Agenda',
             '${appointments.length} citas registradas',
             'Nueva cita',
@@ -52,7 +54,8 @@ class CounselorAgendaTabView extends StatelessWidget {
                   : '${provider.availability.length} bloques disponibles',
             ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: _primary,
+              foregroundColor: isDark ? const Color(0xFFB59AFF) : _primary,
+              side: isDark ? const BorderSide(color: Color(0xFF2E305C)) : null,
               minimumSize: Size.fromHeight(48.h),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15.r),
@@ -72,12 +75,15 @@ class CounselorAgendaTabView extends StatelessWidget {
   }
 
   Widget _pageHeader(
+    BuildContext context,
     String title,
     String subtitle,
     String button,
     IconData icon,
     VoidCallback onTap,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -86,7 +92,7 @@ class CounselorAgendaTabView extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: _dark,
+            color: isDark ? Colors.white : _dark,
             fontSize: 23.sp,
             fontWeight: FontWeight.w900,
           ),
@@ -97,7 +103,7 @@ class CounselorAgendaTabView extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: Colors.grey.shade600,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
             fontSize: 10.5.sp,
           ),
         ),

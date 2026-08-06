@@ -528,7 +528,7 @@ class CounselorProfileScreen extends StatelessWidget {
             child: Row(
               children: [
                 _buildIconBox(
-                  icon: themeProvider.isDarkMode
+                  icon: isDark
                       ? Icons.dark_mode_rounded
                       : Icons.light_mode_rounded,
                   iconColor: isDark
@@ -557,7 +557,7 @@ class CounselorProfileScreen extends StatelessWidget {
                       SizedBox(height: 4.h),
 
                       Text(
-                        themeProvider.isDarkMode
+                        isDark
                             ? 'Tema oscuro activado'
                             : 'Tema claro activado',
                         style: TextStyle(
@@ -570,7 +570,7 @@ class CounselorProfileScreen extends StatelessWidget {
                 ),
 
                 Switch.adaptive(
-                  value: themeProvider.isDarkMode,
+                  value: isDark,
                   onChanged: themeProvider.setDarkMode,
                 ),
               ],

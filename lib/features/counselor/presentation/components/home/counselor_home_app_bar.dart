@@ -16,12 +16,13 @@ class CounselorHomeAppBar extends StatelessWidget implements PreferredSizeWidget
     const primary = Color(0xFF311B92);
     const secondary = Color(0xFF6847D6);
     const dark = Color(0xFF17164A);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppBar(
       automaticallyImplyLeading: false,
       toolbarHeight: 68.h,
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
+      surfaceTintColor: isDark ? const Color(0xFF0F1020) : Colors.white,
       elevation: 0,
       titleSpacing: 20.w,
       title: Row(
@@ -44,7 +45,7 @@ class CounselorHomeAppBar extends StatelessWidget implements PreferredSizeWidget
           Text(
             'Oriéntate+',
             style: TextStyle(
-              color: dark,
+              color: isDark ? Colors.white : dark,
               fontSize: 20.sp,
               fontWeight: FontWeight.w900,
               letterSpacing: -.4,
@@ -59,9 +60,9 @@ class CounselorHomeAppBar extends StatelessWidget implements PreferredSizeWidget
           icon: Stack(
             clipBehavior: Clip.none,
             children: [
-              const Icon(
+              Icon(
                 Icons.notifications_none_rounded,
-                color: dark,
+                color: isDark ? Colors.white : dark,
               ),
               if (pendingNotifications > 0)
                 Positioned(

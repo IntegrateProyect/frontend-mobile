@@ -40,8 +40,10 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CounselorProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: isDark ? const Color(0xFF0F1020) : _background,
       appBar: CounselorHomeAppBar(
         pendingNotifications: _getPendingCount(provider),
         onNotificationsPressed: () => _showNotifications(provider),
@@ -163,12 +165,13 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
   }
 
   Widget _bottomNavigation() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
       type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      selectedItemColor: _primary,
-      unselectedItemColor: Colors.grey.shade600,
+      backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
+      selectedItemColor: isDark ? const Color(0xFFB59AFF) : _primary,
+      unselectedItemColor: isDark ? Colors.white60 : Colors.grey.shade600,
       selectedLabelStyle: const TextStyle(
         fontWeight: FontWeight.w800,
       ),

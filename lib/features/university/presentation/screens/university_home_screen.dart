@@ -44,8 +44,7 @@ class _UniversityHomeScreenState extends State<UniversityHomeScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
-    final themeProvider = context.watch<ThemeProvider>();
-    final isDark = themeProvider.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final String universityName =
         (user?.universityName != null && user!.universityName!.isNotEmpty)

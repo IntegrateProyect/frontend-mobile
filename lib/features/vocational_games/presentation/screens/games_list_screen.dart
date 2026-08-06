@@ -138,20 +138,22 @@ class _GamesListScreenState extends State<GamesListScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<GamesProvider>();
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
+      backgroundColor: isDark ? const Color(0xFF0F1020) : const Color(0xFFF8F9FE),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
+        surfaceTintColor: isDark ? const Color(0xFF0F1020) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios_new, color: isDark ? Colors.white : Colors.black),
           onPressed: () => context.go(AppRoutes.home.path),
         ),
-        title: const Text(
+        title: Text(
           'Minijuegos vocacionales', 
           style: TextStyle(
-            color: Colors.black, 
+            color: isDark ? Colors.white : Colors.black, 
             fontWeight: FontWeight.w900, 
             fontSize: 18
           )

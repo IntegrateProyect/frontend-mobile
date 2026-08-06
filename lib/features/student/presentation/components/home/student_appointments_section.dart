@@ -17,6 +17,8 @@ class StudentAppointmentsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -25,24 +27,26 @@ class StudentAppointmentsSection extends StatelessWidget {
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w800,
-            color: StudentUiColors.darkText,
+            color: isDark ? Colors.white : StudentUiColors.darkText,
           ),
         ),
         SizedBox(height: 12.h),
 
         if (appointments.isEmpty)
-          _buildEmptyAppointments()
+          _buildEmptyAppointments(context)
         else
           ...appointments
               .take(3)
               .map(
-                (appointment) => _buildAppointmentCard(appointment),
+                (appointment) => _buildAppointmentCard(context, appointment),
           ),
       ],
     );
   }
 
-  Widget _buildEmptyAppointments() {
+  Widget _buildEmptyAppointments(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
@@ -50,10 +54,10 @@ class StudentAppointmentsSection extends StatelessWidget {
         vertical: 22.h,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(18.r),
         border: Border.all(
-          color: const Color(0xFFECEEF4),
+          color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECEEF4),
         ),
         boxShadow: [
           BoxShadow(
@@ -69,12 +73,12 @@ class StudentAppointmentsSection extends StatelessWidget {
             width: 52.w,
             height: 52.w,
             decoration: BoxDecoration(
-              color: StudentUiColors.primary.withOpacity(0.08),
+              color: isDark ? StudentUiColors.primary.withOpacity(0.18) : StudentUiColors.primary.withOpacity(0.08),
               borderRadius: BorderRadius.circular(16.r),
             ),
             child: Icon(
               Icons.calendar_month_outlined,
-              color: StudentUiColors.primary.withOpacity(0.55),
+              color: isDark ? const Color(0xFFB59AFF) : StudentUiColors.primary.withOpacity(0.55),
               size: 29.sp,
             ),
           ),
@@ -83,7 +87,7 @@ class StudentAppointmentsSection extends StatelessWidget {
             'Aquí aparecerán las citas con tu orientador',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: StudentUiColors.darkText,
+              color: isDark ? Colors.white : StudentUiColors.darkText,
               fontSize: 13.5.sp,
               fontWeight: FontWeight.w700,
               height: 1.3,
@@ -94,7 +98,7 @@ class StudentAppointmentsSection extends StatelessWidget {
             'Por ahora no tienes ninguna.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               fontSize: 12.sp,
               fontWeight: FontWeight.w500,
             ),
@@ -104,7 +108,9 @@ class StudentAppointmentsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildAppointmentCard(AppointmentEntity appointment) {
+  Widget _buildAppointmentCard(BuildContext context, AppointmentEntity appointment) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     final String dateText = DateFormat(
       'EEEE d MMMM',
       'es',
@@ -124,10 +130,10 @@ class StudentAppointmentsSection extends StatelessWidget {
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
-          color: const Color(0xFFECEEF4),
+          color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECEEF4),
         ),
         boxShadow: [
           BoxShadow(
@@ -143,12 +149,12 @@ class StudentAppointmentsSection extends StatelessWidget {
             width: 44.w,
             height: 44.w,
             decoration: BoxDecoration(
-              color: StudentUiColors.primary.withOpacity(0.10),
+              color: isDark ? StudentUiColors.primary.withOpacity(0.18) : StudentUiColors.primary.withOpacity(0.10),
               borderRadius: BorderRadius.circular(12.r),
             ),
             child: Icon(
               Icons.event_outlined,
-              color: StudentUiColors.primary,
+              color: isDark ? const Color(0xFFB59AFF) : StudentUiColors.primary,
               size: 23.sp,
             ),
           ),
@@ -164,7 +170,7 @@ class StudentAppointmentsSection extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13.5.sp,
-                    color: StudentUiColors.darkText,
+                    color: isDark ? Colors.white : StudentUiColors.darkText,
                   ),
                 ),
                 SizedBox(height: 5.h),
@@ -173,7 +179,7 @@ class StudentAppointmentsSection extends StatelessWidget {
                     Icon(
                       Icons.schedule_rounded,
                       size: 14.sp,
-                      color: Colors.grey.shade500,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
                     ),
                     SizedBox(width: 4.w),
                     Expanded(
@@ -183,7 +189,7 @@ class StudentAppointmentsSection extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 11.5.sp,
-                          color: Colors.grey.shade600,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -200,7 +206,7 @@ class StudentAppointmentsSection extends StatelessWidget {
               vertical: 5.h,
             ),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.10),
+              color: statusColor.withOpacity(isDark ? 0.20 : 0.10),
               borderRadius: BorderRadius.circular(8.r),
             ),
             child: Text(

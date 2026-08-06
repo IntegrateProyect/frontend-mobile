@@ -41,13 +41,15 @@ class RiasecOverviewCard extends StatelessWidget {
         .map((item) => item.key)
         .join('');
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(24.r),
         border: Border.all(
-          color: const Color(0xFFE8E6F2),
+          color: isDark ? const Color(0xFF2E305C) : const Color(0xFFE8E6F2),
         ),
         boxShadow: [
           BoxShadow(
@@ -88,7 +90,7 @@ class RiasecOverviewCard extends StatelessWidget {
                     Text(
                       'Tus resultados vocacionales',
                       style: TextStyle(
-                        color: StudentUiColors.darkText,
+                        color: isDark ? Colors.white : StudentUiColors.darkText,
                         fontSize: 18.sp,
                         fontWeight: FontWeight.w900,
                       ),
@@ -97,7 +99,7 @@ class RiasecOverviewCard extends StatelessWidget {
                     Text(
                       'Puntuaciones reales obtenidas en tus actividades.',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: isDark ? Colors.grey.shade400 : Colors.grey[600],
                         fontSize: 11.sp,
                         height: 1.25,
                       ),
@@ -112,13 +114,13 @@ class RiasecOverviewCard extends StatelessWidget {
                     vertical: 7.h,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1ECFF),
+                    color: isDark ? const Color(0xFF2E2452) : const Color(0xFFF1ECFF),
                     borderRadius: BorderRadius.circular(14.r),
                   ),
                   child: Text(
                     dominant,
                     style: TextStyle(
-                      color: StudentUiColors.primary,
+                      color: isDark ? const Color(0xFFB59AFF) : StudentUiColors.primary,
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.4,

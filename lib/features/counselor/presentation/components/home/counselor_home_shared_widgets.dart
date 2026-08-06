@@ -7,14 +7,17 @@ class CounselorSectionHeader extends StatelessWidget {
   final Color darkColor;
 
   const CounselorSectionHeader({
-    super.key,
+    key,
     required this.title,
     required this.subtitle,
     this.darkColor = const Color(0xFF17164A),
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final resolvedDarkColor = isDark ? Colors.white : darkColor;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -22,7 +25,7 @@ class CounselorSectionHeader extends StatelessWidget {
           child: Text(
             title,
             style: TextStyle(
-              color: darkColor,
+              color: resolvedDarkColor,
               fontSize: 18.sp,
               fontWeight: FontWeight.w900,
             ),
@@ -31,7 +34,7 @@ class CounselorSectionHeader extends StatelessWidget {
         Text(
           subtitle,
           style: TextStyle(
-            color: Colors.grey.shade500,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
             fontSize: 9.5.sp,
           ),
         ),
@@ -50,7 +53,7 @@ class CounselorEmptyFocusCard extends StatelessWidget {
   final Color darkColor;
 
   const CounselorEmptyFocusCard({
-    super.key,
+    key,
     required this.icon,
     required this.color,
     required this.title,
@@ -58,16 +61,19 @@ class CounselorEmptyFocusCard extends StatelessWidget {
     this.button,
     this.onTap,
     this.darkColor = const Color(0xFF17164A),
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final resolvedDarkColor = isDark ? Colors.white : darkColor;
+
     return Container(
       padding: EdgeInsets.all(17.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(21.r),
-        border: Border.all(color: color.withOpacity(.13)),
+        border: Border.all(color: isDark ? const Color(0xFF2E305C) : color.withOpacity(.13)),
       ),
       child: Row(
         children: [
@@ -75,10 +81,10 @@ class CounselorEmptyFocusCard extends StatelessWidget {
             width: 49.w,
             height: 49.w,
             decoration: BoxDecoration(
-              color: color.withOpacity(.09),
+              color: isDark ? color.withOpacity(.18) : color.withOpacity(.09),
               borderRadius: BorderRadius.circular(15.r),
             ),
-            child: Icon(icon, color: color),
+            child: Icon(icon, color: isDark ? const Color(0xFFB59AFF) : color),
           ),
           SizedBox(width: 13.w),
           Expanded(
@@ -88,7 +94,7 @@ class CounselorEmptyFocusCard extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    color: darkColor,
+                    color: resolvedDarkColor,
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w900,
                   ),
@@ -97,7 +103,7 @@ class CounselorEmptyFocusCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     fontSize: 10.5.sp,
                   ),
                 ),
@@ -107,6 +113,9 @@ class CounselorEmptyFocusCard extends StatelessWidget {
           if (button != null)
             TextButton(
               onPressed: onTap,
+              style: TextButton.styleFrom(
+                foregroundColor: isDark ? const Color(0xFFB59AFF) : null,
+              ),
               child: Text(button!),
             ),
         ],
@@ -121,25 +130,27 @@ class CounselorSmallTag extends StatelessWidget {
   final Color primaryColor;
 
   const CounselorSmallTag({
-    super.key,
+    key,
     required this.icon,
     required this.text,
     required this.primaryColor,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Flexible(
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
         decoration: BoxDecoration(
-          color: const Color(0xFFF2F0FA),
+          color: isDark ? const Color(0xFF282443) : const Color(0xFFF2F0FA),
           borderRadius: BorderRadius.circular(20.r),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 12.sp, color: primaryColor),
+            Icon(icon, size: 12.sp, color: isDark ? const Color(0xFFB59AFF) : primaryColor),
             SizedBox(width: 4.w),
             Flexible(
               child: Text(
@@ -147,7 +158,7 @@ class CounselorSmallTag extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: primaryColor,
+                  color: isDark ? const Color(0xFFB59AFF) : primaryColor,
                   fontSize: 8.5.sp,
                   fontWeight: FontWeight.w700,
                 ),

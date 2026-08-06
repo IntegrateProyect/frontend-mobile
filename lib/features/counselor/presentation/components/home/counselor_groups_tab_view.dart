@@ -26,6 +26,8 @@ class CounselorGroupsTabView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return RefreshIndicator(
       color: _primary,
       onRefresh: provider.loadDashboardData,
@@ -39,7 +41,7 @@ class CounselorGroupsTabView extends StatelessWidget {
           Text(
             'Grupos activos',
             style: TextStyle(
-              color: _dark,
+              color: isDark ? Colors.white : _dark,
               fontSize: 17.sp,
               fontWeight: FontWeight.w900,
             ),
@@ -48,7 +50,7 @@ class CounselorGroupsTabView extends StatelessWidget {
           Text(
             'Administra los grupos y consulta a sus alumnos.',
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               fontSize: 10.5.sp,
             ),
           ),
@@ -64,7 +66,7 @@ class CounselorGroupsTabView extends StatelessWidget {
             )
           else
             ...provider.groups.whereType<Map>().map(
-                  (raw) => _groupCard(Map<String, dynamic>.from(raw)),
+                  (raw) => _groupCard(context, Map<String, dynamic>.from(raw)),
                 ),
         ],
       ),
@@ -125,7 +127,8 @@ class CounselorGroupsTabView extends StatelessWidget {
     );
   }
 
-  Widget _groupCard(Map<String, dynamic> group) {
+  Widget _groupCard(BuildContext context, Map<String, dynamic> group) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final id = '${group['id'] ?? ''}';
     final name = '${group['name'] ?? 'Grupo sin nombre'}';
     final code = '${group['accessCode'] ?? group['access_code'] ?? group['code'] ?? '---'}';
@@ -135,9 +138,9 @@ class CounselorGroupsTabView extends StatelessWidget {
       margin: EdgeInsets.only(bottom: 14.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F38) : Colors.white,
         borderRadius: BorderRadius.circular(21.r),
-        border: Border.all(color: const Color(0xFFECECF3)),
+        border: Border.all(color: isDark ? const Color(0xFF2E305C) : const Color(0xFFECECF3)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(.025),
@@ -174,7 +177,7 @@ class CounselorGroupsTabView extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: _dark,
+                        color: isDark ? Colors.white : _dark,
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w900,
                       ),
@@ -197,7 +200,7 @@ class CounselorGroupsTabView extends StatelessWidget {
             ],
           ),
           SizedBox(height: 14.h),
-          Divider(height: 1, color: Colors.grey.shade100),
+          Divider(height: 1, color: isDark ? const Color(0xFF2E305C) : Colors.grey.shade100),
           SizedBox(height: 11.h),
           Row(
             children: [
@@ -225,7 +228,8 @@ class CounselorGroupsTabView extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => onEditGroup(group),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _primary,
+                    foregroundColor: isDark ? const Color(0xFFB59AFF) : _primary,
+                    side: isDark ? const BorderSide(color: Color(0xFF2E305C)) : null,
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.r),
@@ -240,7 +244,7 @@ class CounselorGroupsTabView extends StatelessWidget {
                   onPressed: () => onDeleteGroup(id, name),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.redAccent,
-                    side: const BorderSide(color: Color(0xFFFFCDD2)),
+                    side: BorderSide(color: isDark ? Colors.redAccent.withOpacity(.5) : const Color(0xFFFFCDD2)),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.r),
