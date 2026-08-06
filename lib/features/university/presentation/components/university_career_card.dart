@@ -6,11 +6,13 @@ import '../../domain/entities/university_career_entity.dart';
 class UniversityCareerCard extends StatelessWidget {
   final UniversityCareerEntity career;
   final VoidCallback onDelete;
+  final EdgeInsetsGeometry? margin;
 
   const UniversityCareerCard({
     super.key,
     required this.career,
     required this.onDelete,
+    this.margin,
   });
 
   static const Color primaryColor = Color(0xFF311B92);
@@ -31,7 +33,7 @@ class UniversityCareerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
+      margin: margin ?? EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),

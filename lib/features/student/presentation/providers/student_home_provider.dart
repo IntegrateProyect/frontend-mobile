@@ -5,6 +5,8 @@ import '../../../../core/utils/UserService.dart';
 import '../../domain/entities/student_profile_entity.dart';
 import '../../domain/usecases/get_student_profile_usecase.dart';
 
+enum StudentHomeState { initial, loading, loaded, error }
+
 class StudentHomeProvider extends ChangeNotifier {
   final GetStudentProfileUseCase _getProfileUseCase;
   final UserService _userService;
@@ -16,13 +18,14 @@ class StudentHomeProvider extends ChangeNotifier {
         _userService = userService;
 
   StudentProfileEntity? _profile;
-  bool _isLoading = false;
+  StudentHomeState _state = StudentHomeState.initial;
   bool _hasChatbotInteraction = false;
   String? _errorMessage;
   bool _isDisposed = false;
 
   StudentProfileEntity? get profile => _profile;
-  bool get isLoading => _isLoading;
+  StudentHomeState get state => _state;
+  bool get isLoading => _state == StudentHomeState.loading;
   String? get errorMessage => _errorMessage;
   bool get hasChatbotInteraction => _hasChatbotInteraction;
 
@@ -51,9 +54,9 @@ class StudentHomeProvider extends ChangeNotifier {
   }
 
   Future<void> loadHomeData() async {
-    if (_isLoading) return;
+    if (_state == StudentHomeState.loading) return;
 
-    _isLoading = true;
+    _state = StudentHomeState.loading;
     _errorMessage = null;
     _safeNotifyListeners();
 
@@ -62,10 +65,11 @@ class StudentHomeProvider extends ChangeNotifier {
       final remoteProfile = await _loadProfileSafely();
       if (remoteProfile != null) _profile = remoteProfile;
       await _loadChatbotInteraction();
+      _state = StudentHomeState.loaded;
     } catch (error) {
       _errorMessage = 'Error al cargar datos de inicio';
+      _state = StudentHomeState.error;
     } finally {
-      _isLoading = false;
       _safeNotifyListeners();
     }
   }

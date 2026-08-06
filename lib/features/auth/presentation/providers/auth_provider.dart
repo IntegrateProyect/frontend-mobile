@@ -17,6 +17,8 @@ import 'auth_session_service.dart';
 import 'auth_validators.dart';
 import 'student_account_service.dart';
 
+enum AuthState { initial, loading, success, error }
+
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUseCase;
   final RegisterUseCase _registerUseCase;
@@ -30,7 +32,7 @@ class AuthProvider extends ChangeNotifier {
   final AuthPaymentService _paymentService;
 
   UserEntity? _user;
-  bool _isLoading = false;
+  AuthState _state = AuthState.initial;
   bool _sessionChecked = false;
   String? _errorMessage;
 
@@ -60,7 +62,9 @@ class AuthProvider extends ChangeNotifier {
 
   UserEntity? get user => _user;
 
-  bool get isLoading => _isLoading;
+  AuthState get state => _state;
+
+  bool get isLoading => _state == AuthState.loading;
 
   bool get sessionChecked => _sessionChecked;
 
@@ -73,7 +77,7 @@ class AuthProvider extends ChangeNotifier {
   // =========================================================
 
   Future<bool> restoreSession() async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -81,16 +85,17 @@ class AuthProvider extends ChangeNotifier {
       final restoredUser = await _sessionService.restoreSession();
 
       _user = restoredUser;
+      _state = AuthState.success;
 
       return restoredUser != null;
     } catch (error) {
       _user = null;
       _errorMessage = null;
+      _state = AuthState.error;
 
       return false;
     } finally {
       _sessionChecked = true;
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -124,7 +129,7 @@ class AuthProvider extends ChangeNotifier {
       String email,
       String password,
       ) async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -150,13 +155,14 @@ class AuthProvider extends ChangeNotifier {
         password,
       );
 
+      _state = AuthState.success;
       return true;
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+      _state = AuthState.error;
 
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -176,7 +182,7 @@ class AuthProvider extends ChangeNotifier {
     String? accessCode,
     Map<String, dynamic>? additionalData,
   }) async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -258,10 +264,6 @@ class AuthProvider extends ChangeNotifier {
         }
       }
 
-      /*
-       * Si el registro corresponde a un estudiante y se recibió
-       * un perfil vocacional, se crea después del registro.
-       */
       if (normalizedRole == 'estudiante' &&
           studentProfile != null &&
           studentProfile.isNotEmpty) {
@@ -270,10 +272,6 @@ class AuthProvider extends ChangeNotifier {
         );
       }
 
-      /*
-       * Si también se recibió un código de acceso, se intenta
-       * unir al estudiante al grupo.
-       */
       if (normalizedRole == 'estudiante' &&
           accessCode != null &&
           accessCode.trim().isNotEmpty) {
@@ -282,6 +280,7 @@ class AuthProvider extends ChangeNotifier {
         );
       }
 
+      _state = AuthState.success;
       return true;
     } catch (error) {
       debugPrint(
@@ -289,10 +288,10 @@ class AuthProvider extends ChangeNotifier {
       );
 
       _errorMessage = AuthErrorHelper.cleanError(error);
+      _state = AuthState.error;
 
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -302,18 +301,20 @@ class AuthProvider extends ChangeNotifier {
   // =========================================================
 
   Future<bool?> studentProfileExists() async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      return await _studentService.studentProfileExists();
+      final result = await _studentService.studentProfileExists();
+      _state = AuthState.success;
+      return result;
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+      _state = AuthState.error;
 
       return null;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -325,20 +326,22 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> createStudentVocationalProfile(
       Map<String, dynamic> profile,
       ) async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      return await _studentService.createStudentVocationalProfile(
+      final result = await _studentService.createStudentVocationalProfile(
         profile,
       );
+      _state = AuthState.success;
+      return result;
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+      _state = AuthState.error;
 
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -350,7 +353,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> joinStudentGroup(
       String accessCode,
       ) async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -363,15 +366,17 @@ class AuthProvider extends ChangeNotifier {
         );
       }
 
-      return await _studentService.joinStudentGroup(
+      final result = await _studentService.joinStudentGroup(
         normalizedCode,
       );
+      _state = AuthState.success;
+      return result;
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+      _state = AuthState.error;
 
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -383,7 +388,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> updateAvatar(
       Uint8List imageBytes,
       ) async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -398,13 +403,14 @@ class AuthProvider extends ChangeNotifier {
         imageBytes,
       );
 
+      _state = AuthState.success;
       return true;
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+      _state = AuthState.error;
 
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -448,18 +454,19 @@ class AuthProvider extends ChangeNotifier {
   // =========================================================
 
   Future<void> logout() async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
     try {
       await _sessionService.logout();
+      _state = AuthState.initial;
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+      _state = AuthState.error;
     } finally {
       _user = null;
       _sessionChecked = true;
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -471,7 +478,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> recoverPassword(
       String email,
       ) async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -486,15 +493,17 @@ class AuthProvider extends ChangeNotifier {
         throw Exception(emailError);
       }
 
-      return await _passwordService.recoverPassword(
+      final result = await _passwordService.recoverPassword(
         normalizedEmail,
       );
+      _state = AuthState.success;
+      return result;
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+      _state = AuthState.error;
 
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -507,7 +516,7 @@ class AuthProvider extends ChangeNotifier {
       String token,
       String newPassword,
       ) async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -526,16 +535,18 @@ class AuthProvider extends ChangeNotifier {
         throw Exception(passwordError);
       }
 
-      return await _passwordService.resetPassword(
+      final result = await _passwordService.resetPassword(
         token.trim(),
         newPassword,
       );
+      _state = AuthState.success;
+      return result;
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+      _state = AuthState.error;
 
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -548,21 +559,23 @@ class AuthProvider extends ChangeNotifier {
       double amount, {
         String paymentMethod = 'card',
       }) async {
-    _isLoading = true;
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      return await _paymentService.createPaymentPreference(
+      final result = await _paymentService.createPaymentPreference(
         amount,
         paymentMethod: paymentMethod,
       );
+      _state = AuthState.success;
+      return result;
     } catch (error) {
       _errorMessage = AuthErrorHelper.cleanError(error);
+      _state = AuthState.error;
 
       return null;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }

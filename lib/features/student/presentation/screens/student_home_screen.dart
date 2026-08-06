@@ -307,9 +307,47 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     required StudentProgressProvider progressProvider,
     required StudentAppointmentsProvider appointmentsProvider,
   }) {
-    if (homeProvider.isLoading && homeProvider.profile == null) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (homeProvider.state == StudentHomeState.loading && homeProvider.profile == null) {
       return const Center(
         child: CircularProgressIndicator(color: StudentUiColors.primary),
+      );
+    }
+
+    if (homeProvider.state == StudentHomeState.error && homeProvider.profile == null) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
+              SizedBox(height: 16.h),
+              Text(
+                homeProvider.errorMessage ?? 'Ocurrió un error al cargar el perfil',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16.h),
+              ElevatedButton.icon(
+                onPressed: _refreshAllData,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Reintentar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: StudentUiColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 

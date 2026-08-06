@@ -108,6 +108,93 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
     }).toList();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final double width = MediaQuery.of(context).size.width;
+    final int crossAxisCount = (width >= 1200)
+        ? 3
+        : (width >= 720)
+            ? 2
+            : 1;
+
+    final double horizontalPadding = (width >= 1200)
+        ? 40.w
+        : (width >= 720)
+            ? 24.w
+            : 20.w;
+
+    Widget directoryContent;
+
+    if (alumniProvider.state == UniversityAlumniState.loading && alumniProvider.alumni.isEmpty) {
+      directoryContent = const Center(child: CircularProgressIndicator(color: _primaryColor));
+    } else if (alumniProvider.state == UniversityAlumniState.error && alumniProvider.alumni.isEmpty) {
+      directoryContent = Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
+              SizedBox(height: 16.h),
+              Text(
+                alumniProvider.errorMessage ?? 'Ocurrió un error inesperado',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16.h),
+              ElevatedButton.icon(
+                onPressed: () => alumniProvider.fetchAlumni(),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Reintentar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (filteredAlumni.isEmpty) {
+      directoryContent = _buildEmptyState(context);
+    } else {
+      directoryContent = RefreshIndicator(
+        onRefresh: () => alumniProvider.fetchAlumni(),
+        color: _primaryColor,
+        child: crossAxisCount == 1
+            ? ListView.builder(
+                padding: EdgeInsets.fromLTRB(horizontalPadding, 8.h, horizontalPadding, 80.h),
+                itemCount: filteredAlumni.length,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemBuilder: (context, index) => UniversityAlumniCard(
+                  alumni: filteredAlumni[index],
+                  onEdit: () => _showAlumniForm(context, alumni: filteredAlumni[index]),
+                  onDelete: () => _deleteAlumni(context, filteredAlumni[index].id),
+                ),
+              )
+            : GridView.builder(
+                padding: EdgeInsets.fromLTRB(horizontalPadding, 16.h, horizontalPadding, 80.h),
+                itemCount: filteredAlumni.length,
+                physics: const AlwaysScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 16.w,
+                  mainAxisSpacing: 16.h,
+                  childAspectRatio: (width >= 1200) ? 1.6 : 1.45,
+                ),
+                itemBuilder: (context, index) => UniversityAlumniCard(
+                  alumni: filteredAlumni[index],
+                  margin: EdgeInsets.zero,
+                  onEdit: () => _showAlumniForm(context, alumni: filteredAlumni[index]),
+                  onDelete: () => _deleteAlumni(context, filteredAlumni[index].id),
+                ),
+              ),
+      );
+    }
 
     return DefaultTabController(
       length: 2,
@@ -161,32 +248,14 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
         ),
         body: TabBarView(
           children: [
-            // Tab 1: Alumni Directory
             Column(
               children: [
                 _buildFilters(careersProvider),
                 Expanded(
-                  child: alumniProvider.isLoading && alumniProvider.alumni.isEmpty
-                      ? const Center(child: CircularProgressIndicator(color: _primaryColor))
-                      : filteredAlumni.isEmpty
-                          ? _buildEmptyState(context)
-                          : RefreshIndicator(
-                              onRefresh: () => alumniProvider.fetchAlumni(),
-                              color: _primaryColor,
-                              child: ListView.builder(
-                                padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 80.h),
-                                itemCount: filteredAlumni.length,
-                                itemBuilder: (context, index) => UniversityAlumniCard(
-                                  alumni: filteredAlumni[index],
-                                  onEdit: () => _showAlumniForm(context, alumni: filteredAlumni[index]),
-                                  onDelete: () => _deleteAlumni(context, filteredAlumni[index].id),
-                                ),
-                              ),
-                            ),
+                  child: directoryContent,
                 ),
               ],
             ),
-            // Tab 2: Pending Stories Moderation
             _buildPendingStoriesTab(context, alumniProvider),
           ],
         ),
@@ -222,17 +291,36 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
       );
     }
 
+    final double width = MediaQuery.of(context).size.width;
+    final int gridColumns = width >= 800 ? 2 : 1;
+    final double horizontalPadding = width >= 800 ? 24.w : 20.w;
+
     return RefreshIndicator(
       onRefresh: () => provider.fetchPendingStories(),
       color: _primaryColor,
-      child: ListView.builder(
-        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 80.h),
-        itemCount: provider.pendingStories.length,
-        itemBuilder: (context, index) {
-          final story = provider.pendingStories[index];
-          return _buildStoryModerationCard(context, provider, story);
-        },
-      ),
+      child: gridColumns == 1
+          ? ListView.builder(
+              padding: EdgeInsets.fromLTRB(horizontalPadding, 16.h, horizontalPadding, 80.h),
+              itemCount: provider.pendingStories.length,
+              itemBuilder: (context, index) {
+                final story = provider.pendingStories[index];
+                return _buildStoryModerationCard(context, provider, story);
+              },
+            )
+          : GridView.builder(
+              padding: EdgeInsets.fromLTRB(horizontalPadding, 16.h, horizontalPadding, 80.h),
+              itemCount: provider.pendingStories.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: gridColumns,
+                crossAxisSpacing: 16.w,
+                mainAxisSpacing: 16.h,
+                childAspectRatio: 1.25,
+              ),
+              itemBuilder: (context, index) {
+                final story = provider.pendingStories[index];
+                return _buildStoryModerationCard(context, provider, story);
+              },
+            ),
     );
   }
 
@@ -241,15 +329,16 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
     final String content = story['content'] ?? '';
     final String authorName = story['alumniName'] ?? story['alumni_name'] ?? 'Egresado';
     final String storyId = story['id'] ?? '';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F30) : Colors.white,
         borderRadius: BorderRadius.circular(18.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(isDark ? 0.15 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -273,11 +362,15 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
                   children: [
                     Text(
                       authorName,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp, color: _accentColor),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14.sp,
+                        color: isDark ? Colors.white : _accentColor,
+                      ),
                     ),
                     Text(
                       'Egresado(a)',
-                      style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12.sp, color: isDark ? Colors.white54 : Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -285,13 +378,13 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: Colors.amber[100],
+                  color: isDark ? const Color(0xFF3B2E15) : Colors.amber[100],
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Text(
                   'PENDIENTE',
                   style: TextStyle(
-                    color: Colors.amber[900],
+                    color: isDark ? Colors.amber[400] : Colors.amber[900],
                     fontSize: 10.sp,
                     fontWeight: FontWeight.bold,
                   ),
@@ -302,12 +395,25 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
           SizedBox(height: 12.h),
           Text(
             title,
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.sp, color: _accentColor),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 15.sp,
+              color: isDark ? Colors.white : _accentColor,
+            ),
           ),
           SizedBox(height: 6.h),
-          Text(
-            content,
-            style: TextStyle(fontSize: 13.sp, color: Colors.grey[800], height: 1.3),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Text(
+                content,
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: isDark ? Colors.white70 : Colors.grey[800],
+                  height: 1.3,
+                ),
+              ),
+            ),
           ),
           SizedBox(height: 16.h),
           Row(
@@ -366,40 +472,63 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
   }
 
   Widget _buildFilters(UniversityCareersProvider provider) {
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 16.h),
-      child: Column(
-        children: [
-          TextField(
-            onChanged: (val) => setState(() => _searchQuery = val),
-            decoration: InputDecoration(
-              hintText: 'Buscar por nombre, puesto...',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              filled: true,
-              fillColor: const Color(0xFFF8F9FE),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14.r), borderSide: BorderSide.none),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-          SizedBox(height: 10.h),
-          DropdownButtonFormField<String>(
-            value: _selectedCareerId,
-            hint: const Text('Filtrar por Carrera'),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: const Color(0xFFF8F9FE),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14.r), borderSide: BorderSide.none),
-              contentPadding: EdgeInsets.symmetric(horizontal: 16.w),
-            ),
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Todas las carreras')),
-              ...provider.careers.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))),
-            ],
-            onChanged: (val) => setState(() => _selectedCareerId = val),
-          ),
-        ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final double width = MediaQuery.of(context).size.width;
+    final bool isWide = width >= 720;
+
+    final Widget searchField = TextField(
+      onChanged: (val) => setState(() => _searchQuery = val),
+      decoration: InputDecoration(
+        hintText: 'Buscar por nombre, puesto...',
+        prefixIcon: const Icon(Icons.search, size: 20),
+        filled: true,
+        fillColor: isDark ? const Color(0xFF1E1F30) : const Color(0xFFF8F9FE),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14.r), borderSide: BorderSide.none),
+        contentPadding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
       ),
+    );
+
+    final Widget dropdownField = DropdownButtonFormField<String>(
+      isExpanded: true,
+      value: _selectedCareerId,
+      hint: const Text('Filtrar por Carrera', overflow: TextOverflow.ellipsis),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: isDark ? const Color(0xFF1E1F30) : const Color(0xFFF8F9FE),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14.r), borderSide: BorderSide.none),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      ),
+      items: [
+        const DropdownMenuItem(value: null, child: Text('Todas las carreras')),
+        ...provider.careers.map((c) => DropdownMenuItem(
+          value: c.id, 
+          child: Text(
+            c.name, 
+            overflow: TextOverflow.ellipsis,
+          ),
+        )),
+      ],
+      onChanged: (val) => setState(() => _selectedCareerId = val),
+    );
+
+    return Container(
+      color: isDark ? const Color(0xFF0F1020) : Colors.white,
+      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 16.h),
+      child: isWide
+          ? Row(
+              children: [
+                Expanded(flex: 3, child: searchField),
+                SizedBox(width: 16.w),
+                Expanded(flex: 2, child: dropdownField),
+              ],
+            )
+          : Column(
+              children: [
+                searchField,
+                SizedBox(height: 10.h),
+                dropdownField,
+              ],
+            ),
     );
   }
 

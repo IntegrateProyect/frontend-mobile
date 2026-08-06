@@ -32,7 +32,7 @@ class VocationalResultsBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if ((gamesProvider.isLoading && gamesProvider.miniGames.isEmpty) ||
-        (resultsProvider.isLoading && resultsProvider.results.isEmpty)) {
+        (resultsProvider.state == StudentResultsState.loading && resultsProvider.results.isEmpty)) {
       return const Center(
         child: CircularProgressIndicator(
           color: StudentUiColors.primary,

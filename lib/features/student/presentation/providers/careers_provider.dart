@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/career_entity.dart';
 import '../../domain/usecases/get_recommended_careers_usecase.dart';
 
+enum CareersState { initial, loading, loaded, error }
+
 class CareersProvider extends ChangeNotifier {
   final GetRecommendedCareersUseCase _getCareersUseCase;
 
@@ -11,7 +13,7 @@ class CareersProvider extends ChangeNotifier {
   }) : _getCareersUseCase = getRecommendedCareersUseCase;
 
   List<CareerEntity> _careers = [];
-  bool _isLoading = false;
+  CareersState _state = CareersState.initial;
   bool _hasLoaded = false;
   String? _errorMessage;
   bool _isDisposed = false;
@@ -19,7 +21,8 @@ class CareersProvider extends ChangeNotifier {
   List<CareerEntity> get careers =>
       List<CareerEntity>.unmodifiable(_careers);
 
-  bool get isLoading => _isLoading;
+  CareersState get state => _state;
+  bool get isLoading => _state == CareersState.loading;
   bool get hasLoaded => _hasLoaded;
   bool get hasCareers => _careers.isNotEmpty;
   String? get errorMessage => _errorMessage;
@@ -40,24 +43,25 @@ class CareersProvider extends ChangeNotifier {
     int topN = 5,
     bool force = false,
   }) async {
-    if (_isLoading || (_hasLoaded && !force)) {
+    if (_state == CareersState.loading || (_hasLoaded && !force)) {
       return;
     }
 
-    _isLoading = true;
+    _state = CareersState.loading;
     _errorMessage = null;
     _safeNotifyListeners();
 
     try {
       _careers = await _getCareersUseCase(topN: topN);
       _hasLoaded = true;
+      _state = CareersState.loaded;
     } catch (error, stackTrace) {
       debugPrint('Error al cargar carreras recomendadas: $error');
       debugPrintStack(stackTrace: stackTrace);
       _careers = [];
       _errorMessage = _friendlyError(error);
+      _state = CareersState.error;
     } finally {
-      _isLoading = false;
       _safeNotifyListeners();
     }
   }
@@ -71,7 +75,7 @@ class CareersProvider extends ChangeNotifier {
 
   void clear() {
     _careers = [];
-    _isLoading = false;
+    _state = CareersState.initial;
     _hasLoaded = false;
     _errorMessage = null;
     _safeNotifyListeners();

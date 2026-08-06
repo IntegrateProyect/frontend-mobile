@@ -7,12 +7,14 @@ class UniversityAlumniCard extends StatelessWidget {
   final UniversityAlumniEntity alumni;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final EdgeInsetsGeometry? margin;
 
   const UniversityAlumniCard({
     super.key,
     required this.alumni,
     required this.onEdit,
     required this.onDelete,
+    this.margin,
   });
 
   static const Color _primaryColor = Color(0xFF311B92);
@@ -21,7 +23,7 @@ class UniversityAlumniCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
+      margin: margin ?? EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),

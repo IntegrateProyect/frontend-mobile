@@ -59,12 +59,53 @@ class _CounselorHomeScreenState extends State<CounselorHomeScreen> {
   }
 
   Widget _body(CounselorProvider provider) {
-    if (provider.isLoading &&
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (provider.state == CounselorState.loading &&
         provider.groups.isEmpty &&
         provider.students.isEmpty &&
         provider.appointments.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: _primary),
+      );
+    }
+
+    if (provider.state == CounselorState.error &&
+        provider.groups.isEmpty &&
+        provider.students.isEmpty &&
+        provider.appointments.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
+              SizedBox(height: 16.h),
+              Text(
+                provider.errorMessage ?? 'Ocurrió un error al cargar los datos del panel',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16.h),
+              ElevatedButton.icon(
+                onPressed: () => provider.loadDashboardData(),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Reintentar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
