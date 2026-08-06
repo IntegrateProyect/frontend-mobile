@@ -1,3 +1,5 @@
+import 'package:device_preview/device_preview.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -69,136 +71,137 @@ Future<void> main() async {
   await di.init();
 
   runApp(
-    MultiProvider(
-      providers: [
-        // ====================================================
-        // TEMA
-        // ====================================================
-        ChangeNotifierProvider<ThemeProvider>(
-          create: (_) => ThemeProvider(),
-        ),
+    DevicePreview(
+      enabled: !kReleaseMode,
+      builder: (context) => MultiProvider(
+        providers: [
+          // ====================================================
+          // TEMA
+          // ====================================================
+          ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
 
-        // ====================================================
-        // AUTENTICACIÓN
-        // ====================================================
-        ChangeNotifierProvider<AuthProvider>(
-          create: (_) => di.sl<AuthProvider>(),
-        ),
+          // ====================================================
+          // AUTENTICACIÓN
+          // ====================================================
+          ChangeNotifierProvider<AuthProvider>(
+            create: (_) => di.sl<AuthProvider>(),
+          ),
 
-        // ====================================================
-        // ORIENTADOR
-        // ====================================================
-        ChangeNotifierProvider<CounselorProvider>(
-          create: (_) => di.sl<CounselorProvider>(),
-        ),
+          // ====================================================
+          // ORIENTADOR
+          // ====================================================
+          ChangeNotifierProvider<CounselorProvider>(
+            create: (_) => di.sl<CounselorProvider>(),
+          ),
 
-        // ====================================================
-        // ESTUDIANTE (Providers Especializados)
-        // ====================================================
-        ChangeNotifierProvider<StudentHomeProvider>(
-          create: (_) => di.sl<StudentHomeProvider>(),
-        ),
-        ChangeNotifierProvider<StudentGroupProvider>(
-          create: (_) => di.sl<StudentGroupProvider>(),
-        ),
-        ChangeNotifierProvider<StudentAppointmentsProvider>(
-          create: (_) => di.sl<StudentAppointmentsProvider>(),
-        ),
-        ChangeNotifierProvider<StudentAnnouncementsProvider>(
-          create: (_) => di.sl<StudentAnnouncementsProvider>(),
-        ),
-        ChangeNotifierProvider<StudentProgressProvider>(
-          create: (_) => di.sl<StudentProgressProvider>(),
-        ),
-        ChangeNotifierProvider<StudentEventsProvider>(
-          create: (_) => di.sl<StudentEventsProvider>(),
-        ),
-        ChangeNotifierProvider<StudentProfileProvider>(
-          create: (_) => di.sl<StudentProfileProvider>(),
-        ),
-        ChangeNotifierProvider<StudentResultsProvider>(
-          create: (_) => di.sl<StudentResultsProvider>(),
-        ),
-        ChangeNotifierProvider<CareersProvider>(
-          create: (_) => di.sl<CareersProvider>(),
-        ),
-        ChangeNotifierProvider<FavoritesProvider>(
-          create: (_) => di.sl<FavoritesProvider>(),
-        ),
+          // ====================================================
+          // ESTUDIANTE (Providers Especializados)
+          // ====================================================
+          ChangeNotifierProvider<StudentHomeProvider>(
+            create: (_) => di.sl<StudentHomeProvider>(),
+          ),
+          ChangeNotifierProvider<StudentGroupProvider>(
+            create: (_) => di.sl<StudentGroupProvider>(),
+          ),
+          ChangeNotifierProvider<StudentAppointmentsProvider>(
+            create: (_) => di.sl<StudentAppointmentsProvider>(),
+          ),
+          ChangeNotifierProvider<StudentAnnouncementsProvider>(
+            create: (_) => di.sl<StudentAnnouncementsProvider>(),
+          ),
+          ChangeNotifierProvider<StudentProgressProvider>(
+            create: (_) => di.sl<StudentProgressProvider>(),
+          ),
+          ChangeNotifierProvider<StudentEventsProvider>(
+            create: (_) => di.sl<StudentEventsProvider>(),
+          ),
+          ChangeNotifierProvider<StudentProfileProvider>(
+            create: (_) => di.sl<StudentProfileProvider>(),
+          ),
+          ChangeNotifierProvider<StudentResultsProvider>(
+            create: (_) => di.sl<StudentResultsProvider>(),
+          ),
+          ChangeNotifierProvider<CareersProvider>(
+            create: (_) => di.sl<CareersProvider>(),
+          ),
+          ChangeNotifierProvider<FavoritesProvider>(
+            create: (_) => di.sl<FavoritesProvider>(),
+          ),
 
-        // ====================================================
-        // CATÁLOGO DE UNIVERSIDADES
-        // ====================================================
-        ChangeNotifierProvider<UniversitiesProvider>(
-          create: (_) => di.sl<UniversitiesProvider>(),
-        ),
+          // ====================================================
+          // CATÁLOGO DE UNIVERSIDADES
+          // ====================================================
+          ChangeNotifierProvider<UniversitiesProvider>(
+            create: (_) => di.sl<UniversitiesProvider>(),
+          ),
 
-        // ====================================================
-        // UNIVERSIDAD
-        // ====================================================
-        ChangeNotifierProvider<UniversityProfileProvider>(
-          create: (_) => di.sl<UniversityProfileProvider>(),
-        ),
-        ChangeNotifierProvider<UniversityCareersProvider>(
-          create: (_) => di.sl<UniversityCareersProvider>(),
-        ),
-        ChangeNotifierProvider<UniversityEventsProvider>(
-          create: (_) => di.sl<UniversityEventsProvider>(),
-        ),
-        ChangeNotifierProvider<UniversityAnnouncementsProvider>(
-          create: (_) => di.sl<UniversityAnnouncementsProvider>(),
-        ),
-        ChangeNotifierProvider<UniversityAlumniProvider>(
-          create: (_) => di.sl<UniversityAlumniProvider>(),
-        ),
+          // ====================================================
+          // UNIVERSIDAD
+          // ====================================================
+          ChangeNotifierProvider<UniversityProfileProvider>(
+            create: (_) => di.sl<UniversityProfileProvider>(),
+          ),
+          ChangeNotifierProvider<UniversityCareersProvider>(
+            create: (_) => di.sl<UniversityCareersProvider>(),
+          ),
+          ChangeNotifierProvider<UniversityEventsProvider>(
+            create: (_) => di.sl<UniversityEventsProvider>(),
+          ),
+          ChangeNotifierProvider<UniversityAnnouncementsProvider>(
+            create: (_) => di.sl<UniversityAnnouncementsProvider>(),
+          ),
+          ChangeNotifierProvider<UniversityAlumniProvider>(
+            create: (_) => di.sl<UniversityAlumniProvider>(),
+          ),
 
-        // ====================================================
-        // EGRESADOS
-        // ====================================================
-        ChangeNotifierProvider<AlumniHomeProvider>(
-          create: (_) => di.sl<AlumniHomeProvider>(),
-        ),
-        ChangeNotifierProvider<AlumniProvider>(
-          create: (_) => di.sl<AlumniProvider>(),
-        ),
-        ChangeNotifierProvider<SuccessStoriesProvider>(
-          create: (_) => di.sl<SuccessStoriesProvider>(),
-        ),
-        ChangeNotifierProvider<AlumniProfileFormProvider>(
-          create: (_) => di.sl<AlumniProfileFormProvider>(),
-        ),
-        ChangeNotifierProvider<WriteStoryProvider>(
-          create: (_) => di.sl<WriteStoryProvider>(),
-        ),
+          // ====================================================
+          // EGRESADOS
+          // ====================================================
+          ChangeNotifierProvider<AlumniHomeProvider>(
+            create: (_) => di.sl<AlumniHomeProvider>(),
+          ),
+          ChangeNotifierProvider<AlumniProvider>(
+            create: (_) => di.sl<AlumniProvider>(),
+          ),
+          ChangeNotifierProvider<SuccessStoriesProvider>(
+            create: (_) => di.sl<SuccessStoriesProvider>(),
+          ),
+          ChangeNotifierProvider<AlumniProfileFormProvider>(
+            create: (_) => di.sl<AlumniProfileFormProvider>(),
+          ),
+          ChangeNotifierProvider<WriteStoryProvider>(
+            create: (_) => di.sl<WriteStoryProvider>(),
+          ),
 
-        // ====================================================
-        // MINIJUEGOS
-        // ====================================================
-        ChangeNotifierProvider<GamesProvider>(
-          create: (_) => di.sl<GamesProvider>(),
-        ),
-        ChangeNotifierProvider<GamePlayProvider>(
-          create: (_) => di.sl<GamePlayProvider>(),
-        ),
-        ChangeNotifierProvider<GamePersistenceProvider>(
-          create: (_) => di.sl<GamePersistenceProvider>(),
-        ),
+          // ====================================================
+          // MINIJUEGOS
+          // ====================================================
+          ChangeNotifierProvider<GamesProvider>(
+            create: (_) => di.sl<GamesProvider>(),
+          ),
+          ChangeNotifierProvider<GamePlayProvider>(
+            create: (_) => di.sl<GamePlayProvider>(),
+          ),
+          ChangeNotifierProvider<GamePersistenceProvider>(
+            create: (_) => di.sl<GamePersistenceProvider>(),
+          ),
 
-        // ====================================================
-        // CHAT
-        // ====================================================
-        ChangeNotifierProvider<ChatProvider>(
-          create: (_) => di.sl<ChatProvider>(),
-        ),
+          // ====================================================
+          // CHAT
+          // ====================================================
+          ChangeNotifierProvider<ChatProvider>(
+            create: (_) => di.sl<ChatProvider>(),
+          ),
 
-        // ====================================================
-        // CHATBOT
-        // ====================================================
-        ChangeNotifierProvider<chatbot.ChatbotProvider>(
-          create: (_) => di.sl<chatbot.ChatbotProvider>(),
-        ),
-      ],
-      child: const MyApp(),
+          // ====================================================
+          // CHATBOT
+          // ====================================================
+          ChangeNotifierProvider<chatbot.ChatbotProvider>(
+            create: (_) => di.sl<chatbot.ChatbotProvider>(),
+          ),
+        ],
+        child: const MyApp(),
+      ),
     ),
   );
 }
