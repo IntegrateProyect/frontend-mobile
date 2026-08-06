@@ -34,6 +34,8 @@ import 'counselor_group_manager.dart';
 import 'counselor_appointment_manager.dart';
 import 'counselor_student_manager.dart';
 
+enum CounselorState { initial, loading, loaded, error }
+
 class CounselorProvider extends ChangeNotifier {
   final CounselorDashboardManager _dashboardManager;
   final CounselorGroupManager _groupManager;
@@ -98,7 +100,7 @@ class CounselorProvider extends ChangeNotifier {
 
   StudentFileEntity? _currentStudentFile;
 
-  bool _isLoading = false;
+  CounselorState _state = CounselorState.initial;
   bool _isLoadingFile = false;
   bool _isLoadingGroupStudents = false;
 
@@ -124,7 +126,9 @@ class CounselorProvider extends ChangeNotifier {
 
   Map<String, dynamic> get stats => Map<String, dynamic>.unmodifiable(_stats);
 
-  bool get isLoading => _isLoading;
+  CounselorState get state => _state;
+
+  bool get isLoading => _state == CounselorState.loading;
 
   bool get isLoadingFile => _isLoadingFile;
 
@@ -156,7 +160,7 @@ class CounselorProvider extends ChangeNotifier {
   // =========================================================
 
   Future<void> loadDashboardData() async {
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -178,11 +182,11 @@ class CounselorProvider extends ChangeNotifier {
       _students = _removeDuplicatedStudents(results[4] as List<StudentProfileEntity>);
       _appointments = results[5] as List<AppointmentEntity>;
       _availability = results[6] as List<AvailabilitySlotEntity>;
-
+      _state = CounselorState.loaded;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -199,7 +203,7 @@ class CounselorProvider extends ChangeNotifier {
       return false;
     }
 
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -209,15 +213,15 @@ class CounselorProvider extends ChangeNotifier {
       return true;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<bool> updateGroup(String groupId, {String? name, String? accessCode}) async {
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -227,15 +231,15 @@ class CounselorProvider extends ChangeNotifier {
       return true;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<bool> deleteGroup(String groupId) async {
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -245,9 +249,9 @@ class CounselorProvider extends ChangeNotifier {
       return true;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -257,7 +261,7 @@ class CounselorProvider extends ChangeNotifier {
   // =========================================================
 
   Future<bool> saveAvailability(List<AvailabilitySlotEntity> slots) async {
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -267,9 +271,9 @@ class CounselorProvider extends ChangeNotifier {
       return true;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -313,7 +317,7 @@ class CounselorProvider extends ChangeNotifier {
       return false;
     }
 
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -325,35 +329,38 @@ class CounselorProvider extends ChangeNotifier {
       );
 
       _appointments = await _dashboardManager.loadAppointmentsSafely();
+      _state = CounselorState.loaded;
       notifyListeners();
       return true;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<AppointmentEntity?> getAppointmentDetail(String id) async {
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      return await _appointmentManager.getAppointmentDetail(id);
+      final detail = await _appointmentManager.getAppointmentDetail(id);
+      _state = CounselorState.loaded;
+      return detail;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
       return null;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<bool> updateAppointment(String id, Map<String, dynamic> data) async {
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -363,15 +370,15 @@ class CounselorProvider extends ChangeNotifier {
       return true;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<bool> deleteAppointment(String id) async {
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -381,9 +388,9 @@ class CounselorProvider extends ChangeNotifier {
       return true;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -436,7 +443,7 @@ class CounselorProvider extends ChangeNotifier {
   }
 
   Future<bool> updateStudentParents(String studentId, String? email1, String? email2) async {
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -446,15 +453,15 @@ class CounselorProvider extends ChangeNotifier {
       return true;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<bool> sendStudentReport(String studentId, List<String> emails, String format) async {
-    _isLoading = true;
+    _state = CounselorState.loading;
     _errorMessage = null;
     notifyListeners();
 
@@ -463,9 +470,9 @@ class CounselorProvider extends ChangeNotifier {
       return true;
     } catch (error) {
       _errorMessage = CounselorErrorHelper.cleanError(error);
+      _state = CounselorState.error;
       return false;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }

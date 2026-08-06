@@ -7,6 +7,8 @@ import '../../domain/usecases/create_university_alumni_usecase.dart';
 import '../../domain/usecases/update_university_alumni_usecase.dart';
 import '../../domain/usecases/delete_university_alumni_usecase.dart';
 
+enum UniversityAlumniState { initial, loading, success, error }
+
 class UniversityAlumniProvider extends ChangeNotifier {
   final GetUniversityAlumniUseCase _getAlumniUseCase;
   final CreateUniversityAlumniUseCase _createAlumniUseCase;
@@ -17,7 +19,7 @@ class UniversityAlumniProvider extends ChangeNotifier {
 
   List<UniversityAlumniEntity> _alumni = [];
   List<dynamic> _pendingStories = [];
-  bool _isLoading = false;
+  UniversityAlumniState _state = UniversityAlumniState.initial;
   bool _isLoadingStories = false;
   String? _errorMessage;
 
@@ -49,7 +51,8 @@ class UniversityAlumniProvider extends ChangeNotifier {
 
   List<UniversityAlumniEntity> get alumni => _alumni;
   List<dynamic> get pendingStories => _pendingStories;
-  bool get isLoading => _isLoading;
+  UniversityAlumniState get state => _state;
+  bool get isLoading => _state == UniversityAlumniState.loading;
   bool get isLoadingStories => _isLoadingStories;
   String? get errorMessage => _errorMessage;
 
@@ -98,15 +101,16 @@ class UniversityAlumniProvider extends ChangeNotifier {
   }
 
   Future<void> fetchAlumni() async {
-    _isLoading = true;
+    _state = UniversityAlumniState.loading;
     _errorMessage = null;
     notifyListeners();
     try {
       _alumni = await _getAlumniUseCase();
+      _state = UniversityAlumniState.success;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _state = UniversityAlumniState.error;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -136,6 +140,7 @@ class UniversityAlumniProvider extends ChangeNotifier {
       await fetchAlumni();
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _state = UniversityAlumniState.error;
     } finally {
       isSubmitting = false;
       notifyListeners();
@@ -143,7 +148,7 @@ class UniversityAlumniProvider extends ChangeNotifier {
   }
 
   Future<void> deleteAlumni(String alumniId) async {
-    _isLoading = true;
+    _state = UniversityAlumniState.loading;
     _errorMessage = null;
     notifyListeners();
     try {
@@ -151,8 +156,8 @@ class UniversityAlumniProvider extends ChangeNotifier {
       await fetchAlumni();
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _state = UniversityAlumniState.error;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }

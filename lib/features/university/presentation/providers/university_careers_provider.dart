@@ -6,6 +6,8 @@ import '../../domain/usecases/delete_university_career_usecase.dart';
 import '../../domain/usecases/get_university_profile_usecase.dart';
 import '../../data/repositories/university_repository_impl.dart';
 
+enum UniversityCareersState { initial, loading, loaded, error }
+
 class UniversityCareersProvider extends ChangeNotifier {
   final GetUniversityCareersUseCase _getCareersUseCase;
   final AddUniversityCareerUseCase _addCareerUseCase;
@@ -14,7 +16,7 @@ class UniversityCareersProvider extends ChangeNotifier {
 
   List<UniversityCareerEntity> _careers = [];
   List<UniversityCareerEntity> _catalogCareers = [];
-  bool _isLoading = false;
+  UniversityCareersState _state = UniversityCareersState.initial;
   String? _errorMessage;
 
   UniversityCareersProvider({
@@ -29,7 +31,8 @@ class UniversityCareersProvider extends ChangeNotifier {
 
   List<UniversityCareerEntity> get careers => _careers;
   List<UniversityCareerEntity> get catalogCareers => _catalogCareers;
-  bool get isLoading => _isLoading;
+  UniversityCareersState get state => _state;
+  bool get isLoading => _state == UniversityCareersState.loading;
   String? get errorMessage => _errorMessage;
 
   void clearError() {
@@ -42,35 +45,37 @@ class UniversityCareersProvider extends ChangeNotifier {
   }
 
   Future<void> fetchCareers() async {
-    _isLoading = true;
+    _state = UniversityCareersState.loading;
     _errorMessage = null;
     notifyListeners();
     try {
       _careers = await _getCareersUseCase();
+      _state = UniversityCareersState.loaded;
     } catch (e) {
       _errorMessage = _cleanError(e);
+      _state = UniversityCareersState.error;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<void> fetchCatalogCareers() async {
-    _isLoading = true;
+    _state = UniversityCareersState.loading;
     _errorMessage = null;
     notifyListeners();
     try {
       _catalogCareers = await _getProfileUseCase.repository.getCatalogCareers();
+      _state = UniversityCareersState.loaded;
     } catch (e) {
       _errorMessage = _cleanError(e);
+      _state = UniversityCareersState.error;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<void> addCareer(UniversityCareerEntity career) async {
-    _isLoading = true;
+    _state = UniversityCareersState.loading;
     _errorMessage = null;
     notifyListeners();
     try {
@@ -78,9 +83,9 @@ class UniversityCareersProvider extends ChangeNotifier {
       await fetchCareers();
     } catch (e) {
       _errorMessage = _cleanError(e);
+      _state = UniversityCareersState.error;
       rethrow;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -96,7 +101,7 @@ class UniversityCareersProvider extends ChangeNotifier {
     required String admissionDates,
     String? duration,
   }) async {
-    _isLoading = true;
+    _state = UniversityCareersState.loading;
     _errorMessage = null;
     notifyListeners();
     try {
@@ -117,15 +122,15 @@ class UniversityCareersProvider extends ChangeNotifier {
       await fetchCareers();
     } catch (e) {
       _errorMessage = _cleanError(e);
+      _state = UniversityCareersState.error;
       rethrow;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<void> deleteCareer(String id) async {
-    _isLoading = true;
+    _state = UniversityCareersState.loading;
     _errorMessage = null;
     notifyListeners();
     try {
@@ -133,8 +138,8 @@ class UniversityCareersProvider extends ChangeNotifier {
       await fetchCareers();
     } catch (e) {
       _errorMessage = _cleanError(e);
+      _state = UniversityCareersState.error;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }

@@ -30,122 +30,179 @@ class _CareersScreenState extends State<CareersScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CareersProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Widget content;
+
+    if (provider.state == CareersState.loading && provider.careers.isEmpty) {
+      content = const Center(child: CircularProgressIndicator(color: primaryColor));
+    } else if (provider.state == CareersState.error && provider.careers.isEmpty) {
+      content = Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
+              SizedBox(height: 16.h),
+              Text(
+                provider.errorMessage ?? 'Ocurrió un error al cargar las recomendaciones',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16.h),
+              ElevatedButton.icon(
+                onPressed: () => provider.fetchRecommendedCareers(force: true),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Reintentar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      content = RefreshIndicator(
+        onRefresh: () => provider.refresh(),
+        color: primaryColor,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 28.h),
+          children: [
+            Text(
+              'Tu Futuro Te Espera',
+              style: TextStyle(
+                color: isDark ? Colors.white : darkText,
+                fontSize: 22.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              'Basado en tus pruebas vocacionales y perfil actual, estas son las opciones que mejor se alinean contigo.',
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.grey[600],
+                fontSize: 12.sp,
+                height: 1.3,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            _searchBox(),
+            SizedBox(height: 18.h),
+            _statsRow(),
+            SizedBox(height: 18.h),
+            if (provider.careers.isEmpty) ...[
+              _careerCard(
+                id: 'ia',
+                area: 'Tecnología',
+                title: 'Ingeniería en Inteligencia Artificial',
+                percent: '98%',
+                description:
+                    'Tu alto desempeño en lógica y matemáticas indica una afinidad fuerte con tecnología avanzada.',
+                tags: [
+                  'Pensamiento analítico',
+                  'Resolución de problemas',
+                  'Interés tecnológico',
+                ],
+              ),
+              _careerCard(
+                id: 'psicologia',
+                area: 'Sociales',
+                title: 'Psicología Organizacional',
+                percent: '85%',
+                description:
+                    'Tus habilidades interpersonales y liderazgo sugieren potencial para gestionar talento humano.',
+                tags: [
+                  'Empatía',
+                  'Liderazgo',
+                  'Comunicación asertiva',
+                ],
+              ),
+              _careerCard(
+                id: 'ux',
+                area: 'Arte y Diseño',
+                title: 'Diseño de Experiencia de Usuario (UX)',
+                percent: '78%',
+                description:
+                    'Combina creatividad visual con análisis para crear soluciones centradas en personas.',
+                tags: [
+                  'Creatividad',
+                  'Atención al detalle',
+                  'Pensamiento crítico',
+                ],
+              ),
+            ] else
+              ...provider.careers.map((career) => _careerCard(
+                    id: career.id,
+                    area: career.universityName ?? 'Institución',
+                    title: career.name,
+                    percent: '${career.compatibilityPercentage}%',
+                    description: career.description,
+                    tags: career.fields,
+                  )),
+            _chatHelpCard(),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: isDark ? const Color(0xFF0F1020) : bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios_new, color: isDark ? Colors.white : Colors.black),
           onPressed: () => context.pop(),
         ),
         title: Text(
           'Carreras recomendadas',
           style: TextStyle(
-            color: darkText,
+            color: isDark ? Colors.white : darkText,
             fontSize: 18.sp,
             fontWeight: FontWeight.w900,
           ),
         ),
       ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : ListView(
-        padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 28.h),
-        children: [
-          Text(
-            'Tu Futuro Te Espera',
-            style: TextStyle(
-              color: darkText,
-              fontSize: 22.sp,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            'Basado en tus pruebas vocacionales y perfil actual, estas son las opciones que mejor se alinean contigo.',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 12.sp,
-              height: 1.3,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 16.h),
-          _searchBox(),
-          SizedBox(height: 18.h),
-          _statsRow(),
-          SizedBox(height: 18.h),
-          _careerCard(
-            id: 'ia',
-            area: 'Tecnología',
-            title: 'Ingeniería en Inteligencia Artificial',
-            percent: '98%',
-            description:
-            'Tu alto desempeño en lógica y matemáticas indica una afinidad fuerte con tecnología avanzada.',
-            tags: [
-              'Pensamiento analítico',
-              'Resolución de problemas',
-              'Interés tecnológico',
-            ],
-          ),
-          _careerCard(
-            id: 'psicologia',
-            area: 'Sociales',
-            title: 'Psicología Organizacional',
-            percent: '85%',
-            description:
-            'Tus habilidades interpersonales y liderazgo sugieren potencial para gestionar talento humano.',
-            tags: [
-              'Empatía',
-              'Liderazgo',
-              'Comunicación asertiva',
-            ],
-          ),
-          _careerCard(
-            id: 'ux',
-            area: 'Arte y Diseño',
-            title: 'Diseño de Experiencia de Usuario (UX)',
-            percent: '78%',
-            description:
-            'Combina creatividad visual con análisis para crear soluciones centradas en personas.',
-            tags: [
-              'Creatividad',
-              'Atención al detalle',
-              'Pensamiento crítico',
-            ],
-          ),
-          _chatHelpCard(),
-        ],
-      ),
+      body: content,
     );
   }
 
   Widget _searchBox() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 14.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F30) : Colors.white,
         borderRadius: BorderRadius.circular(14.r),
       ),
       child: Row(
         children: [
-          Icon(Icons.search, color: Colors.grey[500], size: 20.sp),
+          Icon(Icons.search, color: isDark ? Colors.white54 : Colors.grey[500], size: 20.sp),
           SizedBox(width: 8.w),
           Expanded(
             child: TextField(
+              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
                 hintText: 'Buscar por carrera o área...',
                 border: InputBorder.none,
                 hintStyle: TextStyle(
-                  color: Colors.grey[500],
+                  color: isDark ? Colors.white30 : Colors.grey[500],
                   fontSize: 12.sp,
                 ),
               ),
             ),
           ),
-          Icon(Icons.tune_rounded, color: Colors.grey[600], size: 20.sp),
+          Icon(Icons.tune_rounded, color: isDark ? Colors.white54 : Colors.grey[600], size: 20.sp),
         ],
       ),
     );
@@ -181,10 +238,11 @@ class _CareersScreenState extends State<CareersScreen> {
     required String value,
     required Color color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.all(13.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F30) : Colors.white,
         borderRadius: BorderRadius.circular(16.r),
       ),
       child: Row(
@@ -206,7 +264,7 @@ class _CareersScreenState extends State<CareersScreen> {
                 Text(
                   value,
                   style: TextStyle(
-                    color: darkText,
+                    color: isDark ? Colors.white : darkText,
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w800,
                   ),
@@ -229,16 +287,17 @@ class _CareersScreenState extends State<CareersScreen> {
   }) {
     final favoritesProvider = context.watch<FavoritesProvider>();
     final isFavorite = favoritesProvider.isFavorite(id);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       margin: EdgeInsets.only(bottom: 18.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1F30) : Colors.white,
         borderRadius: BorderRadius.circular(18.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
+            color: Colors.black.withOpacity(isDark ? 0.15 : 0.025),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -260,7 +319,7 @@ class _CareersScreenState extends State<CareersScreen> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: isDark ? const Color(0xFF1A2A4A) : const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(20.r),
                 ),
                 child: Text(
@@ -288,7 +347,7 @@ class _CareersScreenState extends State<CareersScreen> {
           Text(
             title,
             style: TextStyle(
-              color: darkText,
+              color: isDark ? Colors.white : darkText,
               fontSize: 17.sp,
               fontWeight: FontWeight.w900,
             ),
@@ -297,14 +356,14 @@ class _CareersScreenState extends State<CareersScreen> {
           Container(
             padding: EdgeInsets.all(12.w),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFF),
+              color: isDark ? const Color(0xFF121324) : const Color(0xFFF8FAFF),
               borderRadius: BorderRadius.circular(14.r),
-              border: Border.all(color: const Color(0xFFE0E7FF)),
+              border: Border.all(color: isDark ? const Color(0xFF2E3150) : const Color(0xFFE0E7FF)),
             ),
             child: Text(
               '¿POR QUÉ ES PARA TI?\n$description',
               style: TextStyle(
-                color: Colors.grey[700],
+                color: isDark ? Colors.white70 : Colors.grey[700],
                 fontSize: 11.sp,
                 height: 1.3,
                 fontWeight: FontWeight.w600,
@@ -315,7 +374,7 @@ class _CareersScreenState extends State<CareersScreen> {
           Text(
             'Perfil de ingreso clave:',
             style: TextStyle(
-              color: darkText,
+              color: isDark ? Colors.white70 : darkText,
               fontSize: 11.sp,
               fontWeight: FontWeight.w900,
             ),
@@ -331,9 +390,10 @@ class _CareersScreenState extends State<CareersScreen> {
                   style: TextStyle(
                     fontSize: 9.sp,
                     fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white70 : Colors.black87,
                   ),
                 ),
-                backgroundColor: const Color(0xFFF3F4F6),
+                backgroundColor: isDark ? const Color(0xFF2E3150) : const Color(0xFFF3F4F6),
                 side: BorderSide.none,
               );
             }).toList(),
@@ -367,7 +427,7 @@ class _CareersScreenState extends State<CareersScreen> {
                   height: 44.w,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.withOpacity(0.25)),
+                    border: Border.all(color: isDark ? Colors.white24 : Colors.grey.withOpacity(0.25)),
                   ),
                   child: Icon(
                     isFavorite ? Icons.favorite : Icons.favorite_border,

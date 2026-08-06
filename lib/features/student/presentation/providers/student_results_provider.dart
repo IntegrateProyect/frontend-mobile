@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/vocational_result_entity.dart';
 import '../../domain/usecases/get_vocational_results_usecase.dart';
 
+enum StudentResultsState { initial, loading, loaded, error }
+
 class StudentResultsProvider extends ChangeNotifier {
   final GetVocationalResultsUseCase _getResultsUseCase;
 
@@ -11,7 +13,7 @@ class StudentResultsProvider extends ChangeNotifier {
   }) : _getResultsUseCase = getResultsUseCase;
 
   List<VocationalResultEntity> _results = [];
-  bool _isLoading = false;
+  StudentResultsState _state = StudentResultsState.initial;
   String? _errorMessage;
   bool _isDisposed = false;
 
@@ -23,7 +25,8 @@ class StudentResultsProvider extends ChangeNotifier {
     return _results.isEmpty ? null : _results.first;
   }
 
-  bool get isLoading => _isLoading;
+  StudentResultsState get state => _state;
+  bool get isLoading => _state == StudentResultsState.loading;
   bool get hasResults => _results.isNotEmpty;
   String? get errorMessage => _errorMessage;
 
@@ -40,20 +43,21 @@ class StudentResultsProvider extends ChangeNotifier {
   }
 
   Future<void> fetchResults() async {
-    if (_isLoading) return;
+    if (_state == StudentResultsState.loading) return;
 
-    _isLoading = true;
+    _state = StudentResultsState.loading;
     _errorMessage = null;
     _safeNotifyListeners();
 
     try {
       _results = await _getResultsUseCase();
+      _state = StudentResultsState.loaded;
     } catch (error, stackTrace) {
       debugPrint('Error al cargar resultados vocacionales: $error');
       debugPrintStack(stackTrace: stackTrace);
       _errorMessage = 'No se pudieron cargar los resultados vocacionales.';
+      _state = StudentResultsState.error;
     } finally {
-      _isLoading = false;
       _safeNotifyListeners();
     }
   }
@@ -64,7 +68,7 @@ class StudentResultsProvider extends ChangeNotifier {
 
   void clear() {
     _results = [];
-    _isLoading = false;
+    _state = StudentResultsState.initial;
     _errorMessage = null;
     _safeNotifyListeners();
   }

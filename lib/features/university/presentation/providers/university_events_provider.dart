@@ -8,6 +8,8 @@ import '../../domain/usecases/update_university_event_usecase.dart';
 import '../../domain/usecases/delete_university_event_usecase.dart';
 import '../../domain/usecases/upload_event_image_usecase.dart';
 
+enum UniversityEventsState { initial, loading, success, error }
+
 class UniversityEventsProvider extends ChangeNotifier {
   final GetUniversityEventsUseCase _getEventsUseCase;
   final CreateUniversityEventUseCase _createEventUseCase;
@@ -16,7 +18,7 @@ class UniversityEventsProvider extends ChangeNotifier {
   final UploadEventImageUseCase _uploadImageUseCase;
 
   List<UniversityEventEntity> _events = [];
-  bool _isLoading = false;
+  UniversityEventsState _state = UniversityEventsState.initial;
   String? _errorMessage;
 
   // --- Form State ---
@@ -42,7 +44,8 @@ class UniversityEventsProvider extends ChangeNotifier {
         _uploadImageUseCase = uploadImageUseCase;
 
   List<UniversityEventEntity> get events => _events;
-  bool get isLoading => _isLoading;
+  UniversityEventsState get state => _state;
+  bool get isLoading => _state == UniversityEventsState.loading;
   String? get errorMessage => _errorMessage;
 
   @override
@@ -95,15 +98,16 @@ class UniversityEventsProvider extends ChangeNotifier {
   }
 
   Future<void> fetchEvents() async {
-    _isLoading = true;
+    _state = UniversityEventsState.loading;
     _errorMessage = null;
     notifyListeners();
     try {
       _events = await _getEventsUseCase();
+      _state = UniversityEventsState.success;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _state = UniversityEventsState.error;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -156,6 +160,7 @@ class UniversityEventsProvider extends ChangeNotifier {
       await fetchEvents();
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _state = UniversityEventsState.error;
     } finally {
       isSubmitting = false;
       notifyListeners();
@@ -163,7 +168,7 @@ class UniversityEventsProvider extends ChangeNotifier {
   }
 
   Future<void> deleteEvent(String eventId) async {
-    _isLoading = true;
+    _state = UniversityEventsState.loading;
     _errorMessage = null;
     notifyListeners();
     try {
@@ -171,8 +176,8 @@ class UniversityEventsProvider extends ChangeNotifier {
       await fetchEvents();
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _state = UniversityEventsState.error;
     } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }

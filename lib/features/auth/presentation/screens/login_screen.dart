@@ -179,6 +179,117 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final double width = MediaQuery.of(context).size.width;
+    final bool isWide = width >= 800;
+
+    if (isWide) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        resizeToAvoidBottomInset: true,
+        body: Row(
+          children: [
+            // Panel izquierdo: Branding / Diseño Premium
+            Expanded(
+              flex: 5,
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF311B92), Color(0xFF1D1B4B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    // Círculos abstractos decorativos
+                    Positioned(
+                      top: -100,
+                      left: -100,
+                      child: Container(
+                        width: 300,
+                        height: 300,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.04),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -150,
+                      right: -50,
+                      child: Container(
+                        width: 400,
+                        height: 400,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.03),
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.school_rounded,
+                              color: Colors.white,
+                              size: 80.sp,
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Oriéntate+',
+                              style: TextStyle(
+                                fontSize: 36.sp,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -1,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Tu puente hacia la educación superior y el éxito profesional',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.white.withOpacity(0.7),
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Panel derecho: Formulario de Login
+            Expanded(
+              flex: 4,
+              child: SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 48),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _buildFormChildren(true, authProvider),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -193,87 +304,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Column(
-                    children: [
-                      SizedBox(height: 70.h),
-                      const LoginHeader(),
-                      SizedBox(height: 55.h),
-                      const LoginLabel(text: 'Correo electrónico'),
-                      SizedBox(height: 10.h),
-                      TextFormField(
-                        controller: _emailController,
-                        enabled: !authProvider.isLoading,
-                        inputFormatters: [
-                          const LowerCaseTextFormatter(),
-                          FilteringTextInputFormatter.allow(RegExp(r'[a-z0-9@._%+\-]')),
-                        ],
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        autofillHints: const [AutofillHints.email],
-                        style: TextStyle(fontSize: 16.sp, color: Colors.black87),
-                        decoration: LoginInputDecorations.getFieldDecoration(
-                          hint: 'ejemplo@correo.com',
-                          icon: Icons.email_outlined,
-                        ),
-                      ),
-                      SizedBox(height: 24.h),
-                      const LoginLabel(text: 'Contraseña'),
-                      SizedBox(height: 10.h),
-                      TextFormField(
-                        controller: _passwordController,
-                        enabled: !authProvider.isLoading,
-                        obscureText: _obscurePassword,
-                        textInputAction: TextInputAction.done,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        autofillHints: const [AutofillHints.password],
-                        onFieldSubmitted: (_) {
-                          if (!authProvider.isLoading) _handleLogin();
-                        },
-                        style: TextStyle(fontSize: 16.sp, color: Colors.black87),
-                        decoration: LoginInputDecorations.getFieldDecoration(
-                          hint: '••••••••',
-                          icon: Icons.lock_outline,
-                          suffix: IconButton(
-                            onPressed: authProvider.isLoading
-                                ? null
-                                : () => setState(() => _obscurePassword = !_obscurePassword),
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              size: 22.sp,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 12.h),
-                      ForgotPasswordLink(
-                        onTap: authProvider.isLoading
-                            ? null
-                            : () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const ForgotPasswordScreen(),
-                                  ),
-                                );
-                              },
-                      ),
-                      SizedBox(height: 36.h),
-                      LoginButton(
-                        isLoading: authProvider.isLoading,
-                        onPressed: _handleLogin,
-                      ),
-                      SizedBox(height: 32.h),
-                      RegisterLink(
-                        onTap: authProvider.isLoading
-                            ? null
-                            : () => context.push(AppRoutes.roleSelection.path),
-                      ),
-                      SizedBox(height: 40.h),
-                    ],
+                    children: _buildFormChildren(false, authProvider),
                   ),
                 ),
               ),
@@ -282,5 +313,89 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildFormChildren(bool isWide, AuthProvider authProvider) {
+    return [
+      if (!isWide) SizedBox(height: 60.h) else const SizedBox(height: 20),
+      const LoginHeader(),
+      if (!isWide) SizedBox(height: 50.h) else const SizedBox(height: 30),
+      const LoginLabel(text: 'Correo electrónico'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _emailController,
+        enabled: !authProvider.isLoading,
+        inputFormatters: [
+          const LowerCaseTextFormatter(),
+          FilteringTextInputFormatter.allow(RegExp(r'[a-z0-9@._%+\-]')),
+        ],
+        keyboardType: TextInputType.emailAddress,
+        textInputAction: TextInputAction.next,
+        autocorrect: false,
+        enableSuggestions: false,
+        autofillHints: const [AutofillHints.email],
+        style: TextStyle(fontSize: 15.sp, color: Colors.black87),
+        decoration: LoginInputDecorations.getFieldDecoration(
+          hint: 'ejemplo@correo.com',
+          icon: Icons.email_outlined,
+        ),
+      ),
+      const SizedBox(height: 20),
+      const LoginLabel(text: 'Contraseña'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _passwordController,
+        enabled: !authProvider.isLoading,
+        obscureText: _obscurePassword,
+        textInputAction: TextInputAction.done,
+        autocorrect: false,
+        enableSuggestions: false,
+        autofillHints: const [AutofillHints.password],
+        onFieldSubmitted: (_) {
+          if (!authProvider.isLoading) _handleLogin();
+        },
+        style: TextStyle(fontSize: 15.sp, color: Colors.black87),
+        decoration: LoginInputDecorations.getFieldDecoration(
+          hint: '••••••••',
+          icon: Icons.lock_outline,
+          suffix: IconButton(
+            onPressed: authProvider.isLoading
+                ? null
+                : () => setState(() => _obscurePassword = !_obscurePassword),
+            icon: Icon(
+              _obscurePassword
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+              size: 20.sp,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+      ForgotPasswordLink(
+        onTap: authProvider.isLoading
+            ? null
+            : () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ForgotPasswordScreen(),
+                  ),
+                );
+              },
+      ),
+      const SizedBox(height: 28),
+      LoginButton(
+        isLoading: authProvider.isLoading,
+        onPressed: _handleLogin,
+      ),
+      const SizedBox(height: 24),
+      RegisterLink(
+        onTap: authProvider.isLoading
+            ? null
+            : () => context.push(AppRoutes.roleSelection.path),
+      ),
+      if (!isWide) SizedBox(height: 40.h) else const SizedBox(height: 20),
+    ];
   }
 }
