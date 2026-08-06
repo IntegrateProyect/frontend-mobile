@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/routes/AppRoutes.dart';
+import '../../../../responsive.dart';
 
 class UniversityManagementGrid extends StatelessWidget {
   const UniversityManagementGrid({super.key});
@@ -9,14 +10,20 @@ class UniversityManagementGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Color accentColor = Color(0xFF1D1B4B);
+    final screenSize = context.screenSize;
+
+    // Adaptamos el grid según el tamaño de pantalla
+    final double width = MediaQuery.of(context).size.width;
+    final int crossAxisCount = (width >= 600 && width < 720) ? 3 : 2;
+    final double childAspectRatio = (width >= 600 && width < 720) ? 1.4 : 1.15;
 
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.3,
+      crossAxisCount: crossAxisCount,
+      mainAxisSpacing: 10.r,
+      crossAxisSpacing: 10.r,
+      childAspectRatio: childAspectRatio,
       children: [
         _buildActionCard(
           context,
@@ -84,36 +91,44 @@ class UniversityManagementGrid extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
-              padding: EdgeInsets.all(6.r),
+              padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
                 color: bg,
-                borderRadius: BorderRadius.circular(8.r),
+                borderRadius: BorderRadius.circular(10.r),
               ),
-              child: Icon(icon, color: iconColor, size: 18.sp),
+              child: Icon(icon, color: iconColor, size: 20.sp),
             ),
-            const Spacer(),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 11.5.sp,
-                fontWeight: FontWeight.w900,
-                color: accentColor,
-                height: 1.1,
-              ),
-            ),
-            SizedBox(height: 2.h),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 8.5.sp,
-                color: Colors.grey[400],
-                fontWeight: FontWeight.w700,
-                height: 1.05,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w900,
+                    color: accentColor,
+                    height: 1.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    color: Colors.grey[400],
+                    fontWeight: FontWeight.w700,
+                    height: 1.05,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ],
         ),

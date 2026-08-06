@@ -161,7 +161,6 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
         ),
         body: TabBarView(
           children: [
-            // Tab 1: Alumni Directory
             Column(
               children: [
                 _buildFilters(careersProvider),
@@ -186,7 +185,6 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
                 ),
               ],
             ),
-            // Tab 2: Pending Stories Moderation
             _buildPendingStoriesTab(context, alumniProvider),
           ],
         ),
@@ -384,8 +382,9 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
           ),
           SizedBox(height: 10.h),
           DropdownButtonFormField<String>(
+            isExpanded: true, // Corregido: Permite que el contenido se ajuste al ancho disponible
             value: _selectedCareerId,
-            hint: const Text('Filtrar por Carrera'),
+            hint: const Text('Filtrar por Carrera', overflow: TextOverflow.ellipsis),
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFFF8F9FE),
@@ -394,7 +393,13 @@ class _ManageAlumniScreenState extends State<ManageAlumniScreen> {
             ),
             items: [
               const DropdownMenuItem(value: null, child: Text('Todas las carreras')),
-              ...provider.careers.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))),
+              ...provider.careers.map((c) => DropdownMenuItem(
+                value: c.id, 
+                child: Text(
+                  c.name, 
+                  overflow: TextOverflow.ellipsis, // Corregido: Evita desbordamiento si el nombre es largo
+                ),
+              )),
             ],
             onChanged: (val) => setState(() => _selectedCareerId = val),
           ),

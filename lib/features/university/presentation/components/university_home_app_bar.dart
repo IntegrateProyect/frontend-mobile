@@ -8,6 +8,12 @@ import 'package:orientate/shared/theme/theme_provider.dart';
 class UniversityHomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   const UniversityHomeAppBar({super.key});
 
+  // kToolbarHeight (56) en vez de 45.h fijo: un valor puramente calculado
+  // por ScreenUtil puede quedar corto si el texto de sistema está
+  // escalado. Usamos un mínimo seguro de Material y dejamos que el título
+  // se trunque con ellipsis en vez de desbordar hacia el body.
+  static const double _minHeight = kToolbarHeight;
+
   @override
   Widget build(BuildContext context) {
     const Color accentColor = Color(0xFF1D1B4B);
@@ -18,9 +24,11 @@ class UniversityHomeAppBar extends StatelessWidget implements PreferredSizeWidge
       backgroundColor: isDark ? const Color(0xFF0F1020) : Colors.white,
       elevation: 0,
       centerTitle: false,
-      toolbarHeight: 45.h,
+      toolbarHeight: _minHeight,
       title: Text(
         'Dashboard Universidad',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: isDark ? Colors.white : accentColor,
           fontWeight: FontWeight.w900,
@@ -33,7 +41,9 @@ class UniversityHomeAppBar extends StatelessWidget implements PreferredSizeWidge
           icon: Container(
             padding: EdgeInsets.all(6.r),
             decoration: BoxDecoration(
-              color: isDark ? Colors.amberAccent.withOpacity(0.1) : const Color(0xFF311B92).withOpacity(0.08),
+              color: isDark
+                  ? Colors.amberAccent.withOpacity(0.1)
+                  : const Color(0xFF311B92).withOpacity(0.08),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -66,5 +76,5 @@ class UniversityHomeAppBar extends StatelessWidget implements PreferredSizeWidge
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(45.h);
+  Size get preferredSize => const Size.fromHeight(_minHeight);
 }
