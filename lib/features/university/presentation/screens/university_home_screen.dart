@@ -42,13 +42,6 @@ class _UniversityHomeScreenState extends State<UniversityHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ScreenUtil.configure(
-      data: MediaQuery.of(context),
-      designSize: const Size(375, 812),
-      minTextAdapt: true,
-      splitScreenMode: true,
-    );
-
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
     final themeProvider = context.watch<ThemeProvider>();

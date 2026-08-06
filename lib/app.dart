@@ -16,39 +16,27 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
 
-    return ScreenUtilInit(
-      // Tamaño base de diseño (iPhone X/11 aprox)
-      designSize: const Size(375, 812),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      // Asegura que ScreenUtil responda a cambios de tamaño de pantalla/orientación
-      ensureScreenSize: true,
-      // Corregido: RebuildFactors.always asegura la reconstrucción en cualquier cambio
-      rebuildFactor: RebuildFactors.always,
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      title: 'Oriéntate+',
+
+      // DevicePreview: locale del dispositivo simulado
+      locale: DevicePreview.locale(context),
+
+      // Configuración de temas
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeProvider.themeMode,
+
+      // Enrutador GoRouter
+      routerConfig: appRouter,
+
       builder: (context, child) {
-        return MaterialApp.router(
-          debugShowCheckedModeBanner: false,
-          title: 'Oriéntate+',
-
-          // DevicePreview: locale del dispositivo simulado
-          locale: DevicePreview.locale(context),
-
-          // Configuración de temas
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: themeProvider.themeMode,
-
-          // Enrutador GoRouter
-          routerConfig: appRouter,
-
-          builder: (context, child) {
-            // appBuilder debe ser el wrapper más externo para que el MediaQuery
-            // simulado del dispositivo se aplique sobre el contenido responsive actual.
-            return DevicePreview.appBuilder(
-              context,
-              _buildResponsiveContent(context, child),
-            );
-          },
+        // appBuilder debe ser el wrapper más externo para que el MediaQuery
+        // simulado del dispositivo se aplique sobre el contenido responsive actual.
+        return DevicePreview.appBuilder(
+          context,
+          _buildResponsiveContent(context, child),
         );
       },
     );
@@ -74,16 +62,29 @@ class MyApp extends StatelessWidget {
           builder: (context) {
             // El ResponsiveScaledBox escala proporcionalmente el contenido
             // basándose en el ancho de diseño según el dispositivo.
+            final double? scaledWidth = ResponsiveValue<double?>(
+              context,
+              conditionalValues: [
+                const Condition.equals(name: MOBILE, value: 375),
+                const Condition.equals(name: TABLET, value: 800),
+                const Condition.equals(name: DESKTOP, value: 1200),
+              ],
+            ).value;
+
             return ResponsiveScaledBox(
-              width: ResponsiveValue<double?>(
-                context,
-                conditionalValues: [
-                  const Condition.equals(name: MOBILE, value: 375),
-                  const Condition.equals(name: TABLET, value: 800),
-                  const Condition.equals(name: DESKTOP, value: 1200),
-                ],
-              ).value,
-              child: child ?? const SizedBox.shrink(),
+              width: scaledWidth,
+              child: Builder(
+                builder: (context) {
+                  // Configuración global y reactiva de ScreenUtil
+                  ScreenUtil.configure(
+                    data: MediaQuery.of(context),
+                    designSize: const Size(375, 812),
+                    minTextAdapt: true,
+                    splitScreenMode: true,
+                  );
+                  return child ?? const SizedBox.shrink();
+                },
+              ),
             );
           },
         ),
