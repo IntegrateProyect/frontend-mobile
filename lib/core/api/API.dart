@@ -1150,10 +1150,11 @@ class API implements IApi {
   }
 
   @override
-  Future<List<dynamic>> getGames() async {
+  Future<List<dynamic>> getGames(String token) async {
     final result = await _request(
       method: 'GET',
       path: '/games',
+      token: token,
     );
 
     return _asList(
